@@ -68,6 +68,8 @@ function enviarArquivo<T>(rota: string, arquivo: File, aoProgresso: (fracao: num
 export type PedidoDeMontagem = {
   fundo_id?: string; biblioteca_id?: string; pessoa_id?: string; personagem_id?: string;
   audio_ids?: string[];
+  /** "Das cenas": os vídeos da biblioteca de onde vem o som, na ordem. */
+  audio_das_cenas?: string[];
   recorte: 'transparente' | 'modnet'; formato: string; tirar_fundo_do_personagem: boolean;
   fala: 'fundo' | 'pessoa' | 'audio';
 };

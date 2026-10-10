@@ -19,13 +19,13 @@ import type {
 import {comecarTour, tourJaVisto} from './tour';
 
 const MONTAGEM_PADRAO: MontagemConfig = {fonteDoFundo: 'video', porCima: 'pessoa', recorte: 'modnet', formato: 'fundo',
-  tirarFundo: true, fala: null};
+  tirarFundo: true, fala: null, cenasDoAudio: []};
 const NADA_ENVIANDO: Record<Envio, number | null> = {video: null, fundo: null, pessoa: null, personagem: null, audio: null,
   biblioteca: null};
 const SEM_ERRO: Record<Envio, string> = {video: '', fundo: '', pessoa: '', personagem: '', audio: '', biblioteca: ''};
 
 /** Os vídeos que a biblioteca aceita (``editor/cenas.py``). */
-const CLIPE = /\.(mp4|mov|m4v|webm|mkv)$/i;
+const CLIPE = /\.(mp4|mov|m4v|webm|mkv|jpe?g|png|webp)$/i;
 /** Quantos clipes sobem ao mesmo tempo. */
 const CLIPES_JUNTOS = 3;
 
@@ -159,6 +159,9 @@ export const App: React.FC = () => {
       ? {info: personagem, recorte: recorteDoPersonagem, tirarFundo: montagem.tirarFundo} : null,
   }), [naMontagem, comPersonagem, fundoEfetivo, personagem, recorteDoPersonagem, montagem.tirarFundo]);
   const fala = falaEfetiva(montagem, comCenas ? null : fundo, pessoa, audios);
+  // "Das cenas": só as marcadas que ainda estão na biblioteca (trocar a pasta tira as outras)
+  const cenasDoAudio = useMemo(() => montagem.cenasDoAudio.filter(
+    (a) => biblioteca?.com_som.some((c) => c.arquivo === a)), [montagem.cenasDoAudio, biblioteca]);
   // A recomendação sai do vídeo principal: o único, ou o fundo da montagem.
   const videoPrincipal = naMontagem ? fundoEfetivo : unico;
   const recomendacao = useMemo(() => recomendadas(videoPrincipal), [videoPrincipal]);
@@ -167,7 +170,7 @@ export const App: React.FC = () => {
   const porCimaPronto = montagem.porCima === 'nada' || Boolean(comPersonagem ? personagem : pessoa);
   const podeEditar = !naMontagem ? Boolean(unico)
     : Boolean(fundoEfetivo && porCimaPronto && (fala === 'voz' ? narracao
-      : fala !== 'audio' || audios.length));
+      : fala === 'cenas' ? cenasDoAudio.length : fala !== 'audio' || audios.length));
   const pararDeAcompanhar = useRef<(() => void) | null>(null);
   const recortesPedidos = useRef(new Set<string>());
   const thumbAtual = useRef(thumb);
@@ -510,10 +513,11 @@ export const App: React.FC = () => {
       ...(comPersonagem && personagem ? {personagem_id: personagem.id} : {}),
       ...(montagem.porCima === 'pessoa' && pessoa ? {pessoa_id: pessoa.id} : {}),
       ...(fala === 'audio' && audios.length ? {audio_ids: audios.map((a) => a.id)}
-        : fala === 'voz' && narracao ? {audio_ids: [narracao.id]} : {}),
+        : fala === 'voz' && narracao ? {audio_ids: [narracao.id]}
+          : fala === 'cenas' ? {audio_das_cenas: cenasDoAudio} : {}),
       recorte: montagem.recorte, formato: montagem.formato, tirar_fundo_do_personagem: montagem.tirarFundo,
-      // a narração é um áudio separado como outro qualquer
-      fala: fala === 'voz' ? 'audio' : fala,
+      // a narração e o som das cenas são áudios separados como outros quaisquer
+      fala: fala === 'voz' || fala === 'cenas' ? 'audio' : fala,
     }};
     try {
       const t = await api.criarTarefa(alvo, edicao, saida, previa ? 15 : null);
@@ -526,7 +530,7 @@ export const App: React.FC = () => {
       setErroEdicao((e as Error).message);
     }
   }, [video, edicao, saida, previa, quandoTerminar, podeEditar, naMontagem, fundoEfetivo, comCenas, biblioteca,
-    comPersonagem, personagem, pessoa, audios, narracao, montagem, camadas, fala]);
+    comPersonagem, personagem, pessoa, audios, narracao, cenasDoAudio, montagem, camadas, fala]);
 
   const marcado = useMemo(() => (estado && edicao && saida ? presetMarcado(estado.presets, edicao, saida) : null),
     [estado, edicao, saida]);

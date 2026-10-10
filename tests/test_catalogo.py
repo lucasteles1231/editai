@@ -221,3 +221,33 @@ class TestOTerminal:
 
         assert cli.main(["--gerar-matriz", str(tmp_path)]) == 2
         assert "não tem clipes" in capsys.readouterr().err
+
+
+class TestAsFotos:
+    def test_uma_foto_vai_num_quadro_so(self, tmp_path):
+        from tests.test_cenas import _foto
+
+        c = catalogo.ler_clipe(_foto(tmp_path / "quarto.JPG"), "quarto.JPG")
+        assert c.foto and len(c.quadros) == 1 and c.quadros[0][:2] == b"\xff\xd8"
+        assert c.duracao == cenas.FOTO_S and c.movimento == 0.0
+
+    def test_o_pedido_conta_as_imagens_de_cada_uma(self, pasta, de_verdade):
+        from tests.test_cenas import _foto
+
+        _foto(pasta / "fotos" / "cozinha.jpg")
+        lidos = [catalogo.ler_clipe(c, a) for c, a in catalogo.clipes_relativos(pasta)]
+        texto = catalogo.montar_pedido(lidos, [], "")
+        # os dois vídeos de clipes/ levam as imagens 1 a 6; a foto, só a 7; o vídeo seguinte, 8 a 10
+        assert '- cena 2: imagem 7 (arquivo "fotos/cozinha.jpg", uma foto)' in texto
+        assert "- cena 3: imagens 8 a 10" in texto
+
+        def descreve(corpo):
+            n = _texto(corpo).count("- cena ")
+            return _resposta([{"k": k, "descricao": f"Cena {k}", "categorias": [],
+                               "periodo": "interno", "energia": "baixa", "monetizacao": "ok"}
+                              for k in range(n)])
+        gemini = _Gemini(descreve)
+        g = catalogo.gerar(catalogo.clipes_relativos(pasta), transporte=gemini.transporte)
+        assert _imagens(gemini.pedidos[0]) == 3 * 3 + 1
+        assert [c["arquivo"] for c in g.cenas][2] == "fotos/cozinha.jpg"
+        assert cenas.ler_matriz(g.cenas, cenas.clipes_da_pasta(pasta)).ficha()["fotos"] == 1

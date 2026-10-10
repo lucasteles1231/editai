@@ -277,10 +277,10 @@ def test_biblioteca_de_cenas(navegador, endereco, tmp_path):
     expect(ficha).to_contain_text("3 cenas", timeout=30_000)
     expect(ficha).to_contain_text("1 marcada “evitar” (fica de fora)")
     pagina.get_by_role("button", name="Nada", exact=True).click()
-    # Sem som nos clipes, a fala vem dos áudios (ou da "Minha voz"): dois, que tocam na
-    # ordem do nome.
+    # Sem som nos clipes, a fala vem dos áudios (ou das cenas, ou da "Minha voz"): dois, que
+    # tocam na ordem do nome.
     audio_vem_de = pagina.get_by_role("group", name="de onde vem o áudio")
-    expect(audio_vem_de.get_by_role("button")).to_have_count(2)
+    expect(audio_vem_de.get_by_role("button")).to_have_count(3)
     pagina.set_input_files('[data-envio="audio"] input',
                            [str(audio_wav(tmp_path / "parte 2.wav")),
                             str(audio_wav(tmp_path / "parte 1.wav"))])
@@ -494,6 +494,65 @@ def test_os_meus_presets(navegador, endereco, tmp_path):
     pagina.get_by_role("button", name="apagar o preset Meu gameplay").click()
     expect(meu).to_have_count(0)
     assert "meu-gameplay" not in presets.todos()
+    assert not _barrados(pagina), _barrados(pagina)
+    assert not erros, erros
+
+
+def test_fotos_e_o_som_das_cenas(navegador, endereco, tmp_path):
+    """Uma pasta com fotos e vídeos com som: as fotos entram como cenas, e o som vem dos
+    vídeos marcados, na ordem dos números (clicar de novo tira, e os outros andam)."""
+    import json
+
+    from tests.test_cenas import _foto
+
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 900})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    pagina.add_init_script(VIGIAR_A_CSP)
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
+    pagina.goto(endereco)
+
+    pasta = tmp_path / "imovel"
+    pasta.mkdir()
+    for nome in ("sala.jpg", "cozinha.jpg"):
+        _foto(pasta / nome)
+    for nome in ("tour-1.mp4", "tour-2.mp4"):
+        fazer_video(pasta / nome, largura=180, altura=320, segundos=2.0)
+    (pasta / "cenas.json").write_text(json.dumps(
+        [{"arquivo": n, "descricao": n.split(".")[0]} for n in
+         ("sala.jpg", "cozinha.jpg", "tour-1.mp4", "tour-2.mp4")]), encoding="utf-8")
+
+    pagina.get_by_role("button", name="Um fundo e, por cima").click()
+    pagina.get_by_role("button", name="Biblioteca de cenas").click()
+    pagina.set_input_files('[data-envio="cenas"] input', str(pasta))
+    ficha = pagina.get_by_label("dados da biblioteca de cenas")
+    expect(ficha).to_contain_text("4 cenas (2 fotos)", timeout=30_000)
+    pagina.get_by_role("button", name="Nada", exact=True).click()
+    pagina.get_by_role("group", name="de onde vem o áudio").get_by_role(
+        "button", name="Das cenas").click()
+    editar = pagina.get_by_role("button", name="Editar vídeo")
+    expect(editar).to_be_disabled()                      # nenhuma marcada ainda
+    grupo = pagina.get_by_role("group", name="as cenas de onde vem o som")
+    expect(grupo.get_by_role("button")).to_have_count(2)  # só os vídeos com som
+    grupo.get_by_role("button", name=re.compile("^tour-2.mp4")).click()
+    grupo.get_by_role("button", name=re.compile("^tour-1.mp4")).click()
+    expect(grupo.get_by_role("button", name="tour-1.mp4, 2ª")).to_be_visible()
+    # tirar a primeira: a outra vira a 1ª
+    grupo.get_by_role("button", name="tour-2.mp4, 1ª").click()
+    expect(grupo.get_by_role("button", name="tour-1.mp4, 1ª")).to_be_visible()
+    grupo.get_by_role("button", name=re.compile("^tour-2.mp4")).click()
+
+    pagina.get_by_role("button", name="Em pé (9:16)").click()
+    resolucao = pagina.locator("label.campo", has_text="Resolução").locator("select")
+    resolucao.select_option("480p")
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/tarefas")
+                               and r.method == "POST") as pedido:
+        editar.click()
+    montagem = pedido.value.post_data_json["montagem"]
+    assert montagem["audio_das_cenas"] == ["tour-1.mp4", "tour-2.mp4"]
+    assert montagem["fala"] == "audio" and "audio_ids" not in montagem
+    pagina.locator(".miniaturas img").first.wait_for(timeout=180_000)
     assert not _barrados(pagina), _barrados(pagina)
     assert not erros, erros
 

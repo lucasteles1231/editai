@@ -404,10 +404,25 @@ palavra saltando, para perto. **Mover a pessoa**, no passo 2, desliga isso.
 ### Biblioteca de cenas
 
 Para um vídeo narrado sobre um assunto com muitas imagens (um trailer, uma notícia, um
-jogo), o fundo pode ser uma biblioteca: uma pasta de clipes curtos, de uns 2 s, e uma
-matriz que descreve cada um. No passo 1, em **O fundo**, escolha **Biblioteca de cenas** e
-arraste a pasta (as subpastas também valem). A matriz que estiver dentro dela, o
-`cenas.json`, entra junto; se não estiver, a página pede em seguida.
+jogo, o tour por um imóvel), o fundo pode ser uma biblioteca: uma pasta de clipes curtos e
+de fotos, e uma matriz que descreve cada um. No passo 1, em **O fundo**, escolha
+**Biblioteca de cenas** e arraste a pasta (as subpastas também valem). A matriz que
+estiver dentro dela, o `cenas.json`, entra junto; se não estiver, a página pede em
+seguida.
+
+- **Vídeos e fotos:** MP4, MOV, WebM e MKV, e JPG, PNG e WebP. Uma foto vale por uma cena
+  de 3 s e ganha um movimento lento (aproxima ou afasta um pouco, andando de lado), para
+  não ficar parada. A orientação que o celular gravou na foto é respeitada.
+- **Em pé ou deitado:** se a maior parte das cenas é em pé, o vídeo sai em pé (a
+  plataforma escolhida no passo 1 ainda manda). Cada cena entra no formato do vídeo; a
+  muito diferente (uma foto em pé num vídeo deitado) entra inteira, sobre ela mesma
+  desfocada, em vez de perder metade no corte.
+- **O áudio pode vir das cenas:** em **O áudio vem de**, **Das cenas** mostra os vídeos da
+  biblioteca que têm som. Clique neles na ordem em que o som deve tocar: cada um ganha um
+  número, e clicar de novo tira. O som deles vira a narração, e as cenas continuam
+  escolhidas pelo que é dito: elas não aparecem nessa ordem, nem inteiras. Quando o
+  roteiro escolhe um desses vídeos, ele entra no ponto da fala, e a boca de quem fala bate
+  com a voz. No terminal, é só passar os vídeos no `--audio`.
 
 A matriz é uma lista em JSON, ou `{"cenas": [...]}`:
 
@@ -427,7 +442,7 @@ A matriz é uma lista em JSON, ou `{"cenas": [...]}`:
 
 | Campo | O que é |
 |---|---|
-| `arquivo` | o clipe, casado pelo nome do arquivo (a pasta não importa). Obrigatório |
+| `arquivo` | o clipe ou a foto, casado pelo nome do arquivo (a pasta não importa). Obrigatório |
 | `descricao` | o que aparece nele. Obrigatório |
 | `id` | um nome curto; sem ele, vale o nome do arquivo |
 | `categorias`, `personagens` | listas, ou texto com vírgulas, que ajudam a escolher |
@@ -435,8 +450,8 @@ A matriz é uma lista em JSON, ou `{"cenas": [...]}`:
 | `monetizacao` | `ok`, `cuidado` (no máximo duas no vídeo) ou `evitar` (nunca entra) |
 | `obs` | um aviso para quem escolhe, como uma data antiga num logo |
 
-A página mostra a ficha: quantas cenas entraram, quantas ficaram de fora por "evitar",
-quais clipes não têm descrição e quais descrições não têm clipe.
+A página mostra a ficha: quantas cenas entraram (e quantas são fotos), quantas ficaram de
+fora por "evitar", quais clipes não têm descrição e quais descrições não têm clipe.
 
 #### Gerar a matriz
 
@@ -446,12 +461,14 @@ Você já cortou os clipes e não tem o `cenas.json`? Depois de arrastar a pasta
 
 <img src="docs/img/interface-matriz.png" alt="A tabela de revisão da matriz: cada cena com a miniatura, a descrição, as categorias, os personagens, a energia, o período, a monetização e a observação, e os botões Usar esta matriz e Baixar o cenas.json" width="420" align="right">
 
-- **O Gemini vê** 3 quadros de cada clipe (começo, meio e fim), 12 clipes por pedido, e
+- **O Gemini vê** 3 quadros de cada clipe (começo, meio e fim) e a foto inteira, 12 cenas
+  por pedido, e
   escreve a descrição, as categorias, os personagens que ele reconhece, o período, a
   energia (o clima da cena, e não o movimento da câmera), a monetização e o que atrapalha
   usar a cena de fundo (texto na tela, logo, troca de plano no meio).
 - **O custo:** 128 clipes são uns 11 pedidos da cota grátis. Cada pedido levou perto de
-  50 s no teste, então a biblioteca inteira deve levar uns 10 minutos. O que já foi
+  50 s no teste, então a biblioteca inteira deve levar uns 10 minutos. As 23 cenas de um
+  imóvel (19 fotos e 4 vídeos) levaram 36 s. O que já foi
   descrito fica guardado: gerar de novo, ou depois que a cota acabou, só pede o que
   falta.
 - **A cena que o Gemini se recusa a descrever** (nudez, por exemplo) fica marcada como
@@ -949,6 +966,8 @@ editar video.mp4 --sem-zoom --sem-sons            # sem zoom e sem efeitos sonor
 editar eu.mp4 --fundo tela.mp4 --quadro vertical  # você por cima da tela gravada, em pé
 editar --fundo jogo.mp4 --personagem boneco.gif --audio narracao.m4a
 editar --gerar-matriz cenas/ --assunto "trailers do GTA 6"   # escreve cenas/cenas.json
+editar --cenas imovel/ --matriz imovel/cenas.json --audio imovel/tour-1.mp4 imovel/tour-2.mp4 \
+       --preset imoveis               # fotos e vídeos de um imóvel, o som de dois vídeos dela
 editar --cenas cenas/ --matriz cenas/cenas.json --audio p1.m4a p2.m4a p3.m4a \
        --personagem boneco.gif --preset noticia --quadro vertical
 editar video.mp4 --voz limpa --bipe "palavra, outra"  # voz limpa e bipe na lista

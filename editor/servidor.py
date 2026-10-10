@@ -747,6 +747,39 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
 
     # ── a biblioteca de cenas: a pasta dos clipes e a matriz ──────────────
 
+    def _video_da_foto(foto: Path, destino: Path) -> Path:
+        """Dois segundos da foto parada, em H.264: a capa de uma biblioteca só de fotos."""
+        import av
+
+        img = Image.fromarray(cenas.ler_imagem(str(foto)))
+        img.thumbnail((1920, 1920))
+        img = img.resize((img.width // 2 * 2, img.height // 2 * 2))
+        with av.open(str(destino), "w") as c:
+            s = c.add_stream("libx264", rate=30, options={"crf": "20", "preset": "veryfast"})
+            s.width, s.height, s.pix_fmt = img.width, img.height, "yuv420p"
+            for k in range(60):
+                q = av.VideoFrame.from_image(img)
+                q.pts = k
+                for pacote in s.encode(q):
+                    c.mux(pacote)
+            for pacote in s.encode():
+                c.mux(pacote)
+        return destino
+
+    def _cenas_com_som(pasta: Path) -> list[dict]:
+        """Os vídeos da biblioteca que têm som: de onde o áudio pode vir ("Das cenas")."""
+        saida = []
+        for clipe in cenas.clipes_da_pasta(pasta):
+            if cenas.e_imagem(clipe):
+                continue
+            try:
+                info = video_mod.sondar(clipe)
+            except Exception:
+                continue
+            if info.tem_audio:
+                saida.append({"arquivo": clipe.name, "duracao": round(info.duracao, 2)})
+        return saida
+
     def _registrar_video(caminho: Path) -> dict:
         """Um arquivo que já está no computador vira um "vídeo" da página (a capa da
         biblioteca, de onde a thumbnail tira os quadros)."""
@@ -772,7 +805,8 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
         b = _biblioteca(bid)
         nome = _nome_seguro(arquivo.filename or "")
         if Path(nome).suffix.lower() not in cenas.EXTENSOES:
-            raise HTTPException(400, "Na biblioteca entram só vídeos (MP4, MOV, WebM, MKV).")
+            raise HTTPException(400, "Na biblioteca entram vídeos (MP4, MOV, WebM, MKV) e fotos "
+                                     "(JPG, PNG, WebP).")
         with (b["pasta"] / nome).open("wb") as f:
             shutil.copyfileobj(arquivo.file, f, length=1024 * 1024)
         return {"clipes": len(cenas.clipes_da_pasta(b["pasta"]))}
@@ -793,10 +827,16 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
         destino = b["pasta"].parent / "matriz.json"
         destino.write_bytes(dados)
         b["matriz"] = destino
-        # A capa: uma cena forte, registrada como vídeo, para a thumbnail e as ideias.
-        capa = next((c for c in lida.cenas if c.energia == "alta"), lida.cenas[0])
-        b["capa"] = _registrar_video(capa.arquivo)
-        return {"id": bid, "nome": b["nome"], **lida.ficha(), "capa": b["capa"]}
+        # A capa: uma cena forte, registrada como vídeo, para a thumbnail e as ideias. Só
+        # com fotos, um vídeo curto da primeira faz esse papel.
+        videos_ = [c for c in lida.cenas if not c.imagem]
+        capa = next((c for c in videos_ if c.energia == "alta"), videos_[0] if videos_ else None)
+        arquivo_da_capa = capa.arquivo if capa else _video_da_foto(
+            lida.cenas[0].arquivo, b["pasta"].parent / "capa.mp4")
+        b["capa"] = _registrar_video(arquivo_da_capa)
+        b["com_som"] = _cenas_com_som(b["pasta"])
+        return {"id": bid, "nome": b["nome"], **lida.ficha(), "capa": b["capa"],
+                "com_som": b["com_som"]}
 
     # A matriz gerada pelo editor: o Gemini descreve os clipes (em segundo plano, com o
     # andamento), e a página mostra numa tabela para revisar antes de valer.
@@ -854,9 +894,12 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
         caminho = b["pasta"] / Path(arquivo.replace("\\", "/")).name
         if not caminho.is_file():
             raise HTTPException(404, "Esta cena não está na pasta enviada.")
-        info = video_mod.sondar(caminho)
-        t = info.duracao / 2 if segundo is None else min(max(0.0, segundo), info.duracao)
-        matriz = video_mod.quadro_em(caminho, t, info.rotacao)
+        if cenas.e_imagem(caminho):
+            matriz = cenas.ler_imagem(str(caminho))
+        else:
+            info = video_mod.sondar(caminho)
+            t = info.duracao / 2 if segundo is None else min(max(0.0, segundo), info.duracao)
+            matriz = video_mod.quadro_em(caminho, t, info.rotacao)
         if matriz is None:
             raise HTTPException(404, "Não deu para ler um quadro desta cena.")
         img = Image.fromarray(matriz)
@@ -974,6 +1017,17 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
         ids_de_audio = pedido.get("audio_ids") or (
             [pedido["audio_id"]] if pedido.get("audio_id") else [])
         partes = [_audio(str(a))["caminho"] for a in list(ids_de_audio)[:PARTES_MAXIMAS]]
+        if pedido.get("audio_das_cenas"):
+            # "Das cenas": o som dos vídeos escolhidos, na ordem em que foram marcados
+            if biblioteca is None:
+                raise HTTPException(422, "O áudio das cenas precisa da biblioteca de cenas.")
+            com_som = {c["arquivo"] for c in biblioteca.get("com_som") or []}
+            partes = []
+            for nome in list(pedido["audio_das_cenas"])[:PARTES_MAXIMAS]:
+                nome = Path(str(nome).replace("\\", "/")).name
+                if nome not in com_som:
+                    raise HTTPException(422, f"A cena {nome} não tem som (ou não está na pasta).")
+                partes.append(biblioteca["pasta"] / nome)
         recorte_ = str(pedido.get("recorte") or "modnet")
         if pessoa is not None and recorte_ == "transparente" and not pessoa.get("tem_alfa"):
             raise HTTPException(422, "Este vídeo da pessoa não tem transparência: escolha "

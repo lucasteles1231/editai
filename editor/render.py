@@ -223,6 +223,10 @@ class _Preparada:
     tem_audio: bool
     palavras: list | None = None
     bipes: list[tuple[float, float]] = field(default_factory=list)
+    #: De onde veio cada pedaço do som: (o arquivo, onde ele começa no áudio junto, quanto
+    #: foi aparado do começo dele, quanto dura). É o que põe na boca certa um vídeo da
+    #: biblioteca que também é a fonte do som.
+    fontes: list[tuple[Path, float, float, float]] = field(default_factory=list)
 
 
 def _duracao_e_audio(caminho: Path) -> tuple[float, bool]:
@@ -258,7 +262,8 @@ def _preparar_fala(arquivos: list[Path], edicao: OpcoesDeEdicao, avisar: Progres
     proibidas = censura.lista(edicao.bipe)
     if len(arquivos) == 1 and edicao.voz == "original" and not proibidas:
         duracao, tem_audio = _duracao_e_audio(arquivos[0])
-        return _Preparada(arquivos[0], duracao, tem_audio)
+        return _Preparada(arquivos[0], duracao, tem_audio,
+                          fontes=[(Path(arquivos[0]), 0.0, 0.0, duracao)])
     por_parte = []
     for k, arquivo in enumerate(arquivos):
         duracao, tem_audio = _duracao_e_audio(arquivo)
@@ -284,7 +289,9 @@ def _preparar_fala(arquivos: list[Path], edicao: OpcoesDeEdicao, avisar: Progres
          for a in arquivos] + [edicao.voz, proibidas], sort_keys=True).encode()).hexdigest()
     wav = pasta_de_vozes() / f"{chave[:16]}.wav"
     _gravar_wav(wav, estereo)
-    return _Preparada(wav, len(junto) / voz.TAXA, True, palavras, bipes)
+    fontes = [(Path(a), p.inicio, p.corte, p.duracao) for a, p in zip(arquivos, partes,
+                                                                        strict=True)]
+    return _Preparada(wav, len(junto) / voz.TAXA, True, palavras, bipes, fontes)
 
 
 def _planejar(fala: Path, duracao_da_fala: float, tem_audio: bool, edicao: OpcoesDeEdicao,
@@ -518,7 +525,9 @@ def _editar_montagem(montagem: Montagem, destino: Path, edicao: OpcoesDeEdicao,
         avisar("transcrevendo", 0.0, "lendo a biblioteca de cenas")
         biblioteca = cenas.ler_matriz(Path(montagem.matriz).read_text(encoding="utf-8"),
                                       cenas.clipes_da_pasta(Path(montagem.cenas)))
-        info_do_fundo, base, fps_base = None, (1920, 1080), Fraction(30)
+        # o quadro "do fundo" é o da maioria das cenas: fotos e vídeos em pé saem em pé
+        base = (1080, 1920) if biblioteca.em_pe() else (1920, 1080)
+        info_do_fundo, fps_base = None, Fraction(30)
     else:
         info_do_fundo = video_mod.sondar(montagem.fundo)
         base, fps_base = (info_do_fundo.largura, info_do_fundo.altura), info_do_fundo.fps
@@ -543,7 +552,10 @@ def _editar_montagem(montagem: Montagem, destino: Path, edicao: OpcoesDeEdicao,
             raise RuntimeError("Não consegui baixar o modelo de recorte. Confira a internet, "
                                "ou envie o vídeo da pessoa já sem fundo.")
     if biblioteca is not None and r is not None:
-        fundo = cenas.FundoDeCenas(cenas.montar_trilha(r.blocos, r.escolhas, biblioteca))
+        # na janela, a cena é 16:9; fora dela, ela já vem no tamanho do quadro
+        trilha = cenas.montar_trilha(r.blocos, r.escolhas, biblioteca)
+        trilha = cenas.sincronizar(trilha, prep.fontes, linha, biblioteca)
+        fundo = cenas.FundoDeCenas(trilha, cenas.TAMANHO if edicao.janela else (largura, altura))
     else:
         fundo = video_mod.Cursor(montagem.fundo, info_do_fundo.rotacao,
                                  duracao=info_do_fundo.duracao)

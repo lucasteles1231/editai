@@ -112,7 +112,7 @@ export type FonteDoFundo = 'video' | 'cenas';
 export type FormatoDoQuadro = 'fundo' | 'vertical' | 'horizontal' | 'quadrado';
 /** De onde vem o áudio: o vídeo de fundo, o vídeo da pessoa ou um áudio separado. */
 /** ``voz``: a voz salva da pessoa narra um roteiro (a narração vai como áudio separado). */
-export type Fala = 'fundo' | 'pessoa' | 'audio' | 'voz';
+export type Fala = 'fundo' | 'pessoa' | 'audio' | 'voz' | 'cenas';
 export type MontagemConfig = {
   fonteDoFundo: FonteDoFundo;
   porCima: PorCima;
@@ -122,6 +122,8 @@ export type MontagemConfig = {
   tirarFundo: boolean;
   /** A escolha de quem edita (``null``: a primeira que tem som; ver fala.ts). */
   fala: Fala | null;
+  /** "Das cenas": os vídeos da biblioteca de onde vem o som, na ordem em que tocam. */
+  cenasDoAudio: string[];
 };
 
 export type PersonagemInfo = {
@@ -152,8 +154,10 @@ export type Narracao = {
 
 /** A biblioteca de cenas depois da matriz: a ficha e a capa (a cena forte que a thumbnail usa). */
 export type BibliotecaInfo = {
-  id: string; nome: string; cenas: number; duracao: number; evitadas: number;
+  id: string; nome: string; cenas: number; duracao: number; evitadas: number; fotos: number;
   sem_clipe: string[]; sem_descricao: string[]; capa: VideoInfo;
+  /** Os vídeos da biblioteca que têm som: de onde o áudio pode vir ("Das cenas"). */
+  com_som: {arquivo: string; duracao: number}[];
 };
 
 /** Uma cena da matriz, como a tabela de revisão edita: as listas em texto, com vírgulas. */

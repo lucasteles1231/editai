@@ -79,7 +79,7 @@ class TestAMatriz:
         assert praia.energia == "baixa" and praia.monetizacao == "ok"
         assert praia.duracao == pytest.approx(1.0, abs=0.05)
         assert (praia.largura, praia.altura) == (160, 90)
-        assert b.ficha() == {"cenas": 3, "duracao": pytest.approx(3.0, abs=0.1),
+        assert b.ficha() == {"cenas": 3, "duracao": pytest.approx(3.0, abs=0.1), "fotos": 0,
                              "evitadas": 1, "sem_clipe": ["t1-005"],
                              "sem_descricao": ["sobra.mp4"]}
 
@@ -247,3 +247,110 @@ class TestOFundoDeCenas:
         q = np.zeros((100, 100, 3), np.uint8)
         assert cenas.cobrir(q, 160, 90).shape == (90, 160, 3)
         assert cenas.cobrir(q, 100, 100) is q
+
+
+def _foto(caminho: Path, tamanho=(90, 160), cor=(40, 160, 60), girada: bool = False) -> Path:
+    """Uma foto em pé; com ``girada``, gravada deitada e endireitada pelo EXIF, como o
+    celular faz."""
+    from PIL import Image
+
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    largura, altura = tamanho
+    im = Image.new("RGB", (altura, largura) if girada else (largura, altura), cor)
+    # uma faixa clara no alto da foto (depois de endireitada), para ver o lado
+    if girada:
+        im.paste((250, 250, 250), (0, 0, 20, largura))
+        exif = im.getexif()
+        exif[0x0112] = 6                            # girar 90° no sentido do relógio
+        im.save(caminho, exif=exif.tobytes())
+    else:
+        im.paste((250, 250, 250), (0, 0, largura, 20))
+        im.save(caminho)
+    return caminho
+
+
+class TestAsFotos:
+    def test_entram_na_pasta_e_na_matriz(self, tmp_path):
+        _clipe(tmp_path / "sala.mp4")
+        foto = _foto(tmp_path / "fotos" / "cozinha.JPG", girada=True)
+        assert [c.name for c in cenas.clipes_da_pasta(tmp_path)] == ["cozinha.JPG", "sala.mp4"]
+        b = cenas.ler_matriz([{"arquivo": "fotos/cozinha.JPG", "descricao": "a cozinha"},
+                              {"arquivo": "sala.mp4", "descricao": "a sala"}],
+                             cenas.clipes_da_pasta(tmp_path))
+        cozinha = b.por_id()["cozinha"]
+        assert cozinha.imagem and cozinha.arquivo == foto
+        assert cozinha.duracao == cenas.FOTO_S
+        assert (cozinha.largura, cozinha.altura) == (90, 160)      # endireitada pelo EXIF
+        assert b.ficha()["fotos"] == 1 and "foto" in cozinha.linha()
+
+    def test_a_maioria_em_pe_decide(self, tmp_path):
+        clipes = [_foto(tmp_path / f"{k}.jpg") for k in range(2)] + [_clipe(tmp_path / "d.mp4")]
+        b = cenas.ler_matriz([{"arquivo": c.name, "descricao": "x"} for c in clipes], clipes)
+        assert b.em_pe()
+
+    def test_a_foto_mexe_devagar_e_fica_no_tamanho(self, tmp_path):
+        foto = _foto(tmp_path / "quarto.jpg", tamanho=(180, 320))
+        b = Biblioteca([Cena("quarto", foto, "x", duracao=cenas.FOTO_S, largura=180, altura=320,
+                             tipo="imagem")])
+        blocos = [cenas.BlocoDeFala(0.0, 3.0, 0, 0, "")]
+        fundo = cenas.FundoDeCenas(cenas.montar_trilha(blocos, [["quarto"]], b), (90, 160))
+        comeco, fim = fundo.em(0.05), fundo.em(2.9)
+        assert comeco.shape == fim.shape == (160, 90, 3)
+        assert np.abs(comeco.astype(int) - fim.astype(int)).mean() > 0.5     # mexeu
+        assert comeco[:5].mean() > 200                       # a faixa clara continua no alto
+
+    def test_foto_em_pe_num_quadro_deitado_entra_inteira(self, tmp_path):
+        q = np.zeros((160, 90, 3), np.uint8)
+        q[:, :] = (200, 30, 30)
+        saida = cenas.ajustar(q, 320, 180)
+        assert saida.shape == (180, 320, 3)
+        # a foto inteira no meio, e dos lados o desfoque dela (vermelho também, mais escuro
+        # nas bordas do desfoque), em vez de um corte que perderia metade
+        meio = saida[:, 160 - 45: 160 + 45]
+        assert meio[..., 0].mean() > 180
+        parecido = np.zeros((90, 160, 3), np.uint8)
+        assert cenas.ajustar(parecido, 160, 90) is parecido      # a mesma forma: nada muda
+
+
+class TestOSomDasCenas:
+    """Um vídeo de onde vem o som, escolhido como cena, entra no ponto da fala."""
+
+    def _biblioteca(self, tmp_path):
+        a = _clipe(tmp_path / "a.mp4", segundos=6.0)
+        b = _clipe(tmp_path / "b.mp4", segundos=6.0)
+        foto = _foto(tmp_path / "sala.jpg")
+        return Biblioteca([Cena("a", a, "x", duracao=6.0), Cena("b", b, "y", duracao=6.0),
+                           Cena("sala", foto, "z", duracao=cenas.FOTO_S, tipo="imagem")])
+
+    def test_no_ponto_da_fala_e_de_quem_fala(self, tmp_path):
+        from editor.cortes import Linha, Trecho
+
+        bib = self._biblioteca(tmp_path)
+        a, b, sala = bib.cenas
+        # o som: "a" (aparado 0,4 s no começo) de 0 a 5 s; "b" de 5,3 a 10 s
+        fontes = [(a.arquivo, 0.0, 0.4, 5.0), (b.arquivo, 5.3, 0.0, 4.7)]
+        cortes = [cenas.Corte(0, 2, sala), cenas.Corte(2, 4, b), cenas.Corte(6, 8, a)]
+        saida = cenas.sincronizar(cortes, fontes, Linha([Trecho(0.0, 10.0)]), bib)
+        assert saida[0].cena is sala                           # a foto fica como está
+        assert (saida[1].cena.id, saida[1].desde) == ("a", 2.4)   # quem fala é "a"
+        assert (saida[2].cena.id, saida[2].desde) == ("b", pytest.approx(0.7))
+
+    def test_o_corte_de_silencio_parte_a_cena(self, tmp_path):
+        from editor.cortes import Linha, Trecho
+
+        bib = self._biblioteca(tmp_path)
+        a, _b, _ = bib.cenas
+        fontes = [(a.arquivo, 0.0, 0.0, 5.0)]
+        # de 3 a 5 s a pausa foi cortada: na saída, o 3 emenda no 5
+        linha = Linha([Trecho(0.0, 3.0), Trecho(5.0, 10.0)])
+        saida = cenas.sincronizar([cenas.Corte(2.0, 4.0, a)], fontes, linha, bib)
+        assert [(c.inicio, c.fim, c.desde) for c in saida] == [(2.0, 3.0, 2.0), (3.0, 4.0, 0.0)]
+        # o segundo pedaço caiu fora da fala de "a" (5 s em diante): fica como estava
+
+    def test_sem_fonte_na_biblioteca_nada_muda(self, tmp_path):
+        from editor.cortes import Linha, Trecho
+
+        bib = self._biblioteca(tmp_path)
+        cortes = [cenas.Corte(0, 2, bib.cenas[0])]
+        assert cenas.sincronizar(cortes, [(tmp_path / "narracao.wav", 0, 0, 9)],
+                                 Linha([Trecho(0.0, 9.0)]), bib) == cortes

@@ -7,6 +7,13 @@ catálogo (``cenas.json``), e cada bloco do roteiro tocava as cenas que combinav
 ele. Aqui a pessoa traz a pasta das cenas e o catálogo (a "matriz"), e quem escolhe é o
 Gemini (:mod:`editor.roteiro`) ou, sem ele, as palavras.
 
+**As cenas são vídeos ou fotos.** Uma foto vale por uma cena de ``FOTO_S`` e ganha um
+movimento lento (aproxima ou afasta um pouco, andando de lado), para não ficar parada.
+
+**O tamanho:** cada cena é entregue no tamanho de quem pede (o quadro do vídeo, ou a
+janela 16:9). Se a forma for muito diferente (uma foto em pé num vídeo deitado), ela
+entra inteira, sobre ela mesma desfocada, em vez de perder metade no corte.
+
 **A matriz** é uma lista (ou ``{"cenas": [...]}``) com, por cena:
 
 - ``arquivo`` (obrigatório): o clipe, casado pelo nome do arquivo com o que veio na pasta;
@@ -19,6 +26,7 @@ Cena marcada "evitar" nunca entra.
 from __future__ import annotations
 
 import bisect
+import functools
 import json
 import math
 import re
@@ -29,13 +37,21 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter, ImageOps
 
 from editor import video as video_mod
 from editor.transcricao import Palavra
 
-#: Os vídeos que a biblioteca aceita.
-EXTENSOES = (".mp4", ".mov", ".m4v", ".webm", ".mkv")
+#: Os vídeos e as fotos que a biblioteca aceita.
+VIDEOS = (".mp4", ".mov", ".m4v", ".webm", ".mkv")
+IMAGENS = (".jpg", ".jpeg", ".png", ".webp")
+EXTENSOES = VIDEOS + IMAGENS
+#: Uma foto vale por uma cena deste tamanho, e aproxima (ou afasta) 8% enquanto toca.
+FOTO_S = 3.0
+FOTO_ZOOM = 0.08
+#: Mais diferente que isto (a proporção de uma pela da outra), a cena entra inteira, sobre
+#: ela mesma desfocada, em vez de cortada.
+DIFERENCA_PARA_ENCAIXAR = 1.45
 #: Um bloco de fala dura de 2 a 6 s; uma cena, uns 2 s.
 BLOCO_MINIMO_S = 2.0
 BLOCO_MAXIMO_S = 6.0
@@ -72,6 +88,12 @@ class Cena:
     largura: int = 0
     altura: int = 0
     rotacao: int = 0
+    #: "video" ou "imagem".
+    tipo: str = "video"
+
+    @property
+    def imagem(self) -> bool:
+        return self.tipo == "imagem"
 
     def linha(self) -> str:
         """A cena numa linha, para o pedido do Gemini."""
@@ -84,7 +106,7 @@ class Cena:
                               ("monetização", self.monetizacao), ("obs", self.obs)):
             if valor:
                 partes.append(f"{rotulo}: {valor}")
-        partes.append(f"{self.duracao:.1f} s")
+        partes.append("foto" if self.imagem else f"{self.duracao:.1f} s")
         return " | ".join(partes)
 
 
@@ -107,12 +129,35 @@ class Biblioteca:
 
     def ficha(self) -> dict:
         return {"cenas": len(self.cenas), "duracao": round(self.duracao, 1),
+                "fotos": sum(c.imagem for c in self.cenas),
                 "evitadas": self.evitadas, "sem_clipe": self.sem_clipe[:20],
                 "sem_descricao": self.sem_descricao[:20]}
 
+    def em_pe(self) -> bool:
+        """Se a maior parte das cenas é em pé (o vídeo sai em pé, sem outra escolha)."""
+        return sum(c.altura > c.largura for c in self.cenas) * 2 > len(self.cenas)
+
+
+def e_imagem(caminho: Path | str) -> bool:
+    return Path(caminho).suffix.lower() in IMAGENS
+
+
+@functools.lru_cache(maxsize=6)
+def ler_imagem(caminho: str) -> np.ndarray:
+    """A foto em RGB, já endireitada pela orientação que a câmera gravou (EXIF)."""
+    with Image.open(caminho) as im:
+        return np.asarray(ImageOps.exif_transpose(im).convert("RGB"))
+
+
+def medir_imagem(caminho: Path) -> tuple[int, int]:
+    with Image.open(caminho) as im:
+        largura, altura = im.size
+        orientacao = im.getexif().get(0x0112, 1)
+    return (altura, largura) if orientacao in (5, 6, 7, 8) else (largura, altura)
+
 
 def clipes_da_pasta(pasta: Path) -> list[Path]:
-    """Os vídeos de uma pasta e das subpastas."""
+    """Os vídeos e as fotos de uma pasta e das subpastas."""
     return sorted(p for p in Path(pasta).rglob("*")
                   if p.is_file() and p.suffix.lower() in EXTENSOES
                   and not p.name.startswith("."))
@@ -158,11 +203,17 @@ def ler_matriz(dados: str | bytes | list | dict, clipes: Sequence[Path]) -> Bibl
             evitadas += 1
             continue
         try:
-            info = video_mod.sondar(caminho)
+            if e_imagem(caminho):
+                largura, altura = medir_imagem(caminho)
+                duracao, rotacao, tipo = FOTO_S, 0, "imagem"
+            else:
+                info = video_mod.sondar(caminho)
+                largura, altura, rotacao, tipo = info.largura, info.altura, info.rotacao, "video"
+                duracao = info.duracao
         except Exception:
             sem_clipe.append(ident)
             continue
-        if info.duracao <= 0.2:
+        if duracao <= 0.2:
             continue
         energia = str(item.get("energia", "")).strip().lower()
         cenas.append(Cena(
@@ -172,8 +223,8 @@ def ler_matriz(dados: str | bytes | list | dict, clipes: Sequence[Path]) -> Bibl
             periodo=str(item.get("periodo", "")).strip(),
             energia=energia if energia in ENERGIAS else "",
             monetizacao=monetizacao if monetizacao in MONETIZACOES else "ok",
-            obs=str(item.get("obs", "")).strip(), duracao=round(info.duracao, 3),
-            largura=info.largura, altura=info.altura, rotacao=info.rotacao))
+            obs=str(item.get("obs", "")).strip(), duracao=round(duracao, 3),
+            largura=largura, altura=altura, rotacao=rotacao, tipo=tipo))
     sem_descricao = sorted(Path(c).name for n, c in por_nome.items() if n not in usados)
     if not cenas:
         raise MatrizInvalida("nenhuma cena da matriz casou com os clipes da pasta "
@@ -343,6 +394,42 @@ def montar_trilha(blocos: Sequence[BlocoDeFala], escolhas: Sequence[Sequence[str
     return cortes
 
 
+def sincronizar(cortes: Sequence[Corte], fontes: Sequence[tuple[Path, float, float, float]],
+                linha, biblioteca: Biblioteca) -> list[Corte]:
+    """Os vídeos de onde vem o som, quando o roteiro os escolhe, entram no ponto da fala:
+    a boca de quem fala bate com a voz. Escolhido fora do trecho dele, entra o vídeo de
+    quem está falando naquele momento (um rosto falando outra coisa parece defeito).
+
+    ``fontes``: (o arquivo, onde ele começa no áudio, o que foi aparado do começo, quanto
+    dura); ``linha``: a linha dos cortes (um corte de silêncio emenda dois pedaços da fala,
+    então a cena é partida ali, e cada pedaço pega o seu ponto)."""
+    por_arquivo = {Path(c.arquivo).resolve(): c for c in biblioteca.cenas}
+    das_fontes = [(Path(a).resolve(), ini, aparado, dura) for a, ini, aparado, dura in fontes]
+    arquivos = {a for a, *_ in das_fontes}
+    if not arquivos & set(por_arquivo):
+        return list(cortes)
+    fronteiras = linha.fronteiras()
+    saida: list[Corte] = []
+    for c in cortes:
+        if Path(c.cena.arquivo).resolve() not in arquivos:
+            saida.append(c)
+            continue
+        dentro = [f for f in fronteiras if c.inicio < f < c.fim]
+        for a, b in zip([c.inicio, *dentro], [*dentro, c.fim], strict=True):
+            t0 = linha.para_origem(a)
+            falando = next(((arq, ini, aparado) for arq, ini, aparado, dura in das_fontes
+                            if ini <= t0 < ini + dura and arq in por_arquivo), None)
+            pedaco = Corte(round(a, 3), round(b, 3), c.cena, c.desde, c.bloco)
+            if falando is not None:
+                arq, ini, aparado = falando
+                desde = aparado + (t0 - ini)
+                if desde < por_arquivo[arq].duracao - SOBRA_S:
+                    pedaco = Corte(round(a, 3), round(b, 3), por_arquivo[arq], round(desde, 3),
+                                   c.bloco)
+            saida.append(pedaco)
+    return saida
+
+
 class FundoDeCenas:
     """A trilha de cenas com a cara de um ``video.Cursor``: ``em(t)`` devolve o quadro
     do instante ``t`` do vídeo editado, em 16:9, cortado para cobrir."""
@@ -374,11 +461,32 @@ class FundoDeCenas:
         corte = self.corte_em(t)
         if corte is None:
             return None
+        if corte.cena.imagem:
+            return self._foto(corte, t)
         local = min(corte.cena.duracao - SOBRA_S, corte.desde + max(0.0, t - corte.inicio))
         q = self._cursor(corte.cena).em(max(0.0, local))
         if q is None:
             return None
-        return cobrir(q, self.largura, self.altura)
+        return ajustar(q, self.largura, self.altura)
+
+    @functools.lru_cache(maxsize=4)  # noqa: B019 (poucas fotos por vez, e o fundo vive pouco)
+    def _base(self, caminho: Path) -> np.ndarray:
+        return ajustar(ler_imagem(str(caminho)), self.largura, self.altura)
+
+    def _foto(self, corte: Corte, t: float) -> np.ndarray:
+        """A foto com o movimento lento: aproxima nos cortes pares e afasta nos ímpares,
+        andando um pouco de lado."""
+        base = self._base(corte.cena.arquivo)
+        f = min(1.0, max(0.0, (t - corte.inicio) / max(0.1, corte.fim - corte.inicio)))
+        k = self.cortes.index(corte) if corte in self.cortes else 0
+        zoom = 1 + FOTO_ZOOM * (f if k % 2 == 0 else 1 - f)
+        cw, ch = self.largura / zoom, self.altura / zoom
+        lado = (f - 0.5) * (1 if k % 4 < 2 else -1)
+        x0 = (self.largura - cw) / 2 + lado * (self.largura - cw) * 0.8
+        y0 = (self.altura - ch) / 2
+        img = Image.fromarray(base).resize((self.largura, self.altura), Image.BILINEAR,
+                                           box=(x0, y0, x0 + cw, y0 + ch))
+        return np.asarray(img)
 
 
 def cobrir(q: np.ndarray, largura: int, altura: int) -> np.ndarray:
@@ -394,6 +502,23 @@ def cobrir(q: np.ndarray, largura: int, altura: int) -> np.ndarray:
     return np.asarray(img)
 
 
-__all__ = ["Biblioteca", "BlocoDeFala", "Cena", "Corte", "FundoDeCenas", "MatrizInvalida",
-           "blocos_da_fala", "cenas_por_bloco", "clipes_da_pasta", "cobrir",
-           "escolher_por_palavras", "ler_matriz", "montar_trilha"]
+def ajustar(q: np.ndarray, largura: int, altura: int) -> np.ndarray:
+    """O quadro no tamanho pedido: cobrindo, se a forma é parecida; inteiro, sobre ele
+    mesmo desfocado, se é muito diferente (uma foto em pé num vídeo deitado)."""
+    h, w = q.shape[:2]
+    proporcao = (w / h) / (largura / altura)
+    if max(proporcao, 1 / proporcao) < DIFERENCA_PARA_ENCAIXAR:
+        return cobrir(q, largura, altura)
+    fundo = Image.fromarray(cobrir(q, largura // 4, altura // 4)).filter(
+        ImageFilter.GaussianBlur(6)).resize((largura, altura), Image.BILINEAR)
+    escala = min(largura / w, altura / h)
+    tw, th = max(1, round(w * escala)), max(1, round(h * escala))
+    fundo.paste(Image.fromarray(q).resize((tw, th), Image.BILINEAR),
+                ((largura - tw) // 2, (altura - th) // 2))
+    return np.asarray(fundo)
+
+
+__all__ = ["EXTENSOES", "IMAGENS", "VIDEOS", "Biblioteca", "BlocoDeFala", "Cena", "Corte",
+           "FundoDeCenas", "MatrizInvalida", "ajustar", "blocos_da_fala", "cenas_por_bloco",
+           "clipes_da_pasta", "cobrir", "e_imagem", "escolher_por_palavras", "ler_imagem",
+           "ler_matriz", "medir_imagem", "montar_trilha", "sincronizar"]

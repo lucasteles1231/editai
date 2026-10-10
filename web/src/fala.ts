@@ -7,7 +7,8 @@
  * A escolha de quem edita vale enquanto ela fizer sentido. Sem escolha (ou com uma que
  * não serve mais, como "a pessoa" depois de trocar para o personagem), vale a primeira
  * que tem som: a pessoa, o fundo, o áudio separado. Sem som em lugar nenhum, o fundo: o
- * vídeo sai mudo, sem cortes e sem legenda. A "Minha voz" só vale escolhida.
+ * vídeo sai mudo, sem cortes e sem legenda. A "Minha voz" e o som das cenas só valem
+ * escolhidos.
  */
 import type {AudioInfo, Fala, MontagemConfig, VideoInfo} from './tipos';
 
@@ -16,7 +17,9 @@ export const semSom = (v: VideoInfo | null) => Boolean(v && !v.tem_audio);
 
 export function opcoesDeFala(m: MontagemConfig): Fala[] {
   const fundo: Fala[] = m.fonteDoFundo === 'cenas' ? [] : ['fundo'];
-  return m.porCima === 'pessoa' ? [...fundo, 'pessoa', 'audio', 'voz'] : [...fundo, 'audio', 'voz'];
+  // com a biblioteca, o som também pode vir dos vídeos dela ("Das cenas")
+  const separados: Fala[] = m.fonteDoFundo === 'cenas' ? ['audio', 'cenas', 'voz'] : ['audio', 'voz'];
+  return m.porCima === 'pessoa' ? [...fundo, 'pessoa', ...separados] : [...fundo, ...separados];
 }
 
 export function falaEfetiva(m: MontagemConfig, fundo: VideoInfo | null, pessoa: VideoInfo | null,

@@ -122,7 +122,7 @@ const SoltarPasta: React.FC<{progresso: string | null; aoEscolher: (arquivos: Fi
       onDragOver={(e) => { e.preventDefault(); setArrastando(true); }}
       onDragLeave={() => setArrastando(false)} onDrop={(e) => void soltar(e)}>
       <strong>{progresso ?? 'Arraste a pasta das cenas'}</strong>
-      <small>ou clique para escolher · os vídeos de dentro, das subpastas também</small>
+      <small>ou clique para escolher · os vídeos e as fotos de dentro, das subpastas também</small>
       <input ref={entrada} type="file" multiple hidden {...pasta}
         onChange={(e) => e.target.files?.length && aoEscolher(Array.from(e.target.files))} />
     </div>
@@ -132,7 +132,7 @@ const SoltarPasta: React.FC<{progresso: string | null; aoEscolher: (arquivos: Fi
 const FichaDaBiblioteca: React.FC<{b: BibliotecaInfo}> = ({b}) => (
   <div className="ficha" aria-label="dados da biblioteca de cenas">
     <span className="etiqueta">{b.nome}</span>
-    <span className="etiqueta">{b.cenas} cenas</span>
+    <span className="etiqueta">{b.cenas} cenas{b.fotos ? ` (${b.fotos} foto${b.fotos > 1 ? 's' : ''})` : ''}</span>
     <span className="etiqueta">{duracao(b.duracao)} de cenas</span>
     {b.evitadas ? (
       <span className="etiqueta">
@@ -212,7 +212,35 @@ export type PropsDoEnvio = {
 const Aviso: React.FC<{texto: string}> = ({texto}) => (texto ? <div className="aviso erro">{texto}</div> : null);
 
 const NOMES_DA_FALA: Record<Fala, string> = {fundo: 'O vídeo de fundo', pessoa: 'O vídeo da pessoa',
-  audio: 'Áudio separado', voz: 'Minha voz (de um roteiro)'};
+  audio: 'Áudio separado', voz: 'Minha voz (de um roteiro)', cenas: 'Das cenas'};
+
+/** "Das cenas": os vídeos da biblioteca que têm som. Cada clique marca o próximo número (a
+ *  ordem em que o som toca); clicar de novo tira, e os outros andam. */
+const CenasDoAudio: React.FC<{
+  biblioteca: BibliotecaInfo; bibliotecaId: string; escolhidas: string[];
+  aoMudar: (escolhidas: string[]) => void;
+}> = ({biblioteca, bibliotecaId, escolhidas, aoMudar}) => {
+  if (!biblioteca.com_som.length) {
+    return <small>Nenhum vídeo da biblioteca tem som: escolha outra fonte para o áudio.</small>;
+  }
+  const alternar = (arquivo: string) => aoMudar(escolhidas.includes(arquivo)
+    ? escolhidas.filter((a) => a !== arquivo) : [...escolhidas, arquivo]);
+  return (
+    <div className="cenas-do-audio" role="group" aria-label="as cenas de onde vem o som">
+      {biblioteca.com_som.map((c) => {
+        const ordem = escolhidas.indexOf(c.arquivo);
+        return (
+          <button key={c.arquivo} type="button" className="cena-do-audio" aria-pressed={ordem >= 0}
+            aria-label={`${c.arquivo}${ordem >= 0 ? `, ${ordem + 1}ª` : ''}`} onClick={() => alternar(c.arquivo)}>
+            <img src={api.quadroDaCenaUrl(bibliotecaId, c.arquivo)} alt="" loading="lazy" />
+            {ordem >= 0 ? <span className="ordem">{ordem + 1}</span> : null}
+            <small>{c.arquivo} · {duracao(c.duracao)}</small>
+          </button>
+        );
+      })}
+    </div>
+  );
+};
 
 const FONTES_DO_FUNDO: [FonteDoFundo, string][] = [['video', 'Um vídeo'], ['cenas', 'Biblioteca de cenas']];
 const POR_CIMA: [PorCima, string][] = [['pessoa', 'Vídeo da pessoa'], ['personagem', 'Personagem animado'],
@@ -262,7 +290,8 @@ const EnvioDaMontagem: React.FC<PropsDoEnvio> = (p) => {
   const fala = falaEfetiva(m, fundo, p.pessoa, p.audios);
   const mudos = [semSom(fundo) ? 'o vídeo de fundo' : '',
     m.porCima === 'pessoa' && semSom(p.pessoa) ? 'o vídeo da pessoa' : ''].filter(Boolean);
-  const nenhumSom = fala !== 'audio' && fala !== 'voz' && semSom(fala === 'fundo' ? fundo : p.pessoa);
+  const nenhumSom = fala !== 'audio' && fala !== 'voz' && fala !== 'cenas'
+    && semSom(fala === 'fundo' ? fundo : p.pessoa);
   const custo = p.pessoa ? p.pessoa.duracao * p.pessoa.fps * CUSTO_DO_RECORTE_POR_QUADRO : 0;
   return (
     <div className="camadas">
@@ -392,7 +421,9 @@ const EnvioDaMontagem: React.FC<PropsDoEnvio> = (p) => {
           {nenhumSom ? 'Nenhum dos vídeos tem som: sem um áudio separado, o vídeo sai mudo, sem cortes e sem legenda.'
             : fala === 'audio' && !p.audios.length ? 'Envie o áudio: dele saem a legenda e os cortes.'
               : fala === 'voz' ? 'A sua voz, gravada uma vez, narra o roteiro. Da narração saem a legenda e os cortes.'
-                : 'Dele saem a legenda e os cortes.'}
+                : fala === 'cenas' ? 'O som dos vídeos que você marcar, na ordem dos números. As cenas continuam '
+                  + 'escolhidas pelo que é dito: não precisam aparecer nessa ordem, nem inteiras.'
+                  : 'Dele saem a legenda e os cortes.'}
           {mudos.length && !nenhumSom ? ` Sem som: ${mudos.join(' e ')}.` : ''}
         </small>
         {fala === 'audio' ? (
@@ -412,7 +443,11 @@ const EnvioDaMontagem: React.FC<PropsDoEnvio> = (p) => {
               aceita="audio/*,.mp3,.wav,.m4a" progresso={p.progresso.audio}
               aoEscolher={(f) => p.aoEscolherAudios([f])} aoEscolherVarios={p.aoEscolherAudios} />
           </>
-        ) : fala === 'voz' ? <MinhaVoz narracao={p.narracao} aoNarrar={p.aoNarrar} /> : null}
+        ) : fala === 'voz' ? <MinhaVoz narracao={p.narracao} aoNarrar={p.aoNarrar} />
+          : fala === 'cenas' ? (p.biblioteca && p.bibliotecaId ? (
+            <CenasDoAudio biblioteca={p.biblioteca} bibliotecaId={p.bibliotecaId} escolhidas={m.cenasDoAudio}
+              aoMudar={(cenasDoAudio) => p.mudarMontagem({cenasDoAudio})} />
+          ) : <small>Envie a pasta das cenas e a matriz: os vídeos com som aparecem aqui.</small>) : null}
         <Aviso texto={p.erro.audio} />
       </div>
     </div>

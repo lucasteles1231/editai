@@ -71,6 +71,8 @@ class Clipe:
     duracao: float
     quadros: list[bytes] = field(default_factory=list)
     movimento: float = 0.0
+    #: Uma foto: vai um quadro só, e não mexe.
+    foto: bool = False
 
 
 @dataclass
@@ -88,8 +90,13 @@ class Geracao:
 
 def ler_clipe(caminho: Path, arquivo: str) -> Clipe:
     """Os 3 quadros (a 20%, 50% e 80% do clipe, em JPEG pequeno) e o movimento (a
-    diferença média entre quadros seguidos, em cinza e pequenos), numa leitura só."""
+    diferença média entre quadros seguidos, em cinza e pequenos), numa leitura só. Uma
+    foto vai inteira, num quadro só."""
     import av
+
+    if cenas_mod.e_imagem(caminho):
+        img = Image.fromarray(cenas_mod.ler_imagem(str(caminho)))
+        return Clipe(caminho, arquivo, cenas_mod.FOTO_S, [_jpeg(img, 0)], 0.0, foto=True)
 
     info = cenas_mod.video_mod.sondar(caminho)
     duracao = max(0.04, info.duracao)
@@ -163,13 +170,18 @@ def esquema() -> dict:
 
 
 def montar_pedido(lote: Sequence[Clipe], vocabulario: Sequence[str], assunto: str) -> str:
-    linhas = "\n".join(f"- cena {k}: imagens {k * QUADROS_POR_CLIPE + 1} a "
-                       f"{k * QUADROS_POR_CLIPE + QUADROS_POR_CLIPE} (arquivo \"{c.arquivo}\", "
-                       f"{c.duracao:.1f} s)" for k, c in enumerate(lote))
+    partes, n = [], 0
+    for k, c in enumerate(lote):
+        q = len(c.quadros)
+        faixa = f"imagem {n + 1}" if q == 1 else f"imagens {n + 1} a {n + q}"
+        tipo = "uma foto" if c.foto else f"{c.duracao:.1f} s"
+        partes.append(f"- cena {k}: {faixa} (arquivo \"{c.arquivo}\", {tipo})")
+        n += q
+    linhas = "\n".join(partes)
     sobre = f"\nSobre o que são as cenas (dito por quem enviou): {assunto}\n" if assunto else ""
     usadas = ", ".join(vocabulario) if vocabulario else "nenhuma ainda"
-    return f"""As imagens são quadros de {len(lote)} cenas curtas, {QUADROS_POR_CLIPE} por cena
-(começo, meio e fim), na ordem:
+    return f"""As imagens são quadros de {len(lote)} cenas curtas, na ordem: {QUADROS_POR_CLIPE}
+por vídeo (começo, meio e fim) e uma por foto:
 {linhas}
 {sobre}
 Para cada cena ("k" é o número dela), devolva:

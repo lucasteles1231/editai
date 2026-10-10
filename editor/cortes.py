@@ -214,6 +214,10 @@ class Linha:
         i = self._trecho_de(t)
         return None if i is None else self._na_saida[i] + (t - self.trechos[i].ini)
 
+    def fronteiras(self) -> list[float]:
+        """Os instantes de saída em que um trecho emenda no seguinte (onde houve corte)."""
+        return list(self._na_saida[1:])
+
     def para_origem(self, t: float) -> float:
         """O instante do vídeo original que vira ``t`` na saída (o inverso de
         :meth:`para_saida`). Fora da linha, prende no começo ou no fim."""

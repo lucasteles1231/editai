@@ -555,7 +555,7 @@ class TestABiblioteca:
         with open(self._clipes(tmp_path)[0], "rb") as f:
             r = cliente.post(f"/api/bibliotecas/{bid}/clipes", headers=CABECA,
                              files={"arquivo": ("leia-me.txt", f, "text/plain")})
-        assert r.status_code == 400 and "só vídeos" in r.json()["detail"]
+        assert r.status_code == 400 and "e fotos (JPG, PNG, WebP)" in r.json()["detail"]
         r = cliente.post(f"/api/bibliotecas/{bid}/matriz", headers=CABECA,
                          files={"arquivo": ("cenas.json", json.dumps(list(self.MATRIZ)).encode(),
                                             "application/json")})
@@ -800,3 +800,61 @@ class TestOsMeusPresets:
         r = cliente.post("/api/presets/importar", headers=CABECA,
                          files={"arquivo": ("x.json", b"nada disso", "application/json")})
         assert r.status_code == 422
+
+
+
+class TestFotosEOSomDasCenas:
+    """Fotos na biblioteca (a capa de uma biblioteca só de fotos vira um vídeo curto) e o
+    som que vem dos vídeos dela, na ordem pedida."""
+
+    def _enviar(self, cliente, bid, caminho):
+        with open(caminho, "rb") as f:
+            r = cliente.post(f"/api/bibliotecas/{bid}/clipes", headers=CABECA,
+                             files={"arquivo": (caminho.name, f, "application/octet-stream")})
+        assert r.status_code == 200, r.text
+
+    def _matriz(self, cliente, bid, nomes):
+        r = cliente.post(f"/api/bibliotecas/{bid}/matriz", headers=CABECA, files={"arquivo": (
+            "cenas.json", json.dumps([{"arquivo": n, "descricao": n} for n in nomes]).encode(),
+            "application/json")})
+        assert r.status_code == 200, r.text
+        return r.json()
+
+    def test_so_fotos(self, cliente, tmp_path):
+        from tests.test_cenas import _foto
+
+        bid = cliente.post("/api/bibliotecas", headers=CABECA, json={}).json()["id"]
+        for nome in ("sala.jpg", "quarto.png"):
+            self._enviar(cliente, bid, _foto(tmp_path / nome))
+        ficha = self._matriz(cliente, bid, ["sala.jpg", "quarto.png"])
+        assert (ficha["cenas"], ficha["fotos"], ficha["com_som"]) == (2, 2, [])
+        # a thumbnail precisa de um vídeo: a primeira foto vira dois segundos dela
+        assert ficha["capa"]["duracao"] == pytest.approx(2.0, abs=0.1) and ficha["capa"]["vertical"]
+        quadro = cliente.get(f"/api/bibliotecas/{bid}/quadro?arquivo=sala.jpg", headers=CABECA)
+        assert quadro.status_code == 200 and quadro.content[:2] == b"\xff\xd8"
+
+    def test_o_som_vem_das_cenas_na_ordem(self, cliente, tmp_path):
+        from tests.test_cenas import _foto
+
+        bid = cliente.post("/api/bibliotecas", headers=CABECA, json={}).json()["id"]
+        self._enviar(cliente, bid, _foto(tmp_path / "sala.jpg"))
+        for nome in ("tour-1.mp4", "tour-2.mp4"):
+            self._enviar(cliente, bid, fazer_video(tmp_path / nome, largura=180, altura=320,
+                                                   segundos=1.5))
+        self._enviar(cliente, bid, fazer_video(tmp_path / "mudo.mp4", largura=180, altura=320,
+                                               segundos=1.0, com_audio=False))
+        ficha = self._matriz(cliente, bid, ["sala.jpg", "tour-1.mp4", "tour-2.mp4", "mudo.mp4"])
+        assert [c["arquivo"] for c in ficha["com_som"]] == ["tour-1.mp4", "tour-2.mp4"]
+
+        def editar(audio_das_cenas):
+            return cliente.post("/api/tarefas", headers=CABECA, json={
+                "montagem": {"biblioteca_id": bid, "audio_das_cenas": audio_das_cenas,
+                             "fala": "audio", "formato": "vertical"},
+                "edicao": {"zoom": False}, "saida": {"resolucao": "480p"}, "previa_s": 3})
+
+        assert editar(["mudo.mp4"]).status_code == 422                # sem som
+        assert editar(["../../segredo.mp4"]).status_code == 422          # fora da pasta
+        r = editar(["tour-2.mp4", "tour-1.mp4"])
+        assert r.status_code == 200, r.text
+        t = _esperar(cliente, r.json()["id"], limite=120)
+        assert t["estado"] == "pronto", t
