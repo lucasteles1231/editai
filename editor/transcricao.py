@@ -229,7 +229,12 @@ def chaves(texto: str) -> list[str]:
     import unicodedata
 
     t = texto.lower().replace("%", " por cento ")
-    t = re.sub(r"(?<=\d)\.(?=\d{3}\b)", "", t)                 # 3.500 → 3500
+    # 3.500 → 3500, também como o Whisper às vezes escreve: "3 .500"
+    t = re.sub(r"(?<=\d)\s*\.\s*(?=\d{3}\b)", "", t)
+    # "R$ 3500" (ou "R $3500") é lido "três mil e quinhentos reais", com os centavos depois
+    t = re.sub(r"r\s*\$\s*(\d+)(?:\s*,\s*(\d{2})\b)?",
+               lambda m: f"{m.group(1)} reais" + (
+                   f" e {int(m.group(2))} centavos" if m.group(2) and int(m.group(2)) else ""), t)
     t = re.sub(r"\d{1,12}", lambda m: f" {por_extenso(int(m.group()))} ", t)
     t = "".join(c for c in unicodedata.normalize("NFKD", t) if not unicodedata.combining(c))
     return re.findall(r"[a-z0-9]+", t)

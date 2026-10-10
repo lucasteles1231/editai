@@ -77,6 +77,24 @@ class TestACobertura:
         ouvido = "Ontem custava 3.500 reais, e hoje quinze por cento menos."
         assert voz_clonada.cobertura(esperado, ouvido)[0] == 1.0
 
+    def test_o_valor_como_o_whisper_escreve(self):
+        """Duas gravações reais do parágrafo 3 (10/10): o Whisper escreveu "R $3 .500", com
+        espaços, e a leitura certa dava 77%."""
+        esperado = voz_clonada.texto_de_leitura("Ana")[2]
+        ouvido = ("Você já reparou como as coisas mudam rápido, ontem o celular costava R $3 .500, "
+                  "hoje com desconto sai por R $2 .900. Vale a pena?")
+        fracao, faltaram = voz_clonada.cobertura(esperado, ouvido)
+        assert fracao >= voz_clonada.COBERTURA_MINIMA and faltaram == ["custava", "o"]
+
+    @pytest.mark.parametrize(("escrito", "lido"), [
+        ("R$ 3.500", "tres mil e quinhentos reais"),
+        ("R$2,50", "dois reais e cinquenta centavos"),
+        ("R$ 10,00", "dez reais"),
+        ("3 .500", "tres mil e quinhentos"),
+    ])
+    def test_dinheiro_por_extenso(self, escrito, lido):
+        assert transcricao.chaves(escrito) == lido.split()
+
     def test_o_que_faltou(self):
         fracao, faltaram = voz_clonada.cobertura("o milho, a farinha e o queijo",
                                                  "o milho e o queijo")
