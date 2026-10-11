@@ -348,12 +348,12 @@ def banner(tela: Image.Image) -> Image.Image:
     d = ImageDraw.Draw(im)
     x0 = 76 * S
 
-    # A marca, como no topo da página: "editor" no adesivo, "de vídeo" ao lado.
-    px = 64 * S
+    # A marca, como no topo da página: "edit" no adesivo, "ai" ao lado (Editai).
+    px = 72 * S
     f = legenda.fonte(px)
-    largura_do_selo = f.getlength("editor") + px * legenda.FORMA_SOBRA_X
-    colar(im, adesivo("editor", px, estilo=0, giro=4), x0 + largura_do_selo / 2, 150 * S)
-    d.text((x0 + largura_do_selo + 16 * S, 150 * S), "de vídeo", font=f, fill=PAPEL, anchor="lm")
+    largura_do_selo = f.getlength("edit") + px * legenda.FORMA_SOBRA_X
+    colar(im, adesivo("edit", px, estilo=0, giro=4), x0 + largura_do_selo / 2, 150 * S)
+    d.text((x0 + largura_do_selo + 16 * S, 150 * S), "ai", font=f, fill=PAPEL, anchor="lm")
 
     # A frase da página, com a palavra-chave em amarelo como na legenda.
     f = legenda.fonte(40 * S)

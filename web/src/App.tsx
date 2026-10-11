@@ -259,7 +259,7 @@ export const App: React.FC = () => {
         setGeracao(e.geracao);
       })
       .catch((e: Error) => setErroGeral(
-        `Não consegui falar com o editor (${e.message}). Abra esta página pelo comando "editar".`));
+        `Não consegui falar com o editor (${e.message}). Abra esta página pelo comando "editai".`));
     carregarFonte().then(() => setFonteOk(true)).catch(() => setFonteOk(true));
     api.icones().then(setIcones).catch(() => undefined);
     if (!tourJaVisto()) setTimeout(comecarTour, 700);
@@ -664,12 +664,12 @@ export const App: React.FC = () => {
     <>
       <header className="cabecalho">
         <div className="marca">
-          <span className="adesivo">editor</span>
-          <span>de vídeo</span>
+          <span className="adesivo">edit</span>
+          <span>ai</span>
         </div>
         <nav>
           <button type="button" className="botao pequeno" onClick={comecarTour}>Tour</button>
-          <a className="botao pequeno" href="https://github.com/lucasteles1231/editor-de-video"
+          <a className="botao pequeno" href="https://github.com/lucasteles1231/editai"
             target="_blank" rel="noreferrer">Ajuda</a>
         </nav>
       </header>
@@ -731,8 +731,8 @@ export const App: React.FC = () => {
           gerandoThumbs={gerandoThumbs} pastaSaida={estado?.pasta_saida ?? ''} />
       </main>
       <footer className="rodape">
-        editor-de-video {estado?.versao ?? ''} · nasceu da edição de um projeto anterior ·{' '}
-        <a href="https://github.com/lucasteles1231/editor-de-video" target="_blank" rel="noreferrer">código no GitHub</a>
+        Editai {estado?.versao ?? ''} · nasceu da edição de um projeto anterior ·{' '}
+        <a href="https://github.com/lucasteles1231/editai" target="_blank" rel="noreferrer">código no GitHub</a>
       </footer>
     </>
   );

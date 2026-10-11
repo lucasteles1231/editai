@@ -891,6 +891,8 @@ def _imagem_falsa(proporcao: str) -> bytes:
 def pasta_de_dados() -> Path:
     from platformdirs import user_data_dir
 
+    # o nome de antes do Editai: as pastas continuam com ele, para ninguém perder a chave,
+    # as vozes, os presets e o motor da voz
     return Path(user_data_dir("editor-de-video", appauthor=False))
 
 

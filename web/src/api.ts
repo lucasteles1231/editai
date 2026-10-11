@@ -1,6 +1,6 @@
 /**
  * A conversa com o servidor local. Toda chamada leva o token da sessão, que chega na
- * URL aberta pelo comando `editar` e fica guardado na aba (sessionStorage).
+ * URL aberta pelo comando `editai` e fica guardado na aba (sessionStorage).
  */
 import type {
   AudioInfo, BibliotecaInfo, Edicao, EfeitosDaVoz, Estado, EstadoChave, EstadoIa, FotoPexels, GeracaoDaMatriz, GravacaoDaVoz, Ideia,

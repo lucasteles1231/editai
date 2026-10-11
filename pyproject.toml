@@ -1,5 +1,5 @@
 [project]
-name = "editor-de-video"
+name = "editai"
 version = "0.1.0"
 description = "Edita vídeos falados no estilo dos Shorts — legenda karaokê, cortes de silêncio, zoom, adesivos, ícones e thumbnail — no seu computador."
 readme = "README.md"
@@ -34,9 +34,11 @@ dependencies = [
 ]
 
 [project.urls]
-Repositorio = "https://github.com/lucasteles1231/editor-de-video"
+Repositorio = "https://github.com/lucasteles1231/editai"
 
 [project.scripts]
+editai = "editor.cli:main"
+# o nome de antes do Editai: continua funcionando para quem já usa
 editar = "editor.cli:main"
 
 [dependency-groups]

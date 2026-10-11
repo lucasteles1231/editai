@@ -1,6 +1,6 @@
 # Terceiros
 
-O código do editor-de-video é MIT (veja o [LICENSE](LICENSE)). Ele também usa
+O código do Editai é MIT (veja o [LICENSE](LICENSE)). Ele também usa
 projetos de outras pessoas: alguns vão junto neste repositório, e outros são baixados
 na instalação. A lista completa está aqui, com a licença de cada um.
 

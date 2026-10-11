@@ -5,7 +5,7 @@ O motor da voz sintetizada (Qwen3-TTS 0.6B Base, Apache 2.0), num ambiente só d
 editor continua pequeno para quem não usa a voz, o PyTorch não briga com as versões do
 editor, e desinstalar é apagar uma pasta (``<dados>/motor-de-voz``, com o modelo dentro).
 
-**A instalação** (o botão da página, ou ``editar --instalar-voz``):
+**A instalação** (o botão da página, ou ``editai --instalar-voz``):
 
 1. o ``uv`` cria o ambiente com o Python 3.12 (ele baixa o Python, se faltar);
 2. instala o ``qwen-tts`` e o que ele pede **nas versões testadas**
@@ -331,7 +331,7 @@ def sintetizar(referencia: Path, texto_da_referencia: str, frases: list[tuple[st
         return "falso"
     if not instalado():
         raise ErroDoMotor("A voz sintetizada não está instalada: instale pelo botão da página "
-                          "ou com editar --instalar-voz.")
+                          "ou com editai --instalar-voz.")
     pedido = {"modelo": str(pasta_do_modelo()), "idioma": "Portuguese",
               "referencia": {"wav": str(referencia), "texto": texto_da_referencia},
               "frases": [{"texto": t, "saida": str(s)} for t, s in frases]}

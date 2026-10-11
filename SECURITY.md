@@ -3,7 +3,7 @@
 ## Como avisar de uma falha
 
 **Não abra uma issue pública.** Use o
-[aviso privado do GitHub](https://github.com/lucasteles1231/editor-de-video/security/advisories/new)
+[aviso privado do GitHub](https://github.com/lucasteles1231/editai/security/advisories/new)
 (**Report a vulnerability**, na aba Security do repositório). Só o dono do repositório
 vê o aviso, e a conversa continua por ele.
 

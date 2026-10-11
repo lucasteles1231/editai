@@ -1,15 +1,15 @@
 """
-O comando ``editar``.
+O comando ``editai`` (o ``editar``, nome de antes, continua valendo).
 
-    editar                       abre a interface no navegador
-    editar video.mp4             edita direto no terminal
-    editar video.mp4 --formato webm --resolucao 720p --sem-cortes
-    editar video.mp4 --preset gameplay --ritmo 1.2
-    editar --presets             os presets de edição (os prontos e os seus)
-    editar --efeitos             os efeitos na voz (robô, esquilo, cantado... e os seus)
-    editar video.mp4 --efeito-na-voz esquilo
-    editar --preset gameplay --ritmo 1.3 --salvar-preset "Meu gameplay"
-    editar --formatos            o que este computador consegue gravar
+    editai                       abre a interface no navegador
+    editai video.mp4             edita direto no terminal
+    editai video.mp4 --formato webm --resolucao 720p --sem-cortes
+    editai video.mp4 --preset gameplay --ritmo 1.2
+    editai --presets             os presets de edição (os prontos e os seus)
+    editai --efeitos             os efeitos na voz (robô, esquilo, cantado... e os seus)
+    editai video.mp4 --efeito-na-voz esquilo
+    editai --preset gameplay --ritmo 1.3 --salvar-preset "Meu gameplay"
+    editai --formatos            o que este computador consegue gravar
 
 As flags de edição e de saída começam vazias: sem elas vale o preset (o padrão, se nenhum
 for escolhido); com elas, a flag ganha do preset.
@@ -62,7 +62,7 @@ class _Formato(argparse.HelpFormatter):
 
 def argumentos() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="editar", formatter_class=_Formato,
+        prog="editai", formatter_class=_Formato,
         description="Edita vídeos falados no estilo dos Shorts: legenda karaokê, cortes de "
                     "silêncio, zoom, adesivos, ícones e sons. Tudo no seu computador.",
         epilog="Sem nenhum vídeo, abre a interface no navegador. Os padrões das edições e "
@@ -217,7 +217,7 @@ def argumentos() -> argparse.ArgumentParser:
     v.add_argument("--pronuncia", metavar="LISTA",
                    help='como o motor deve ler uma palavra: "PEGI=pégui; GTA=gê tê á" (a '
                         "legenda continua com a grafia do roteiro)")
-    p.add_argument("--versao", action="version", version=f"editor-de-video {__version__}",
+    p.add_argument("--versao", action="version", version=f"Editai {__version__}",
                    help="mostra a versão e sai")
     return p
 
@@ -485,7 +485,7 @@ def main(argv: list[str] | None = None) -> int:
 def _montagem(a: argparse.Namespace):
     """A montagem pedida nas flags (ou ``None`` sem ``--fundo``), e o erro, se houver.
 
-    ``editar eu.mp4 --fundo tela.mp4`` também vale: com ``--fundo`` e sem ``--pessoa`` nem
+    ``editai eu.mp4 --fundo tela.mp4`` também vale: com ``--fundo`` e sem ``--pessoa`` nem
     ``--personagem``, o vídeo do argumento é a pessoa."""
     from editor import video as video_mod
     from editor.montagem import Montagem
@@ -495,7 +495,7 @@ def _montagem(a: argparse.Namespace):
             return None, ("--pessoa, --personagem, --audio e --fala vão junto com --fundo "
                           "ou --cenas")
         if a.video is None:
-            return None, ("faltou o vídeo: editar video.mp4 --preset gameplay (na página, os "
+            return None, ("faltou o vídeo: editai video.mp4 --preset gameplay (na página, os "
                           "presets ficam no passo 2)")
         if not a.video.is_file():
             return None, f"não achei o vídeo: {a.video}"

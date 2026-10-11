@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/img/banner.png" alt="editor de vídeo: seu vídeo falado, editado no estilo dos Shorts" width="100%">
+  <img src="docs/img/banner.png" alt="Editai: seu vídeo falado, editado no estilo dos Shorts" width="100%">
 </p>
 
 <p align="center">
@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/lucasteles1231/editor-de-video/actions/workflows/testes.yml"><img src="https://img.shields.io/github/actions/workflow/status/lucasteles1231/editor-de-video/testes.yml?branch=main&style=for-the-badge&label=testes&labelColor=1a1a1a" alt="testes"></a>
+  <a href="https://github.com/lucasteles1231/editai/actions/workflows/testes.yml"><img src="https://img.shields.io/github/actions/workflow/status/lucasteles1231/editai/testes.yml?branch=main&style=for-the-badge&label=testes&labelColor=1a1a1a" alt="testes"></a>
   <img src="https://img.shields.io/badge/Windows-macOS-00c2ff?style=for-the-badge&labelColor=1a1a1a" alt="Windows e macOS">
   <img src="https://img.shields.io/badge/100%25%20local-por%20padr%C3%A3o-ffd400?style=for-the-badge&labelColor=1a1a1a" alt="100% local por padrão">
   <img src="https://img.shields.io/badge/python-3.12+-b36bff?style=for-the-badge&labelColor=1a1a1a" alt="Python 3.12 ou mais novo">
@@ -33,7 +33,7 @@
 
 ---
 
-Você grava falando, com as pausas e os respiros de quem fala. O **editor-de-video** faz
+Você grava falando, com as pausas e os respiros de quem fala. O **Editai** faz
 a edição que tomaria uma tarde, no estilo dos Shorts, Reels e TikTok:
 
 - corta os silêncios;
@@ -189,7 +189,7 @@ Há dois jeitos, e o tour da página (botão **Tour**, no topo) mostra os dois.
 
 ### Um vídeo seu falando
 
-1. Digite `editar`. O navegador abre no editor.
+1. Digite `editai`. O navegador abre no editor.
 2. No passo 1, arraste o vídeo e marque onde vai postar.
 3. No passo 2, escolha o preset do tipo de vídeo: vlog, gameplay, review, aula,
    imóveis… ou um seu.
@@ -238,11 +238,11 @@ Algumas dicas:
 - **Na primeira vez sem internet,** os quatro sons do tema Notícia que vêm do Remotion
   tocam um parecido da Kenney.
 - **No terminal,** o mesmo vídeo sai com
-  `editar --cenas cenas/ --matriz cenas/cenas.json --audio p1.m4a p2.m4a --personagem boneco.gif --preset noticia --quadro vertical`.
+  `editai --cenas cenas/ --matriz cenas/cenas.json --audio p1.m4a p2.m4a --personagem boneco.gif --preset noticia --quadro vertical`.
 
 ## A interface
 
-Digite `editar` e o navegador abre no editor. O caminho é sempre o mesmo: enviar o vídeo,
+Digite `editai` e o navegador abre no editor. O caminho é sempre o mesmo: enviar o vídeo,
 escolher as edições, escolher a saída e, se quiser, a thumbnail.
 
 <picture>
@@ -484,7 +484,7 @@ Você já cortou os clipes e não tem o `cenas.json`? Depois de arrastar a pasta
   faz ela valer, e **Baixar o cenas.json** guarda o arquivo para pôr junto dos clipes: da
   próxima vez, ele entra sozinho. **Revisar a matriz** reabre a tabela com a matriz em
   uso, também a que veio na pasta.
-- **No terminal,** `editar --gerar-matriz cenas/ --assunto "trailers do GTA 6"` escreve
+- **No terminal,** `editai --gerar-matriz cenas/ --assunto "trailers do GTA 6"` escreve
   o `cenas.json` na pasta (ou `cenas-gerada.json`, se já existe um).
 
 Num teste com 8 cenas do vídeo de referência, comparadas com as descrições escritas à
@@ -588,7 +588,7 @@ Gostou de um ajuste? Ele vira um preset seu, que aparece junto dos prontos, com 
 - **As conferências:** cada valor passa pelas mesmas conferências da edição, inclusive o
   que vem de um arquivo importado. O nome de um preset pronto não pode ser usado, e
   cabem até 50.
-- **No terminal:** `editar --preset gameplay --ritmo 1.3 --salvar-preset "Meu gameplay"`
+- **No terminal:** `editai --preset gameplay --ritmo 1.3 --salvar-preset "Meu gameplay"`
   salva o preset de partida com as flags por cima. Depois é só usar `--preset
   meu-gameplay`, e o `--presets` lista os prontos e os seus.
 
@@ -830,7 +830,7 @@ por todos os sons do português.
 
 Tudo fica no computador: a gravação, a voz salva (na pasta `vozes`, ao lado do
 `config.json`) e o modelo. Nenhum áudio vai para a internet. No terminal, a voz é criada
-com `editar --criar-voz "Seu Nome" --gravacao leitura.m4a` e usada com `--minha-voz`
+com `editai --criar-voz "Seu Nome" --gravacao leitura.m4a` e usada com `--minha-voz`
 (veja [No terminal](#no-terminal)).
 
 ## Efeitos sonoros
@@ -906,13 +906,13 @@ para você, sem mexer no do sistema), outro instala o editor, e o último abre.
 3. **Feche o PowerShell e abra de novo**, e instale o editor:
 
    ```powershell
-   uv tool install https://github.com/lucasteles1231/editor-de-video/archive/refs/heads/main.zip
+   uv tool install https://github.com/lucasteles1231/editai/archive/refs/heads/main.zip
    ```
 
 4. Abra:
 
    ```powershell
-   editar
+   editai
    ```
 
 ### macOS
@@ -927,13 +927,13 @@ para você, sem mexer no do sistema), outro instala o editor, e o último abre.
 3. **Feche o Terminal e abra de novo**, e instale o editor:
 
    ```bash
-   uv tool install https://github.com/lucasteles1231/editor-de-video/archive/refs/heads/main.zip
+   uv tool install https://github.com/lucasteles1231/editai/archive/refs/heads/main.zip
    ```
 
 4. Abra:
 
    ```bash
-   editar
+   editai
    ```
 
 O navegador abre sozinho no editor. Para fechar, volte ao terminal e aperte `Ctrl+C`.
@@ -992,6 +992,9 @@ sua. As medidas são de um MacBook com Apple M5 (10 núcleos, 16 GB).
 | As chaves do Gemini e do Pexels, se você colar | — | `config.json`, em `%LOCALAPPDATA%\editor-de-video` (Windows) ou `~/Library/Application Support/editor-de-video` (macOS) |
 | Os vídeos editados e as thumbnails | — | `editor-de-video`, dentro da pasta **Vídeos** (Windows) ou **Filmes** (macOS) |
 
+As pastas ainda se chamam `editor-de-video`, o nome de antes do Editai: assim, quem já
+usava não perde a chave, as vozes nem os presets.
+
 O vídeo que você envia pela página é copiado para a pasta de cache do sistema
 (`%LOCALAPPDATA%\editor-de-video\Cache` no Windows e `~/Library/Caches/editor-de-video`
 no macOS), e as cópias com mais de 2 dias são apagadas sozinhas.
@@ -1022,13 +1025,22 @@ for usado.
 Para atualizar para a versão mais nova do GitHub:
 
 ```bash
-uv tool install --force --reinstall-package editor-de-video https://github.com/lucasteles1231/editor-de-video/archive/refs/heads/main.zip
+uv tool install --force --reinstall-package editai https://github.com/lucasteles1231/editai/archive/refs/heads/main.zip
+```
+
+Se você instalou quando o projeto ainda se chamava **editor-de-video**, troque uma vez,
+desinstalando o antigo antes (os seus vídeos, presets, vozes e a chave continuam onde
+estavam):
+
+```bash
+uv tool uninstall editor-de-video
+uv tool install https://github.com/lucasteles1231/editai/archive/refs/heads/main.zip
 ```
 
 Para desinstalar:
 
 ```bash
-uv tool uninstall editor-de-video
+uv tool uninstall editai
 ```
 
 O modelo continua no cache do Hugging Face. Para liberar o espaço, apague a pasta
@@ -1040,44 +1052,45 @@ pasta `motor-de-voz`.
 
 ## No terminal
 
-A interface é o jeito mais fácil, mas tudo também funciona direto no terminal:
+A interface é o jeito mais fácil, mas tudo também funciona direto no terminal. O comando
+é `editai` (o `editai`, nome de antes, continua funcionando):
 
 ```bash
-editar meu-video.mp4
+editai meu-video.mp4
 ```
 
 O resultado sai ao lado do original, como `meu-video-editado.mp4`, junto com o
 `.plano.json`, que guarda tudo o que foi decidido. Alguns exemplos:
 
 ```bash
-editar aula.mov --srt --vtt                       # também grava as legendas à parte
-editar video.mp4 --previa 15                      # só os primeiros 15 s, para testar
-editar video.mp4 --formato webm --resolucao 720p  # WebM (VP9) em 720p
-editar jogo.mp4 --preset gameplay                 # o preset de gameplay (veja --presets)
-editar jogo.mp4 --preset gameplay --ritmo 1.2     # o preset, com o ritmo um pouco menor
-editar --preset vlog --ritmo 0.9 --salvar-preset "Meu vlog"   # um preset seu
-editar video.mp4 --preset meu-vlog                # e usá-lo
-editar video.mp4 --tema-dos-sons humor --som-nos-cortes
-editar video.mp4 --sem-zoom --sem-sons            # sem zoom e sem efeitos sonoros
-editar eu.mp4 --fundo tela.mp4 --quadro vertical  # você por cima da tela gravada, em pé
-editar --fundo jogo.mp4 --personagem boneco.gif --audio narracao.m4a
-editar --gerar-matriz cenas/ --assunto "trailers do GTA 6"   # escreve cenas/cenas.json
-editar --cenas imovel/ --matriz imovel/cenas.json --audio imovel/tour-1.mp4 imovel/tour-2.mp4 \
+editai aula.mov --srt --vtt                       # também grava as legendas à parte
+editai video.mp4 --previa 15                      # só os primeiros 15 s, para testar
+editai video.mp4 --formato webm --resolucao 720p  # WebM (VP9) em 720p
+editai jogo.mp4 --preset gameplay                 # o preset de gameplay (veja --presets)
+editai jogo.mp4 --preset gameplay --ritmo 1.2     # o preset, com o ritmo um pouco menor
+editai --preset vlog --ritmo 0.9 --salvar-preset "Meu vlog"   # um preset seu
+editai video.mp4 --preset meu-vlog                # e usá-lo
+editai video.mp4 --tema-dos-sons humor --som-nos-cortes
+editai video.mp4 --sem-zoom --sem-sons            # sem zoom e sem efeitos sonoros
+editai eu.mp4 --fundo tela.mp4 --quadro vertical  # você por cima da tela gravada, em pé
+editai --fundo jogo.mp4 --personagem boneco.gif --audio narracao.m4a
+editai --gerar-matriz cenas/ --assunto "trailers do GTA 6"   # escreve cenas/cenas.json
+editai --cenas imovel/ --matriz imovel/cenas.json --audio imovel/tour-1.mp4 imovel/tour-2.mp4 \
        --preset imoveis               # fotos e vídeos de um imóvel, o som de dois vídeos dela
-editar --cenas cenas/ --matriz cenas/cenas.json --audio p1.m4a p2.m4a p3.m4a \
+editai --cenas cenas/ --matriz cenas/cenas.json --audio p1.m4a p2.m4a p3.m4a \
        --personagem boneco.gif --preset noticia --quadro vertical
-editar video.mp4 --voz limpa --bipe "palavra, outra"  # voz limpa e bipe na lista
-editar video.mp4 --efeito-na-voz esquilo           # a voz de esquilo (veja --efeitos)
-editar video.mp4 --efeito-na-voz "tom=-5,sala=40"  # ou os ajustes, do seu jeito
-editar --instalar-voz                             # a voz sintetizada (Minha voz), ~3,5 GB
-editar --criar-voz "Ana"                          # mostra o texto a ler
-editar --criar-voz "Ana" --gravacao leitura.m4a   # confere a leitura e salva a voz
-editar --cenas cenas/ --matriz cenas/cenas.json --minha-voz ana --roteiro roteiro.txt \
+editai video.mp4 --voz limpa --bipe "palavra, outra"  # voz limpa e bipe na lista
+editai video.mp4 --efeito-na-voz esquilo           # a voz de esquilo (veja --efeitos)
+editai video.mp4 --efeito-na-voz "tom=-5,sala=40"  # ou os ajustes, do seu jeito
+editai --instalar-voz                             # a voz sintetizada (Minha voz), ~3,5 GB
+editai --criar-voz "Ana"                          # mostra o texto a ler
+editai --criar-voz "Ana" --gravacao leitura.m4a   # confere a leitura e salva a voz
+editai --cenas cenas/ --matriz cenas/cenas.json --minha-voz ana --roteiro roteiro.txt \
        --preset noticia --quadro vertical         # a notícia, narrada com a sua voz
-editar eu.mp4 --fundo aula.mp4 --fala fundo        # o som vem da aula, e não da câmera
-editar talk.mp4 --idioma en --modelo medium       # fala em inglês, modelo maior
-editar video.mp4 -o final.mov --codec prores      # ProRes, para levar a outro editor
-editar --formatos                                 # o que este computador grava
+editai eu.mp4 --fundo aula.mp4 --fala fundo        # o som vem da aula, e não da câmera
+editai talk.mp4 --idioma en --modelo medium       # fala em inglês, modelo maior
+editai video.mp4 -o final.mov --codec prores      # ProRes, para levar a outro editor
+editai --formatos                                 # o que este computador grava
 ```
 
 <details>
@@ -1148,7 +1161,7 @@ editar --formatos                                 # o que este computador grava
 | `--formatos` | mostra os formatos e codecs que este computador grava | |
 
 Os padrões da tabela são os do preset `padrao`. Com `--preset`, valem os do preset
-escolhido, e as flags passadas ganham dele. `editar --ajuda` mostra a mesma lista.
+escolhido, e as flags passadas ganham dele. `editai --ajuda` mostra a mesma lista.
 
 </details>
 
@@ -1324,13 +1337,13 @@ a página, que só mostra os quatro últimos caracteres.
   cenas, dos cartões e das ideias é dele. Revise antes de postar.
 
 **Achou uma falha?** Não abra uma issue pública: use o
-[aviso privado](https://github.com/lucasteles1231/editor-de-video/security/advisories/new)
+[aviso privado](https://github.com/lucasteles1231/editai/security/advisories/new)
 (**Report a vulnerability**, na aba Security). Veja o [SECURITY.md](SECURITY.md).
 
 ## Dúvidas e problemas
 
 <details>
-<summary><b><code>editar</code> não é reconhecido como comando</b></summary>
+<summary><b><code>editai</code> não é reconhecido como comando</b></summary>
 
 O instalador do uv põe a pasta dos comandos (`.local/bin`) no PATH, mas só as janelas
 abertas **depois** dele enxergam. Feche o terminal e abra de novo. No macOS, dá para
@@ -1349,7 +1362,7 @@ Se ainda assim não funcionar, rode `uv tool update-shell`, feche e abra de novo
 
 Você já tinha outro `uv` no computador, instalado pelo `pip` ou pelo Homebrew por
 exemplo, e ele vem antes no PATH. Isso não atrapalha: qualquer um dos dois instala o
-editor, e o comando `editar` vai para a mesma pasta.
+editor, e o comando `editai` vai para a mesma pasta.
 
 Se quiser ficar com um só, desinstale o antigo pelo mesmo caminho por onde ele veio:
 `pip uninstall uv` ou `brew uninstall uv`.
@@ -1421,7 +1434,7 @@ apagar, use o botão **Remover chave** no topo da página, ou apague o arquivo.
 
 O editor abre um pequeno servidor que só aceita conexões do seu próprio computador
 (`127.0.0.1`), por isso o firewall não deve perguntar nada. Se o antivírus bloquear o
-`editar`, autorize: ele foi instalado pelo uv, a partir deste repositório.
+`editai`, autorize: ele foi instalado pelo uv, a partir deste repositório.
 
 </details>
 
@@ -1429,7 +1442,7 @@ O editor abre um pequeno servidor que só aceita conexões do seu próprio compu
 <summary><b>"Address already in use" ou porta ocupada</b></summary>
 
 O editor escolhe uma porta livre sozinho. Se você fixou uma com `--porta`, escolha outra,
-por exemplo `editar --porta 8765`.
+por exemplo `editai --porta 8765`.
 
 </details>
 
@@ -1487,8 +1500,8 @@ Você vai precisar do [uv](https://docs.astral.sh/uv/) e, só para mexer na pág
 [Node](https://nodejs.org/) 20.19 ou mais novo.
 
 ```bash
-git clone https://github.com/lucasteles1231/editor-de-video
-cd editor-de-video
+git clone https://github.com/lucasteles1231/editai
+cd editai
 uv sync                                   # o ambiente, com as dependências de teste
 
 uv run pytest -m "not navegador"          # o núcleo e o servidor (a transcrição é falsa)
@@ -1504,8 +1517,8 @@ Node.
 ```bash
 cd web
 npm ci
-uv run editar --porta 8765 --sem-navegador   # noutro terminal: a API
-npm run dev        # abra localhost:5173/?t=<token>, com o token que o editar mostrou
+uv run editai --porta 8765 --sem-navegador   # noutro terminal: a API
+npm run dev        # abra localhost:5173/?t=<token>, com o token que o editai mostrou
 npm run build      # monta a página de volta no pacote
 ```
 

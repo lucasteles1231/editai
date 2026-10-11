@@ -3,7 +3,7 @@
  * verdade e o recorte de verdade, para conferir o desenho de uma vez só. Não vai para a
  * página montada (só o index.html entra no build).
  *
- *   editar --porta 8765 --sem-navegador        (o vídeo enviado pela página ou pela API)
+ *   editai --porta 8765 --sem-navegador        (o vídeo enviado pela página ou pela API)
  *   npm run dev → http://localhost:5173/galeria.html?t=<token>#v=<id do vídeo>&s=<segundo>&a=<largura/altura>
  */
 import {useEffect, useState} from 'react';

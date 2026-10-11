@@ -218,7 +218,7 @@ def abrir_pasta(pasta: Path) -> None:
 
 def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
               estatico: Path | None = None) -> FastAPI:
-    app = FastAPI(title="editor-de-video", version=__version__, docs_url=None, redoc_url=None)
+    app = FastAPI(title="Editai", version=__version__, docs_url=None, redoc_url=None)
     gerente = Gerente()
     envios = pasta_de_envios()
     _limpar_envios_antigos(envios)
@@ -1368,7 +1368,7 @@ def abrir(*, porta: int = 0, navegador: bool = True) -> int:
     def quando_subir() -> None:
         while not servidor.started:
             time.sleep(0.05)
-        print(f"\n  editor-de-video {__version__} aberto em:\n  {url}\n\n"
+        print(f"\n  Editai {__version__} aberto em:\n  {url}\n\n"
               "  (Ctrl+C para fechar)\n", flush=True)
         if navegador:
             webbrowser.open(url)
