@@ -50,7 +50,7 @@ export const EfeitoNaVoz: React.FC<Props> = ({efeito, mudar, catalogo, aoMudarCa
   };
 
   return (
-    <div className="efeito-na-voz" aria-label="efeito na voz">
+    <div className="efeito-na-voz" aria-label="efeito na voz" data-tour="efeito-na-voz">
       <span className="rotulo" id="rotulo-efeito">Efeito na voz</span>
       <div className="linha-de-opcoes" role="group" aria-labelledby="rotulo-efeito">
         <button type="button" className="pilula" aria-pressed={!efeito} onClick={() => mudar('')}>Nenhum</button>

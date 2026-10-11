@@ -24,6 +24,8 @@ playwright = pytest.importorskip("playwright.sync_api")
 expect = playwright.expect
 
 PORTA, TOKEN = 8911, "token-do-navegador"
+#: Os balões do tour (web/src/tour.ts).
+BALOES_DO_TOUR = 18
 
 
 def _instalado(motor: str) -> bool:
@@ -80,20 +82,29 @@ def test_tour_edicao_e_thumbnail(navegador, endereco, tmp_path):
     pagina.add_init_script(VIGIAR_A_CSP)
     pagina.goto(endereco)
 
-    # O tour abre sozinho na primeira visita: os dois jeitos de usar e um passo por área
-    # (nove ao todo). Cada passo é esperado antes do clique seguinte: o balão anima entre
-    # um e outro, e no CI (mais lento) o texto ainda dizia "6 de 7" logo depois do sexto
-    # clique.
+    # O tour abre sozinho na primeira visita: os dois jeitos de usar e cada parte da
+    # página (dezoito balões). Cada passo é esperado antes do clique seguinte: o balão anima
+    # entre um e outro, e no CI (mais lento) o texto ainda dizia "6 de 7" logo depois do
+    # sexto clique. Os balões 4 a 6 abrem a montagem, e o 7 já voltou ao vídeo único.
     progresso = pagina.locator(".driver-popover-progress-text")
-    expect(progresso).to_have_text("1 de 9", timeout=10_000)
+    expect(progresso).to_have_text(f"1 de {BALOES_DO_TOUR}", timeout=10_000)
     expect(pagina.locator(".driver-popover-title")).to_have_text("Dois jeitos de usar")
     expect(pagina.locator(".driver-popover-description")).to_contain_text(
-        "Notícia com cenas")
-    for passo in range(2, 10):
+        "Uma notícia com cenas")
+    um = pagina.get_by_role("group", name="como é o seu vídeo").get_by_role(
+        "button", name="Um vídeo com você falando")
+    for passo in range(2, BALOES_DO_TOUR + 1):
         pagina.locator(".driver-popover-next-btn").click()
-        expect(progresso).to_have_text(f"{passo} de 9")
+        expect(progresso).to_have_text(f"{passo} de {BALOES_DO_TOUR}")
+        if passo == 4:
+            expect(pagina.locator(".driver-popover-title")).to_have_text("O fundo")
+            expect(pagina.get_by_role("button", name="Biblioteca de cenas")).to_be_visible()
+            expect(um).to_have_attribute("aria-pressed", "false")
+        elif passo == 7:
+            expect(um).to_have_attribute("aria-pressed", "true")
     pagina.locator(".driver-popover-next-btn").click()      # "Começar a editar"
     pagina.locator(".driver-popover").wait_for(state="detached")
+    expect(um).to_have_attribute("aria-pressed", "true")
 
     # Envia, edita e espera a thumbnail desenhada no navegador. A IA e o recorte são os
     # falsos (conftest): três ideias fixas e uma silhueta de busto, sem rede nem modelo.
@@ -914,6 +925,55 @@ def test_estudio_grava_a_amostra_no_microfone(navegador, endereco):
         expect(estudio.get_by_role("button", name="Gravar de novo")).to_be_visible()
     finally:
         nav.close()
+
+
+def test_o_tour_volta_ao_modo_de_quem_usa(navegador, endereco):
+    """Os balões da montagem abrem o modo das camadas; ao sair deles (para trás ou fechando
+    o tour), a página volta ao modo em que estava, e quem já estava na montagem continua
+    nela."""
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 900})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
+    pagina.goto(endereco)
+    modos = pagina.get_by_role("group", name="como é o seu vídeo")
+    um = modos.get_by_role("button", name="Um vídeo com você falando")
+    montagem = modos.get_by_role("button", name=re.compile("^Um fundo e, por cima"))
+    progresso = pagina.locator(".driver-popover-progress-text")
+    proximo = pagina.locator(".driver-popover-next-btn")
+    voltar = pagina.locator(".driver-popover-prev-btn")
+
+    def ate(balao: int) -> None:
+        while True:
+            texto = progresso.text_content() or ""
+            if texto.startswith(f"{balao} de"):
+                return
+            proximo.click()
+            pagina.wait_for_timeout(150)
+
+    pagina.get_by_role("button", name="Tour", exact=True).click()
+    ate(4)
+    expect(montagem).to_have_attribute("aria-pressed", "true")
+    voltar.click()
+    expect(progresso).to_have_text(f"3 de {BALOES_DO_TOUR}")
+    expect(um).to_have_attribute("aria-pressed", "true")
+    proximo.click()
+    expect(montagem).to_have_attribute("aria-pressed", "true")
+    pagina.keyboard.press("Escape")                          # fechar no meio da montagem
+    pagina.locator(".driver-popover").wait_for(state="detached")
+    expect(um).to_have_attribute("aria-pressed", "true")
+
+    montagem.click()
+    pagina.get_by_role("button", name="Tour", exact=True).click()
+    ate(7)
+    expect(montagem).to_have_attribute("aria-pressed", "true")
+    voltar.click()
+    expect(progresso).to_have_text(f"6 de {BALOES_DO_TOUR}")
+    pagina.keyboard.press("Escape")
+    pagina.locator(".driver-popover").wait_for(state="detached")
+    expect(montagem).to_have_attribute("aria-pressed", "true")
+    assert not erros, erros
 
 
 def test_a_chave_do_gemini_no_topo(navegador, endereco, monkeypatch):

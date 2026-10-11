@@ -296,7 +296,7 @@ const EnvioDaMontagem: React.FC<PropsDoEnvio> = (p) => {
   const custo = p.pessoa ? p.pessoa.duracao * p.pessoa.fps * CUSTO_DO_RECORTE_POR_QUADRO : 0;
   return (
     <div className="camadas">
-      <div className="camada">
+      <div className="camada" data-tour="fundo">
         <strong>O fundo</strong>
         <div className="linha-de-opcoes" role="group" aria-label="de onde vem o fundo">
           {FONTES_DO_FUNDO.map(([v, nome]) => (
@@ -336,7 +336,7 @@ const EnvioDaMontagem: React.FC<PropsDoEnvio> = (p) => {
         )}
       </div>
 
-      <div className="camada">
+      <div className="camada" data-tour="por-cima">
         <strong>Por cima</strong>
         <div className="linha-de-opcoes" role="group" aria-label="o que vai por cima">
           {POR_CIMA.map(([v, nome]) => (
@@ -405,7 +405,7 @@ const EnvioDaMontagem: React.FC<PropsDoEnvio> = (p) => {
         ) : null}
       </div>
 
-      <div className="camada">
+      <div className="camada" data-tour="audio">
         <strong>O áudio vem de</strong>
         <div className="linha-de-opcoes" role="group" aria-label="de onde vem o áudio">
           {opcoesDeFala(m).map((f) => {
@@ -487,11 +487,12 @@ export const PassoEnvio: React.FC<PropsDoEnvio> = (p) => (
   <section className="passo" id="passo-envio">
     <Cabeca n={1} titulo="Envie o vídeo"
       texto="Os arquivos são copiados para uma pasta do seu computador — não vão para a internet." />
-    <div className="linha-de-opcoes modos" role="group" aria-label="como é o seu vídeo">
-      <button type="button" className="pilula" aria-pressed={p.modo === 'um'} onClick={() => p.setModo('um')}>
+    <div className="linha-de-opcoes modos" role="group" aria-label="como é o seu vídeo" data-tour="modos">
+      <button type="button" className="pilula" aria-pressed={p.modo === 'um'} onClick={() => p.setModo('um')}
+        data-tour="modo-um">
         Um vídeo com você falando
       </button>
-      <button type="button" className="pilula" aria-pressed={p.modo === 'montagem'}
+      <button type="button" className="pilula" aria-pressed={p.modo === 'montagem'} data-tour="modo-montagem"
         onClick={() => p.setModo('montagem')}>Um fundo e, por cima, você ou um personagem</button>
     </div>
     {p.modo === 'um' ? (
@@ -581,7 +582,7 @@ export const PassoEdicoes: React.FC<{
     <section className="passo" id="passo-edicoes">
       <Cabeca n={2} titulo="Escolha as edições"
         texto="Comece por um preset e ajuste o que quiser. Tudo é decidido por regras, no seu computador; só os cartões animados, as cenas da biblioteca e os destaques da legenda pedem o Gemini." />
-      <div className="presets" role="group" aria-label="presets de edição">
+      <div className="presets" role="group" aria-label="presets de edição" data-tour="presets">
         {presets.map((p) => (p.meu ? (
           <div key={p.nome} className="preset-meu">
             <button type="button" className="preset meu" aria-pressed={marcado === p.nome}
@@ -663,7 +664,7 @@ export const PassoEdicoes: React.FC<{
         </label>
       </div>
       {importado ? <div className={`aviso${importado.erro ? ' erro' : ''}`} role="status">{importado.texto}</div> : null}
-      <div className="grade">
+      <div className="grade" data-tour="interruptores">
         <Interruptor ligado={edicao.cortes} aoMudar={(v) => mudar({cortes: v})} titulo="Cortar silêncios"
           descricao="Tira as pausas longas entre as frases. A legenda acompanha o corte." />
         <Interruptor ligado={edicao.zoom} aoMudar={(v) => mudar({zoom: v})} titulo="Zoom de ênfase"
@@ -684,7 +685,7 @@ export const PassoEdicoes: React.FC<{
         <Interruptor ligado={edicao.animacoes} aoMudar={(v) => mudar({animacoes: v})} titulo="Cartões animados"
           descricao="Selo, lista, quadro, enquete, carimbo, número e flash, escritos pelo Gemini na palavra certa. Precisa da chave dele (no topo da página)." />
       </div>
-      <div className="campos">
+      <div className="campos" data-tour="voz-e-bipe">
         <div className="campo largo">
           <span id="rotulo-voz">Voz</span>
           <div className="linha-de-opcoes" role="group" aria-labelledby="rotulo-voz">
@@ -704,7 +705,7 @@ export const PassoEdicoes: React.FC<{
       </div>
       <EfeitoNaVoz efeito={edicao.efeito_da_voz} mudar={(e) => mudar({efeito_da_voz: e})} catalogo={efeitosDaVoz}
         aoMudarCatalogo={aoMudarEfeitos} tratamento={edicao.voz} fonte={fonteDaVoz.fonte} semFonte={fonteDaVoz.motivo} />
-      <div className="campos">
+      <div className="campos" data-tour="ritmo">
         <label className="campo">
           <span>Ritmo: {numero(edicao.ritmo, 1)}×</span>
           <input type="range" min={0.5} max={2} step={0.1} value={edicao.ritmo}
@@ -742,7 +743,7 @@ export const PassoEdicoes: React.FC<{
           <small>40% fica no rosto de quem fala para a câmera.</small>
         </label>
       </div>
-      <div className="sons">
+      <div className="sons" data-tour="sons">
         <div className="grade">
           <Interruptor ligado={edicao.sons} aoMudar={(v) => mudar({sons: v})} titulo="Efeitos sonoros"
             descricao="Um som quando algo aparece e outro quando o zoom troca ou a pessoa muda de lugar." />

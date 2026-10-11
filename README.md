@@ -257,8 +257,9 @@ escolher as edições, escolher a saída e, se quiser, a thumbnail.
     <td width="50%"><img src="docs/img/interface-resultado.png" alt="A thumbnail com prévia ao vivo e o resultado, com os botões de baixar"></td>
   </tr>
   <tr>
-    <td><b>Tour guiado.</b> Na primeira visita, nove passos curtos mostram os dois jeitos
-    de usar e cada parte da página. O botão <b>Tour</b> refaz quando quiser.</td>
+    <td><b>Tour guiado.</b> Na primeira visita, dezoito balões curtos mostram os dois jeitos
+    de usar e cada parte da página, da chave do Gemini ao resultado, abrindo a montagem em
+    camadas no caminho. O botão <b>Tour</b> refaz quando quiser.</td>
     <td><b>Thumbnail e resultado.</b> A prévia muda enquanto você escolhe. Toque numa palavra
     do título para ela virar o adesivo.</td>
   </tr>
