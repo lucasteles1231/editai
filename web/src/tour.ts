@@ -156,7 +156,7 @@ export function comecarTour(): void {
         title: 'A voz e o bipe',
         description: 'A voz como foi gravada, <b>limpa</b> (sem eco, sem chiado e no mesmo volume) ou de '
           + '<b>estúdio</b>. No bipe, as palavras da lista ganham um bipe numa sílaba e asteriscos na legenda: '
-          + '“coca**na”.',
+          + '“porca**a”.',
       },
     },
     {

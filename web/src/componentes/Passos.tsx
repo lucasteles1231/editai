@@ -698,9 +698,9 @@ export const PassoEdicoes: React.FC<{
         </div>
         <label className="campo largo">
           <span>Bipe nas palavras</span>
-          <input type="text" value={edicao.bipe} maxLength={500} placeholder="cocaína, sexo, decapitação"
+          <input type="text" value={edicao.bipe} maxLength={500} placeholder="droga, porcaria, caramba"
             onChange={(e) => mudar({bipe: e.target.value})} />
-          <small>Separadas por vírgula. Uma sílaba vira bipe na voz e asteriscos na legenda: “coca**na”.</small>
+          <small>Separadas por vírgula. Uma sílaba vira bipe na voz e asteriscos na legenda: “porca**a”.</small>
         </label>
       </div>
       <EfeitoNaVoz efeito={edicao.efeito_da_voz} mudar={(e) => mudar({efeito_da_voz: e})} catalogo={efeitosDaVoz}

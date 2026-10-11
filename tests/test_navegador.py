@@ -305,8 +305,8 @@ def test_biblioteca_de_cenas(navegador, endereco, tmp_path):
            ).to_have_attribute("aria-pressed", "true")
     expect(pagina.get_by_role("group", name="Estilo").get_by_role("button", name="Destaques")
            ).to_have_attribute("aria-pressed", "true")
-    expect(pagina.get_by_placeholder("cocaína, sexo, decapitação")).to_have_value(
-        re.compile("^cocaína, sexo"))
+    # o bipe vem vazio: cada vídeo tem as suas palavras (o exemplo leve fica só no campo)
+    expect(pagina.get_by_placeholder("droga, porcaria, caramba")).to_have_value("")
     # leve, para o teste não demorar (a biblioteca não limita a resolução)
     pagina.get_by_role("button", name="Em pé (9:16)").click()
     resolucao = pagina.locator("label.campo", has_text="Resolução").locator("select")

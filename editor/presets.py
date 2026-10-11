@@ -34,9 +34,6 @@ EDICAO = ("cortes", "zoom", "adesivos", "icones", "sons", "mover", "pausa_maxima
           "nivel_zoom", "ritmo", "empurrao", "respiro", "tema_dos_sons", "som_nos_cortes",
           "sons_por_palavra", "volume_dos_sons", "tamanho_legenda", "caracteres_por_linha",
           "janela", "animacoes", "bipe", "voz", "efeito_da_voz", "estilo_da_legenda")
-#: As palavras do bipe do vídeo de referência (o ponto de partida do preset de notícia;
-#: cada vídeo tem as suas).
-BIPE_DA_NOTICIA = "cocaína, sexo, sexual, decapitação, desmembramento"
 SAIDA = ("resolucao", "fps", "qualidade")
 THUMB = ("modelo", "cor")
 
@@ -114,12 +111,12 @@ PRESETS: dict[str, Preset] = {p.nome: p for p in (
             janela=True, voz="limpa",
             thumb=("pergunta", "roxo")),
     _preset("noticia", "Notícia com cenas",
-            "Narração com muitas imagens: cenas pela fala, janela com câmera, cartões, bipe e "
-            "voz de estúdio.",
+            "Narração com muitas imagens: cenas pela fala, janela com câmera, cartões e voz de "
+            "estúdio.",
             pausa_maxima=0.35, nivel_zoom=1.12, ritmo=1.2, empurrao=0.06, adesivos=False,
             icones=False, tema_dos_sons="noticia", sons_por_palavra=False,
             volume_dos_sons=1.0, caracteres_por_linha=16,
-            janela=True, animacoes=True, voz="estudio", bipe=BIPE_DA_NOTICIA,
+            janela=True, animacoes=True, voz="estudio",
             estilo_da_legenda="destaques", thumb=("alerta", "rosa")),
     _preset("aula", "Aula ou tutorial longo",
             "Vídeo longo: legenda larga, poucos efeitos e a pessoa parada.",

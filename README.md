@@ -126,7 +126,7 @@ sugestões do Gemini, com uma chave grátis sua.
     <td><b>Voz, efeitos e bipe.</b> A voz pode sair limpa (sem eco, sem chiado e no mesmo
     volume em todas as partes) ou de estúdio, e ganhar um efeito: robô, esquilo, cantado,
     rádio, fantasma ou um seu. As palavras proibidas ganham um bipe numa sílaba e
-    asteriscos na legenda: "coca**na". Veja <a href="#voz-e-bipe">Voz e bipe</a> e
+    asteriscos na legenda: "porca**a". Veja <a href="#voz-e-bipe">Voz e bipe</a> e
     <a href="#efeitos-na-voz">Efeitos na voz</a>.</td>
   </tr>
   <tr>
@@ -219,9 +219,8 @@ Você traz:
    envie os arquivos da narração, ou escolha **Minha voz** e cole o roteiro.
 3. Em **Onde você vai postar**, marque Shorts, TikTok ou Reels para o vídeo sair em pé.
 4. No passo 2, escolha o preset **Notícia com cenas**. Ele liga a janela com câmera, os
-   cartões animados, a voz de estúdio, o bipe, a legenda em destaques e os sons do tema
-   Notícia. A lista do bipe vem com as palavras de um vídeo de exemplo: troque pelas do
-   seu.
+   cartões animados, a voz de estúdio, a legenda em destaques e os sons do tema Notícia.
+   Se o assunto pede, escreva no **Bipe nas palavras** as que devem ser escondidas.
 5. Se ainda não colou a chave do Gemini, cole no topo da página.
 6. Clique em **Editar vídeo**. Uma narração de 50 s leva uns 2 minutos num MacBook M5. O
    resultado diz quantas cenas e cartões o Gemini escreveu e quantos pedidos da cota
@@ -550,7 +549,7 @@ editável, e mexer em qualquer um troca a marca para **Personalizado**.
 | **Corte de podcast** | conversa que respira | pausa de 0,80 s, respiro de 0,25 s, ritmo 0,6×, quase nenhum som e a pessoa parada |
 | **Aula ou tutorial longo** | vídeo longo | ritmo 0,5×, legenda de 36 letras, poucos efeitos e a pessoa parada |
 | **Divulgação de imóveis** | o tour por uma casa ou um apartamento | a tomada inteira, sem cortar as pausas (o tour quase não tem fala), sem zoom, adesivos, ícones nem sons, a voz limpa (sem o eco dos cômodos vazios), a legenda discreta e, com o Gemini, o preço e a metragem em cartões |
-| **Notícia com cenas** | narração sobre um assunto com muitas imagens | janela e câmera, cartões animados, legenda em destaques, voz de estúdio, uma lista de bipe de exemplo, pausa de 0,35 s, ritmo 1,2× e os sons do tema Notícia |
+| **Notícia com cenas** | narração sobre um assunto com muitas imagens | janela e câmera, cartões animados, legenda em destaques, voz de estúdio, pausa de 0,35 s, ritmo 1,2× e os sons do tema Notícia |
 
 - **O formato** (em pé ou deitado) não é do preset: vem da plataforma escolhida no passo
   1. O preset muda o estilo, e o modelo e a cor da thumbnail.
@@ -661,11 +660,11 @@ gravados com até 5 dB de diferença saíram a 1,2 dB um do outro.
 
 **O bipe** esconde uma sílaba de cada palavra da lista (passo 2, separadas por vírgula):
 a do meio, nunca a primeira, com um tom de 1 kHz e a voz zerada por baixo. A legenda e os
-cartões mostram a mesma sílaba em asteriscos: "coca\*\*na", "se\*\*".
+cartões mostram a mesma sílaba em asteriscos: "porca\*\*a", "dro\*\*".
 
-- **O plural e o acento contam:** "sexo" também pega "sexos".
-- **A lista vai de dica para o Whisper.** Sem ela, o modelo `small` ouvia "coca ainda" no
-  lugar de "cocaína", e a palavra escapava do bipe.
+- **O plural e o acento contam:** "porcaria" também pega "porcarias".
+- **A lista vai de dica para o Whisper.** Sem ela, o modelo `small` trocava uma palavra
+  pouco comum por duas parecidas, e a palavra escapava do bipe.
 - **A sílaba é estimada:** o começo e o fim da palavra são medidos no áudio, e as sílabas
   são divididas pelo número de letras, com uma folga de 30 ms de cada lado. É menos
   preciso que um alinhador fonético, que não cabe num editor leve. No vídeo de teste,

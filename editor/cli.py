@@ -121,7 +121,7 @@ def argumentos() -> argparse.ArgumentParser:
     g.add_argument("--sem-animacoes", dest="animacoes", action="store_const", const=False,
                    help=argparse.SUPPRESS)
     g.add_argument("--bipe", metavar="PALAVRAS",
-                   help='palavras proibidas, separadas por vírgula ("cocaína, sexo"): uma '
+                   help='palavras proibidas, separadas por vírgula ("droga, porcaria"): uma '
                         "sílaba vira bipe na voz e asteriscos na legenda")
     g.add_argument("--voz", choices=["original", "limpa", "estudio"],
                    help="o tratamento da voz (padrão: original)")

@@ -1,8 +1,8 @@
 """
 A censura das palavras proibidas: uma sílaba some, com asteriscos na legenda e nos
 cartões e com bipe na voz. É a mesma regra nos três lugares, então eles nunca
-divergem: "SEXO" vira "SE**", "cocaína" vira "coca**na", "decapitação" vira
-"deca**tação".
+divergem: "DROGA" vira "DRO**", "porcaria" vira "porca**a", "caramba" vira
+"ca***ba".
 
 Portado do separador de sílabas do vídeo de referência: uma divisão simples do
 português, suficiente para palavras de narração, e não um dicionário. As letras
@@ -103,7 +103,7 @@ def _formas(n: str) -> set[str]:
 
 
 def lista(texto: str | Iterable[str]) -> list[str]:
-    """As palavras proibidas de um texto ("cocaína, sexo; decapitação") ou de uma lista."""
+    """As palavras proibidas de um texto ("droga, porcaria; caramba") ou de uma lista."""
     partes = re.split(r"[,;\n]+", texto) if isinstance(texto, str) else list(texto)
     return [p.strip() for p in partes if p and p.strip()]
 
