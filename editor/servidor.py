@@ -364,6 +364,19 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
             raise HTTPException(422, str(erro)) from erro
         return {"salvo": e.nome, "efeitos_da_voz": efeitos_da_voz.para_json()}
 
+    @app.put("/api/efeitos/{nome}")
+    def atualizar_efeito(nome: str, dados: Annotated[dict, Body()]):
+        """Edita um efeito seu; com outro título, renomeia (no mesmo lugar da lista)."""
+        try:
+            e = efeitos_da_voz.atualizar(nome, dados)
+        except efeitos_da_voz.EfeitoNaoExiste as erro:
+            raise HTTPException(404, str(erro)) from erro
+        except efeitos_da_voz.EfeitoJaExiste as erro:
+            raise HTTPException(409, str(erro)) from erro
+        except efeitos_da_voz.EfeitoInvalido as erro:
+            raise HTTPException(422, str(erro)) from erro
+        return {"salvo": e.nome, "efeitos_da_voz": efeitos_da_voz.para_json()}
+
     @app.delete("/api/efeitos/{nome}")
     def apagar_efeito(nome: str):
         try:
@@ -372,10 +385,31 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
             raise HTTPException(404, str(erro)) from erro
         return {"efeitos_da_voz": efeitos_da_voz.para_json()}
 
+    @app.get("/api/efeitos/exportar")
+    def exportar_efeitos():
+        corpo = json.dumps(efeitos_da_voz.exportar(), ensure_ascii=False, indent=1)
+        return Response(corpo, media_type="application/json", headers={
+            "Content-Disposition": 'attachment; filename="meus-efeitos-de-voz.json"'})
+
+    @app.post("/api/efeitos/importar")
+    def importar_efeitos(arquivo: Annotated[UploadFile, File()]):
+        bruto = arquivo.file.read(PRESETS_MAXIMO + 1)
+        if len(bruto) > PRESETS_MAXIMO:
+            raise HTTPException(400, "O arquivo de efeitos passa de 1 MB.")
+        try:
+            entraram, recusados = efeitos_da_voz.importar(json.loads(bruto.decode("utf-8-sig")))
+        except (UnicodeDecodeError, ValueError) as erro:
+            mensagem = str(erro) if isinstance(erro, efeitos_da_voz.EfeitoInvalido) else (
+                "Esse arquivo não é um JSON de efeitos de voz do editor.")
+            raise HTTPException(422, mensagem) from erro
+        return {"entraram": entraram, "recusados": recusados,
+                "efeitos_da_voz": efeitos_da_voz.para_json()}
+
     @app.get("/api/efeitos/ouvir")
-    def ouvir_efeito(fonte: str, efeito: str = "", tratamento: str = "original"):
-        """Oito segundos da fala (``audio:ID`` ou ``video:ID``) com o efeito e o tratamento
-        da voz, pelo mesmo caminho da edição."""
+    def ouvir_efeito(fonte: str, efeito: str = "", tratamento: str = "original",
+                     segundos: float = efeitos_da_voz.PREVIA_S):
+        """Os primeiros segundos da fala (``audio:ID`` ou ``video:ID``) com o efeito e o
+        tratamento da voz, pelo mesmo caminho da edição: o "ouvir antes" e o estúdio."""
         tipo, _, ident = fonte.partition(":")
         if tipo == "audio":
             caminho = _audio(ident)["caminho"]
@@ -386,12 +420,14 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
         if tratamento not in voz.NIVEIS:
             raise HTTPException(422, "tratamento desconhecido (use "
                                      f"{', '.join(voz.NIVEIS)})")
+        if not efeitos_da_voz.PREVIA_MINIMA_S <= segundos <= efeitos_da_voz.PREVIA_MAXIMA_S:
+            raise HTTPException(422, "a amostra vai de 3 a 20 segundos")
         try:
             ajustes = efeitos_da_voz.ler(efeito)
         except efeitos_da_voz.EfeitoInvalido as erro:
             raise HTTPException(422, str(erro)) from erro
         x = video_mod.ler_audio_mono(caminho, video_mod.TAXA, maximo_s=90)
-        estereo = efeitos_da_voz.previa(x, ajustes, tratamento)
+        estereo = efeitos_da_voz.previa(x, ajustes, tratamento, segundos)
         if not len(estereo):
             raise HTTPException(422, "Essa fala não tem som para ouvir.")
         return Response(_wav(estereo, video_mod.TAXA), media_type="audio/wav",

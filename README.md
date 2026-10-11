@@ -674,12 +674,13 @@ cartões mostram a mesma sílaba em asteriscos: "coca\*\*na", "se\*\*".
 ## Efeitos na voz
 
 No passo 2, logo abaixo da voz, o **Efeito na voz** muda o som de quem fala. Vale para
-qualquer voz: a do vídeo, a do áudio separado e a [Minha voz](#minha-voz). Nada precisa
+qualquer voz: a do vídeo, a do áudio separado e a [Minha voz](#minha-voz). Escolha um
+pronto, ouça 8 s com ele, ou monte o seu no [estúdio](#o-estúdio-de-voz). Nada precisa
 ser instalado: os filtros são os do FFmpeg que vem no PyAV, e o resto (o cantado, o
 robô, o sussurro e a sala) é feito pelo próprio editor.
 
 <p align="center">
-  <img src="docs/img/interface-efeitos.png" alt="O efeito na voz no passo 2: as pílulas dos 13 efeitos prontos e do Meu locutor, um efeito salvo, marcado; os controles abertos em quatro grupos (Tom, Caráter, Ambiente e Equalizador), com o rádio em 85%, a distorção em 20% e a sala em 30%; e o player do Ouvir 8 s com o efeito" width="640">
+  <img src="docs/img/interface-efeitos.png" alt="O efeito na voz no passo 2: as pílulas dos 13 efeitos prontos e do Meu locutor, um efeito salvo, marcado, com os botões de editar no estúdio e de apagar; os botões Ouvir 8 s com o efeito e Abrir o estúdio; e o player do Ouvir" width="640">
 </p>
 
 **Os prontos:**
@@ -688,9 +689,9 @@ robô, o sussurro e a sala) é feito pelo próprio editor.
 |---|---|---|
 | **Robô** | metálico e sem entonação, com o zumbido de um robô | `tom=-2,robo=85,medios=3` |
 | **Esquilo** | a voz de desenho animado, bem mais aguda e fina | `tom=9,agudos=2` |
-| **Fofo** | mais aguda e suave, com um coral leve | `tom=4,coral=20,agudos=3` |
+| **Fofo** | mais aguda e suave | `tom=4,agudos=3` |
 | **Monstro** | grave, rouca e com eco de caverna | `tom=-8,distorcao=25,sala=35,graves=6` |
-| **Cantado** | afinada nota a nota, como um autotune | `afinacao=100,coral=25,sala=20` |
+| **Cantado** | afinada nota a nota, como um autotune | `afinacao=100` |
 | **Rádio antigo** | a faixa estreita e o chiado de um rádio velho | `radio=85,distorcao=20` |
 | **Telefone** | como numa ligação | `radio=65,medios=4` |
 | **Megafone** | estourada e anasalada, de alto-falante | `radio=60,distorcao=60,medios=5` |
@@ -700,14 +701,14 @@ robô, o sussurro e a sala) é feito pelo próprio editor.
 | **Gigante** | grave e encorpada, com um pouco de sala | `tom=-5,graves=6,sala=30` |
 | **Sussurro** | só o ar, sem a voz | `sussurro=100` |
 
-**Os controles**, em **Ajustar**, ficam em quatro grupos:
+**Os controles**, no estúdio, ficam em quatro grupos:
 
 | Grupo | Controle | Faixa | O que faz |
 |---|---|---|---|
 | Tom | **Tom** | −12 a +12 semitons | sobe ou desce a voz sem mudar a duração; o timbre acompanha, como num desenho animado |
 | Tom | **Cantado** | 0 a 100% | puxa cada trecho da fala para a nota mais perto, como um autotune; o timbre fica |
 | Caráter | **Robô** | 0 a 100% | troca a entonação por um zumbido fixo de 120 Hz |
-| Caráter | **Sussurro** | 0 a 100% | tira a nota da voz e deixa só o ar |
+| Caráter | **Sussurro** | 0 a 100% | troca a voz por ar com o formato das vogais, sem os graves |
 | Caráter | **Rádio** | 0 a 100% | estreita a faixa, de 100–8.000 Hz até 500–2.800 Hz |
 | Caráter | **Distorção** | 0 a 100% | satura, como um alto-falante estourado |
 | Ambiente | **Vibrato** | 0 a 100% | faz a voz tremer 5,5 vezes por segundo |
@@ -719,9 +720,9 @@ robô, o sussurro e a sala) é feito pelo próprio editor.
 - **Ouvir antes:** **Ouvir 8 s** passa os primeiros 8 s com fala pelo mesmo caminho da
   edição, com o tratamento escolhido (original, limpa ou estúdio), e toca na página. A
   fala é a que a edição vai usar: a do vídeo, a do áudio separado ou a narração.
-- **Os seus:** mexeu num controle, o efeito vira **Personalizado**, e **Salvar como meu
-  efeito** guarda com um nome. Ele fica só no seu computador, no `efeitos-de-voz.json`
-  da pasta de dados, e sai pelo ×. Um preset de edição seu também guarda o efeito.
+- **Os seus** ficam só no seu computador, no `efeitos-de-voz.json` da pasta de dados. No
+  passo 2, o ✎ abre um no estúdio e o × apaga. Um preset de edição seu também guarda o
+  efeito.
 - **A duração não muda.** Cada efeito devolve o mesmo número de amostras, então os
   cortes, a legenda e o bipe ficam no lugar.
 - **A legenda não sofre.** O efeito entra depois da transcrição: o Whisper ouve a voz
@@ -733,6 +734,28 @@ robô, o sussurro e a sala) é feito pelo próprio editor.
 semitons dá 244), o fofo a 182 Hz (183) e o monstro a 92 Hz (91). No cantado, os trechos
 a menos de 25 cents de uma nota passaram de 50% para 92%. No M5, um minuto de voz leva
 menos de 1 s no cantado e menos ainda nos outros.
+
+### O estúdio de voz
+
+**Abrir o estúdio** (passo 2) abre uma tela só para montar um efeito de ouvido:
+
+<p align="center">
+  <img src="docs/img/interface-estudio.png" alt="O estúdio de voz: a amostra (a fala do vídeo, 8 s), a forma de onda, os botões Tocar, Em laço, A sem efeito e B com efeito; Começar de, Zerar e o efeito como texto; os 13 controles em quatro grupos, com o rádio em 85%, a distorção em 20% e a sala em 30%; o nome Meu locutor e a frase; a lista dos seus efeitos com editar, duplicar e apagar, Exportar e Importar; e Usar no vídeo" width="760">
+</p>
+
+1. **A amostra:** a fala do vídeo (a que a edição vai usar), uma gravação feita ali,
+   pelo microfone, ou um arquivo; 8 ou 15 s. A gravação e o arquivo ficam no computador.
+2. **Ouça e compare:** **Tocar**, **Em laço** e **A · sem efeito** / **B · com efeito**.
+   Trocar entre os dois continua do mesmo ponto, e um clique na forma de onda pula para
+   lá. Os dois saem do mesmo caminho da edição, com o tratamento da voz do passo 2.
+3. **Ajuste:** comece de um pronto ou de um seu, ou do zero, e mexa nos controles. Uns
+   400 ms depois de cada mudança, o B já é o efeito novo, sem parar de tocar.
+4. **Guarde:** um nome e uma frase, e **Salvar**. Na lista dos seus, o ✎ abre um para
+   editar (salvar com outro nome renomeia), o ⧉ duplica e o × apaga. **Exportar os seus**
+   baixa o `meus-efeitos-de-voz.json`, e **Importar** junta os de outro computador (o
+   mesmo nome substitui).
+5. **Usar no vídeo** leva o efeito para o passo 2. **Fechar sem usar** (ou o Esc) não
+   muda nada.
 
 > [!NOTE]
 > Um efeito muda o som, não a emoção: "feliz" ou "triste" dependem de como a frase é

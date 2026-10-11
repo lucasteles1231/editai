@@ -73,8 +73,9 @@ AMBIENTE = ("vibrato", "coral", "eco", "sala")
 ROBO_HZ = 120
 #: O fim cortado do eco e da sala some em 50 ms, sem estalo.
 FADE_S = 0.05
-#: O "ouvir antes".
+#: O "ouvir antes" (e a amostra do estúdio): 8 s, de 3 a 20.
 PREVIA_S = 8.0
+PREVIA_MINIMA_S, PREVIA_MAXIMA_S = 3.0, 20.0
 
 
 class EfeitoInvalido(ValueError):
@@ -294,13 +295,22 @@ def _robo(x: np.ndarray) -> np.ndarray:
 
 
 def _sussurro(x: np.ndarray) -> np.ndarray:
-    # 5 ms: menos que um período da voz, então a STFT não separa os harmônicos e a fase
-    # aleatória apaga o tom (com 21 ms, sobrava a "nota" da voz no ruído)
-    n, passo = 256, 64
+    """Ruído com o formato das vogais: o envelope de cada quadro (o cepstro abaixo de
+    1,5 ms, que guarda os formantes e deixa os harmônicos de fora) vezes um ruído
+    gaussiano, sem os graves e com mais agudo. A primeira versão (a fase aleatória sobre o
+    espectro inteiro) punha o ruído nos graves e soava como vento; esta foi a escolhida
+    de ouvido pelo dono, entre três (11/10)."""
+    n, passo = 1024, 256
     espectro, janela = voz._stft(x, n, passo)
-    fase = np.random.default_rng(7).uniform(0, 2 * np.pi, espectro.shape)
-    ruido = voz._istft(np.abs(espectro) * np.exp(1j * fase), janela, n, passo, len(x))
-    return voz.filtrar(ruido, "highpass=f=250,highpass=f=250")
+    cepstro = np.fft.irfft(np.log(np.abs(espectro) + 1e-7), n=n, axis=1)
+    corte = int(0.0015 * TAXA)
+    cepstro[:, corte:n - corte] = 0
+    envelope = np.exp(np.fft.rfft(cepstro, n=n, axis=1).real)
+    rng = np.random.default_rng(7)
+    ruido = (rng.standard_normal(espectro.shape)
+             + 1j * rng.standard_normal(espectro.shape)) / np.sqrt(2)
+    ar = voz._istft(envelope * ruido, janela, n, passo, len(x))
+    return voz.filtrar(ar, "highpass=f=650,highpass=f=650,treble=g=8:f=2500")
 
 
 def _radio(x: np.ndarray, quanto: float) -> np.ndarray:
@@ -432,11 +442,11 @@ def aplicar(x: np.ndarray, efeito: dict[str, int]) -> np.ndarray:
     return aplicar_no_ambiente(np.stack([mono, mono], axis=1), efeito)
 
 
-def previa(x: np.ndarray, efeito: dict[str, int], tratamento: str = "original"
-           ) -> np.ndarray:
+def previa(x: np.ndarray, efeito: dict[str, int], tratamento: str = "original",
+           segundos: float = PREVIA_S) -> np.ndarray:
     """O "ouvir antes": os primeiros segundos com voz pelo mesmo caminho da edição (o
     efeito na voz, o tratamento, o ambiente), no volume final. Estéreo."""
-    trecho = trecho_para_ouvir(x)
+    trecho = trecho_para_ouvir(x, segundos)
     if not len(trecho):
         return np.zeros((0, 2), np.float32)
     junto, _ = voz.juntar([trecho], tratamento)
@@ -479,12 +489,10 @@ PRONTOS = {p.nome: p for p in (
             "robo=85,tom=-2,medios=3"),
     _pronto("esquilo", "Esquilo", "A voz de desenho animado: bem mais aguda e fina.",
             "tom=9,agudos=2"),
-    _pronto("fofo", "Fofo", "Mais aguda e suave, com um coral leve.",
-            "tom=4,agudos=3,coral=20"),
+    _pronto("fofo", "Fofo", "Mais aguda e suave.", "tom=4,agudos=3"),
     _pronto("monstro", "Monstro", "Grave, rouca e com eco de caverna.",
             "tom=-8,distorcao=25,graves=6,sala=35"),
-    _pronto("cantado", "Cantado", "Afinada nota a nota, como um autotune.",
-            "afinacao=100,coral=25,sala=20"),
+    _pronto("cantado", "Cantado", "Afinada nota a nota, como um autotune.", "afinacao=100"),
     _pronto("radio-antigo", "Rádio antigo", "A faixa estreita e o chiado de um rádio velho.",
             "radio=85,distorcao=20"),
     _pronto("telefone", "Telefone", "Como numa ligação.", "radio=65,medios=4"),
@@ -509,6 +517,10 @@ FRASE_MAXIMA = 120
 
 class EfeitoJaExiste(EfeitoInvalido):
     """Já há um efeito seu com esse nome (salvar de novo substitui, se pedido)."""
+
+
+class EfeitoNaoExiste(EfeitoInvalido):
+    """O efeito pedido não está entre os seus (ou é um pronto, que não muda)."""
 
 
 def arquivo_dos_meus() -> Path:
@@ -564,14 +576,19 @@ def todos() -> dict[str, EfeitoSalvo]:
     return {**PRONTOS, **{e.nome: e for e in meus()}}
 
 
+def exportar(lista: list[EfeitoSalvo] | None = None) -> dict:
+    """O arquivo dos efeitos de quem usa: o mesmo que fica no disco e que a importação lê."""
+    return {"editor-de-video": "efeitos-de-voz", "versao": 1,
+            "efeitos": [{"titulo": e.titulo, "frase": e.frase, "efeito": e.efeito}
+                        for e in (meus() if lista is None else lista)]}
+
+
 def _gravar(lista: list[EfeitoSalvo]) -> None:
     destino = arquivo_dos_meus()
     destino.parent.mkdir(parents=True, exist_ok=True)
     parcial = destino.with_suffix(".parcial")
-    corpo = {"editor-de-video": "efeitos-de-voz", "versao": 1,
-             "efeitos": [{"titulo": e.titulo, "frase": e.frase, "efeito": e.efeito}
-                         for e in lista]}
-    parcial.write_text(json.dumps(corpo, ensure_ascii=False, indent=1), encoding="utf-8")
+    parcial.write_text(json.dumps(exportar(lista), ensure_ascii=False, indent=1),
+                       encoding="utf-8")
     parcial.replace(destino)
 
 
@@ -587,11 +604,51 @@ def salvar(dados, *, substituir: bool = False) -> EfeitoSalvo:
     return e
 
 
+def atualizar(nome: str, dados) -> EfeitoSalvo:
+    """Edita um efeito seu no mesmo lugar da lista; o título pode mudar (renomear), desde
+    que o nome novo não seja o de um pronto nem o de outro seu."""
+    atuais = meus()
+    lugar = next((k for k, x in enumerate(atuais) if x.nome == nome), None)
+    if lugar is None:
+        raise EfeitoNaoExiste("Esse efeito não existe (ou não é seu).")
+    e = conferir(dados)
+    if e.nome != nome and any(x.nome == e.nome for x in atuais):
+        raise EfeitoJaExiste(f"Já existe um efeito seu chamado “{e.titulo}”.")
+    atuais[lugar] = e
+    _gravar(atuais)
+    return e
+
+
 def apagar(nome: str) -> None:
     atuais = meus()
     if not any(x.nome == nome for x in atuais):
-        raise EfeitoInvalido("Esse efeito não existe (ou não é seu).")
+        raise EfeitoNaoExiste("Esse efeito não existe (ou não é seu).")
     _gravar([x for x in atuais if x.nome != nome])
+
+
+def importar(dados) -> tuple[list[str], list[str]]:
+    """Junta os efeitos de um arquivo exportado aos de quem usa (o mesmo nome substitui).
+    Devolve os que entraram e os recusados, com o motivo."""
+    lista = dados.get("efeitos") if isinstance(dados, dict) else dados
+    if not isinstance(lista, list):
+        raise EfeitoInvalido("Esse arquivo não tem efeitos de voz do editor.")
+    atuais = {e.nome: e for e in meus()}
+    entraram, recusados = [], []
+    for item in lista[: TETO * 2]:
+        titulo = str(item.get("titulo") or "?")[:TITULO_MAXIMO] if isinstance(item, dict) else "?"
+        try:
+            e = conferir(item)
+        except EfeitoInvalido as erro:
+            recusados.append(f"{titulo}: {erro}")
+            continue
+        if e.nome not in atuais and len(atuais) >= TETO:
+            recusados.append(f"{titulo}: não cabe (até {TETO} efeitos seus)")
+            continue
+        atuais[e.nome] = e
+        entraram.append(e.titulo)
+    if entraram:
+        _gravar(list(atuais.values()))
+    return entraram, recusados
 
 
 def resolver(nome_ou_ajustes: str) -> str:
@@ -617,7 +674,33 @@ def para_json() -> dict:
             "efeitos": [e.para_json() for e in todos().values()]}
 
 
-__all__ = ["AMBIENTE", "CONTROLES", "PRONTOS", "TETO", "Controle", "EfeitoInvalido",
-           "EfeitoJaExiste", "EfeitoSalvo", "apagar", "aplicar", "aplicar_na_voz",
-           "aplicar_no_ambiente", "arquivo_dos_meus", "conferir", "escrever", "ler", "meus",
-           "normalizar", "para_json", "previa", "resolver", "salvar", "todos", "trecho_para_ouvir"]
+__all__ = [
+    "AMBIENTE",
+    "CONTROLES",
+    "PRONTOS",
+    "TETO",
+    "Controle",
+    "EfeitoInvalido",
+    "EfeitoJaExiste",
+    "EfeitoNaoExiste",
+    "EfeitoSalvo",
+    "apagar",
+    "aplicar",
+    "aplicar_na_voz",
+    "aplicar_no_ambiente",
+    "arquivo_dos_meus",
+    "atualizar",
+    "conferir",
+    "escrever",
+    "exportar",
+    "importar",
+    "ler",
+    "meus",
+    "normalizar",
+    "para_json",
+    "previa",
+    "resolver",
+    "salvar",
+    "todos",
+    "trecho_para_ouvir",
+]

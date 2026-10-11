@@ -457,7 +457,7 @@ button.preset:hover { border-color: var(--linha); }
 }
 .presets-meus { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: -6px 0 14px; }
 .presets-meus small { color: var(--tinta-suave); }
-.presets-meus .link { font-size: 13.5px; font-weight: 600; text-decoration: underline; cursor: pointer; color: var(--tinta); }
+.presets-meus .link, .meus-efeitos .link { font-size: 13.5px; font-weight: 600; text-decoration: underline; cursor: pointer; color: var(--tinta); }
 
 /* ── onde vai postar (passo 1) ── */
 .plataformas {
@@ -540,7 +540,7 @@ button.preset:hover { border-color: var(--linha); }
 .efeito-na-voz small { color: var(--tinta-suave); font-size: 12.5px; }
 /* os seus: a mesma pílula, com a marca "seu" e o × de apagar dentro dela */
 .pilula-sua { position: relative; display: inline-flex; }
-.pilula-sua .pilula { padding-right: 32px; }
+.pilula-sua .pilula { padding-right: 58px; }
 .apagar-pilula {
   position: absolute;
   top: 50%;
@@ -562,8 +562,22 @@ button.preset:hover { border-color: var(--linha); }
   background: color-mix(in srgb, var(--rosa) 18%, var(--papel));
   cursor: default;
 }
-.ajustes-da-voz summary { cursor: pointer; font-size: 14px; font-weight: 600; }
-.ajustes-da-voz[open] summary { margin-bottom: 10px; }
+.editar-pilula {
+  position: absolute;
+  top: 50%;
+  right: 30px;
+  width: 22px;
+  height: 22px;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tinta-suave);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.editar-pilula:hover, .editar-pilula:focus-visible { background: color-mix(in srgb, var(--ciano) 22%, var(--papel)); color: var(--tinta); }
 .grupos-da-voz {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -588,9 +602,105 @@ button.preset:hover { border-color: var(--linha); }
   font-size: 13px;
 }
 .controle-da-voz output { color: var(--tinta-suave); font-variant-numeric: tabular-nums; text-align: right; }
-.ajustes-da-voz .link { display: inline-block; margin-top: 8px; }
 .ouvir-efeito { display: flex; flex-direction: column; gap: 4px; }
 .ouvir-efeito audio { width: 100%; max-width: 440px; }
+
+/* ── o estúdio de voz: uma janela sobre a página, com o topo e o rodapé presos ── */
+.estudio-de-voz {
+  width: min(1100px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0 22px 20px;
+  border: 2px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--papel);
+  color: var(--tinta);
+  box-shadow: var(--sombra);
+  overflow: auto;
+}
+.estudio-de-voz[open] { display: grid; gap: 18px; }
+.estudio-de-voz::backdrop { background: rgb(10 8 5 / 0.55); }
+.topo-do-estudio, .rodape-do-estudio {
+  position: sticky;
+  z-index: 1;
+  margin: 0 -22px;
+  padding: 12px 22px;
+  background: var(--papel);
+}
+.topo-do-estudio {
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid color-mix(in srgb, var(--linha) 15%, transparent);
+}
+.topo-do-estudio h2 { margin: 0; font-family: var(--titulo); font-size: 22px; }
+.fechar-estudio {
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--linha);
+  border-radius: 50%;
+  background: var(--papel);
+  color: var(--tinta);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.rodape-do-estudio {
+  bottom: -20px;
+  margin-bottom: -20px;
+  justify-content: flex-end;
+  border-top: 2px solid color-mix(in srgb, var(--linha) 15%, transparent);
+}
+.amostra-do-estudio, .tocador-do-estudio, .controles-do-estudio { display: flex; flex-direction: column; gap: 8px; }
+.estudio-de-voz small { color: var(--tinta-suave); font-size: 12.5px; }
+.separador { width: 2px; align-self: stretch; background: color-mix(in srgb, var(--linha) 18%, transparent); }
+.tocador-do-estudio canvas {
+  width: 100%;
+  height: 110px;
+  border: 2px solid color-mix(in srgb, var(--linha) 22%, transparent);
+  border-radius: 12px;
+  background: var(--papel-2);
+  cursor: pointer;
+}
+.tocador-do-estudio .linha-de-opcoes { align-items: center; }
+.marcar { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
+.controles-do-estudio > .linha-de-opcoes { align-items: flex-end; }
+/* no estúdio, dois grupos por linha: a barra fica longa o bastante para acertar um semitom */
+.controles-do-estudio .grupos-da-voz { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+.comecar-de { min-width: 230px; }
+.texto-do-efeito {
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: var(--papel-2);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.salvar-do-estudio { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.salvar-do-estudio form { display: flex; flex-direction: column; gap: 10px; }
+.meus-efeitos { display: flex; flex-direction: column; gap: 8px; }
+.meus-efeitos ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.meus-efeitos li {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 6px 6px 10px;
+  border: 2px solid color-mix(in srgb, var(--linha) 18%, transparent);
+  border-radius: 10px;
+}
+.meus-efeitos li[aria-current='true'] { border-color: var(--linha); background: color-mix(in srgb, var(--amarelo) 25%, var(--papel)); }
+.meus-efeitos li span { display: flex; flex: 1; flex-direction: column; min-width: 0; font-size: 14px; font-weight: 600; }
+.meus-efeitos li code { color: var(--tinta-suave); font-size: 11.5px; font-weight: 400; overflow-wrap: anywhere; }
+.icone-do-estudio {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tinta);
+  font-size: 16px;
+  cursor: pointer;
+}
+.icone-do-estudio:hover, .icone-do-estudio:focus-visible { background: color-mix(in srgb, var(--linha) 12%, var(--papel)); }
 
 .aviso {
   margin-top: 12px;

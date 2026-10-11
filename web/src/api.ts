@@ -227,16 +227,26 @@ export const api = {
     enviarArquivo<PresetsImportados>('/api/presets/importar', arquivo, () => undefined),
 
   // ── os efeitos na voz: os seus e o "ouvir antes" ──
-  salvarEfeito: (efeito: {titulo: string; efeito: string}, substituir: boolean) =>
+  salvarEfeito: (efeito: {titulo: string; frase?: string; efeito: string}, substituir: boolean) =>
     pedir<{salvo: string; efeitos_da_voz: EfeitosDaVoz}>('/api/efeitos', {
       method: 'POST', headers: JSON_, body: JSON.stringify({...efeito, substituir}),
     }),
+  /** Edita um efeito seu; com outro título, renomeia. */
+  atualizarEfeito: (nome: string, efeito: {titulo: string; frase: string; efeito: string}) =>
+    pedir<{salvo: string; efeitos_da_voz: EfeitosDaVoz}>(`/api/efeitos/${encodeURIComponent(nome)}`, {
+      method: 'PUT', headers: JSON_, body: JSON.stringify(efeito),
+    }),
   apagarEfeito: (nome: string) =>
     pedir<{efeitos_da_voz: EfeitosDaVoz}>(`/api/efeitos/${encodeURIComponent(nome)}`, {method: 'DELETE'}),
-  /** Oito segundos da fala com o efeito. ``vez`` muda a URL para o navegador não reaproveitar. */
-  ouvirEfeitoUrl: (fonte: string, efeito: string, tratamento: string, vez: number) =>
+  exportarEfeitosUrl: () => comToken('/api/efeitos/exportar'),
+  importarEfeitos: (arquivo: File) =>
+    enviarArquivo<{entraram: string[]; recusados: string[]; efeitos_da_voz: EfeitosDaVoz}>(
+      '/api/efeitos/importar', arquivo, () => undefined),
+  /** Os primeiros segundos da fala com o efeito (8 no "ouvir antes"; 8 ou 15 no estúdio).
+   *  ``vez`` muda a URL para o navegador não reaproveitar. */
+  ouvirEfeitoUrl: (fonte: string, efeito: string, tratamento: string, vez: number, segundos = 8) =>
     comToken(`/api/efeitos/ouvir?fonte=${encodeURIComponent(fonte)}&efeito=${encodeURIComponent(efeito)}`
-      + `&tratamento=${encodeURIComponent(tratamento)}&vez=${vez}`),
+      + `&tratamento=${encodeURIComponent(tratamento)}&segundos=${segundos}&vez=${vez}`),
 
   // ── "Minha voz": o motor, a leitura, as vozes salvas e a narração ──
   vozes: () => pedir<{motor: MotorDeVoz; vozes: VozSalva[]}>('/api/vozes'),

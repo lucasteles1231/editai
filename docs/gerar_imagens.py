@@ -29,8 +29,9 @@ Gera em ``docs/img/``:
 - ``thumb-ideias.png`` e ``thumb-abas.png``: as ideias de thumbnail e a prévia com as
   abas. Saem da IA de teste; com ``--ia-de-verdade``, do Gemini, com a chave salva no
   editor (gasta um ou dois pedidos da cota);
-- ``interface-efeitos.png``: o efeito na voz no passo 2, com um efeito salvo, os
-  controles abertos e o "ouvir antes" (com o ``--so-noticia``; não precisa do exemplo);
+- ``interface-estudio.png`` e ``interface-efeitos.png``: o estúdio de voz com um efeito
+  montado e salvo, e o passo 2 com ele marcado e o "ouvir antes" (com o ``--so-noticia``;
+  não precisam do exemplo);
 - ``funcoes/*.svg``: os ícones das funções, do Tabler (baixados do unpkg).
 """
 from __future__ import annotations
@@ -732,8 +733,9 @@ def video_com_som(caminho: Path, segundos: float = 6.0) -> Path:
 
 
 def capturas_dos_efeitos(nav, url: str, pasta: Path) -> None:
-    """O efeito na voz no passo 2: o rádio antigo com um pouco de sala, salvo como um efeito
-    seu, os controles abertos e o "ouvir antes" tocado, numa pasta de dados temporária."""
+    """O estúdio de voz aberto (o rádio antigo com um pouco de sala, salvo como "Meu
+    locutor") e, depois de usar, o efeito marcado no passo 2 com o "ouvir antes" tocado,
+    numa pasta de dados temporária."""
     from editor import ia
 
     dados_de_verdade = ia.pasta_de_dados
@@ -741,7 +743,7 @@ def capturas_dos_efeitos(nav, url: str, pasta: Path) -> None:
     os.environ["EDITOR_TRANSCRITOR"] = "falso"
     try:
         ctx = nav.new_context(
-            bypass_csp=True, viewport={"width": 1280, "height": 1400}, device_scale_factor=2,
+            bypass_csp=True, viewport={"width": 1280, "height": 1700}, device_scale_factor=2,
             color_scheme="light")
         ctx.add_init_script(SEM_TOUR)
         pagina = ctx.new_page()
@@ -751,17 +753,24 @@ def capturas_dos_efeitos(nav, url: str, pasta: Path) -> None:
                                str(video_com_som(pasta / "fala.mp4")))
         pagina.locator(".ficha").wait_for(timeout=60_000)
         efeito = pagina.get_by_label("efeito na voz", exact=True)
-        efeito.get_by_role("button", name="Rádio antigo", exact=True).click()
-        efeito.locator("summary", has_text="Ajustar").click()
-        sala = efeito.get_by_label("Sala", exact=True)
+        efeito.get_by_role("button", name="Abrir o estúdio").click()
+        estudio = pagina.get_by_role("dialog", name="Estúdio de voz")
+        estudio.get_by_label("começar de").select_option(label="Rádio antigo")
+        sala = estudio.get_by_label("Sala", exact=True)
         sala.focus()
         for _ in range(30):
             sala.press("ArrowRight")
-        efeito.get_by_role("button", name="Salvar como meu efeito").click()
-        formulario = efeito.get_by_label("salvar como meu efeito")
+        formulario = estudio.get_by_role("form", name="salvar o efeito")
         formulario.get_by_label("Nome do efeito").fill("Meu locutor")
+        formulario.get_by_label("Frase (opcional)").fill("O rádio antigo, com um pouco de sala.")
         formulario.get_by_role("button", name="Salvar").click()
-        efeito.get_by_role("button", name=re.compile("^Meu locutor")).wait_for()
+        estudio.get_by_text("O B já é o efeito de agora").wait_for(timeout=60_000)
+        estudio.get_by_text("Salvo: “Meu locutor”.").wait_for()
+        pagina.wait_for_timeout(400)
+        salvar(estudio.screenshot(), "interface-estudio.png", 1400)
+
+        estudio.get_by_role("button", name="Usar no vídeo").click()
+        estudio.wait_for(state="hidden")
         efeito.get_by_role("button", name="Ouvir 8 s com o efeito").click()
         pagina.wait_for_function(
             "document.querySelector('.ouvir-efeito audio')?.duration > 0", timeout=60_000)

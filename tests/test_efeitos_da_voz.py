@@ -165,6 +165,18 @@ class TestCadaControle:
         assert harmonia(x) > 0.6
         assert harmonia(ef.aplicar_na_voz(x, {"sussurro": 100})) < 0.35
 
+    def test_o_sussurro_e_ar_e_nao_vento(self, entrada):
+        """O ar fica nos médios e agudos: a primeira versão punha o ruído nos graves, e o
+        dono ouviu vento (11/10)."""
+        x, _ = entrada
+
+        def grave_sobre_o_ar(z):
+            m = np.abs(np.fft.rfft(z)) ** 2
+            f = np.fft.rfftfreq(len(z), 1 / T)
+            return 10 * np.log10(m[(f > 60) & (f < 300)].mean() / m[(f > 1000) & (f < 4000)].mean())
+
+        assert grave_sobre_o_ar(ef.aplicar_na_voz(x, {"sussurro": 100})) < grave_sobre_o_ar(x) - 15
+
     def test_o_radio_estreita_a_faixa(self, entrada):
         x, _ = entrada
 
@@ -231,6 +243,36 @@ class TestOsProntos:
 
 
 class TestOsSeus:
+    def test_renomear_no_mesmo_lugar(self):
+        ef.salvar({"titulo": "Um", "efeito": "tom=1"})
+        ef.salvar({"titulo": "Dois", "efeito": "tom=2"})
+        e = ef.atualizar("um", {"titulo": "Primeiro", "efeito": "tom=3, eco=10"})
+        assert (e.nome, e.efeito) == ("primeiro", "tom=3,eco=10")
+        assert [x.nome for x in ef.meus()] == ["primeiro", "dois"]
+        with pytest.raises(ef.EfeitoJaExiste):
+            ef.atualizar("primeiro", {"titulo": "Dois", "efeito": "tom=1"})
+        with pytest.raises(ef.EfeitoNaoExiste):
+            ef.atualizar("esquilo", {"titulo": "Esquilo 2", "efeito": "tom=1"})
+        with pytest.raises(ef.EfeitoInvalido, match="efeito pronto"):
+            ef.atualizar("dois", {"titulo": "Robô", "efeito": "tom=1"})
+        assert [x.nome for x in ef.meus()] == ["primeiro", "dois"]
+
+    def test_exportar_e_importar_em_outro_computador(self, monkeypatch, tmp_path):
+        ef.salvar({"titulo": "Meu rádio", "efeito": "radio=70"})
+        arquivo = ef.exportar()
+        assert arquivo["editor-de-video"] == "efeitos-de-voz" and len(arquivo["efeitos"]) == 1
+        outra = tmp_path / "outro-computador"
+        outra.mkdir()
+        monkeypatch.setattr("editor.ia.pasta_de_dados", lambda: outra)
+        ef.salvar({"titulo": "Meu rádio", "efeito": "radio=10"})
+        entraram, recusados = ef.importar(
+            {**arquivo, "efeitos": [*arquivo["efeitos"], {"titulo": "Torto", "efeito": "tom=99"}]})
+        assert entraram == ["Meu rádio"]
+        assert len(recusados) == 1 and recusados[0].startswith("Torto:")
+        assert [e.efeito for e in ef.meus()] == ["radio=70"]              # o importado substitui
+        with pytest.raises(ef.EfeitoInvalido, match="não tem efeitos"):
+            ef.importar({"outra": "coisa"})
+
     def test_salvar_substituir_e_apagar(self):
         e = ef.salvar({"titulo": "Meu robô", "efeito": "robo=70, eco=20"})
         assert (e.nome, e.efeito, e.meu) == ("meu-robo", "robo=70,eco=20", True)
@@ -289,6 +331,12 @@ def _wav(caminho, x):
         w.setframerate(T)
         w.writeframes((np.clip(x, -1, 1) * 32767).astype("<i2").tobytes())
     return caminho
+
+
+def test_a_previa_com_outros_segundos(entrada):
+    x, _ = vogal(segundos=20.0)
+    assert len(ef.previa(x, {"tom": 3}, "original", 15.0)) == pytest.approx(15 * T, abs=T * 0.3)
+    assert len(ef.previa(x, {}, "limpa")) <= ef.PREVIA_S * T
 
 
 class TestNaEdicao:

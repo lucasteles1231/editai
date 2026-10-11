@@ -875,6 +875,47 @@ class TestOsEfeitosDaVoz:
                            headers=CABECA).status_code == 422
         assert cliente.get(f"/api/efeitos/ouvir?fonte=audio:{aid}").status_code == 401
 
+    def test_editar_renomear_exportar_e_importar(self, cliente):
+        cliente.post("/api/efeitos", headers=CABECA, json={"titulo": "Um", "efeito": "tom=1"})
+        cliente.post("/api/efeitos", headers=CABECA, json={"titulo": "Dois", "efeito": "tom=2"})
+        r = cliente.put("/api/efeitos/um", headers=CABECA,
+                        json={"titulo": "Primeiro", "efeito": "tom=3"})
+        assert r.status_code == 200 and r.json()["salvo"] == "primeiro"
+        assert [e["nome"] for e in r.json()["efeitos_da_voz"]["efeitos"] if e["meu"]] == [
+            "primeiro", "dois"]
+        assert cliente.put("/api/efeitos/primeiro", headers=CABECA,
+                           json={"titulo": "Dois", "efeito": "tom=1"}).status_code == 409
+        assert cliente.put("/api/efeitos/esquilo", headers=CABECA,
+                           json={"titulo": "X", "efeito": "tom=1"}).status_code == 404
+        assert cliente.put("/api/efeitos/dois", headers=CABECA,
+                           json={"titulo": "Dois", "efeito": "tom=40"}).status_code == 422
+        r = cliente.get("/api/efeitos/exportar", headers=CABECA)
+        assert "meus-efeitos-de-voz.json" in r.headers["content-disposition"]
+        arquivo = r.content
+        cliente.delete("/api/efeitos/primeiro", headers=CABECA)
+        cliente.delete("/api/efeitos/dois", headers=CABECA)
+        r = cliente.post("/api/efeitos/importar", headers=CABECA,
+                         files={"arquivo": ("meus.json", arquivo, "application/json")})
+        assert r.status_code == 200 and r.json()["entraram"] == ["Primeiro", "Dois"]
+        r = cliente.post("/api/efeitos/importar", headers=CABECA,
+                         files={"arquivo": ("x.json", b"nada disso", "application/json")})
+        assert r.status_code == 422
+        grande = b" " * (1024 * 1024 + 1)
+        r = cliente.post("/api/efeitos/importar", headers=CABECA,
+                         files={"arquivo": ("x.json", grande, "application/json")})
+        assert r.status_code == 400
+
+    def test_a_amostra_do_estudio(self, cliente, tmp_path):
+        import wave
+
+        aid = self._audio(cliente, tmp_path)
+        r = cliente.get(f"/api/efeitos/ouvir?fonte=audio:{aid}&segundos=10", headers=CABECA)
+        with wave.open(io.BytesIO(r.content)) as w:
+            assert 9.0 <= w.getnframes() / 48_000 <= 10.0
+        for ruim in (2, 60):
+            assert cliente.get(f"/api/efeitos/ouvir?fonte=audio:{aid}&segundos={ruim}",
+                               headers=CABECA).status_code == 422
+
     def test_a_edicao_recusa_o_efeito_torto(self, cliente, tmp_path):
         v = _enviar(cliente, fazer_video(tmp_path / "x.mp4"))
         r = cliente.post("/api/tarefas", headers=CABECA, json={

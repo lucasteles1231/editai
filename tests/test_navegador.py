@@ -701,6 +701,66 @@ def test_plataformas_e_baixar(navegador, endereco, tmp_path):
     assert not erros, erros
 
 
+def _pagina_vigiada(navegador, endereco):
+    """Uma página sem o tour, que anota os erros do console e as violações da CSP."""
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 900})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    pagina.add_init_script(VIGIAR_A_CSP)
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
+    pagina.goto(endereco)
+    return pagina, erros
+
+
+def _conferir_o_wav(pagina, pedido) -> None:
+    """O WebKit do Linux entrega o som ao GStreamer e o Playwright não vê a resposta: o WAV
+    é conferido à parte, pelo mesmo endereço."""
+    wav = pagina.request.get(pedido.url)
+    assert wav.status == 200 and wav.headers["content-type"] == "audio/wav"
+
+
+def test_efeito_na_voz(navegador, endereco, tmp_path):
+    """O efeito na voz no passo 2: um pronto marcado, o "ouvir antes" com 8 s da fala com o
+    efeito, e a edição levando o efeito como texto e saindo inteira."""
+    import sys
+
+    pagina, erros = _pagina_vigiada(navegador, endereco)
+    efeito = pagina.get_by_label("efeito na voz", exact=True)
+    ouvir = efeito.get_by_role("button", name=re.compile("^Ouvir 8 s"))
+    expect(ouvir).to_be_disabled()                       # sem fala, nada para ouvir
+    expect(efeito).to_contain_text("Envie o vídeo para ouvir o efeito")
+    pagina.set_input_files("#passo-envio input[type=file]",
+                           str(fazer_video(tmp_path / "fala.mp4", segundos=4.0)))
+    pagina.locator(".ficha").wait_for(timeout=20_000)
+    expect(ouvir).to_be_enabled()
+
+    esquilo = efeito.get_by_role("button", name="Esquilo", exact=True)
+    esquilo.click()
+    expect(esquilo).to_have_attribute("aria-pressed", "true")
+    with pagina.expect_request(lambda r: "/api/efeitos/ouvir" in r.url) as pedido:
+        efeito.get_by_role("button", name="Ouvir 8 s com o efeito").click()
+    assert "efeito=tom%3D9%2Cagudos%3D2" in pedido.value.url
+    assert "fonte=video%3A" in pedido.value.url
+    _conferir_o_wav(pagina, pedido.value)
+    if not (navegador.browser_type.name == "webkit" and sys.platform == "linux"):
+        tocador = efeito.get_by_label("ouvir o efeito na voz")
+        fim = time.monotonic() + 30
+        # (o wait_for_function avalia texto na página, e a CSP do editor barra; o evaluate não)
+        while (tocador.evaluate("a => a.duration") or 0) <= 3:
+            assert time.monotonic() < fim, "o áudio do efeito não carregou"
+            pagina.wait_for_timeout(200)
+
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/tarefas")
+                               and r.method == "POST") as pedido:
+        pagina.get_by_role("button", name="Editar vídeo").click()
+    assert pedido.value.post_data_json["edicao"]["efeito_da_voz"] == "tom=9,agudos=2"
+    pagina.locator(".miniaturas img").first.wait_for(timeout=120_000)
+    assert list((tmp_path / "saida").glob("fala-editado.mp4"))
+    assert not _barrados(pagina), _barrados(pagina)
+    assert not erros, erros
+
+
 def _deslizar(controle, ate: int) -> None:
     """Leva um controle deslizante até o valor pelas setas do teclado: cada tecla é um
     passo, e o React recebe os eventos como numa pessoa mexendo."""
@@ -710,88 +770,150 @@ def _deslizar(controle, ate: int) -> None:
         controle.press("ArrowRight" if ate > atual else "ArrowLeft")
 
 
-def test_efeito_na_voz(navegador, endereco, tmp_path):
-    """O efeito na voz no passo 2: um pronto põe os controles no lugar, mexer num controle
-    vira "Personalizado", o "ouvir antes" toca 8 s da fala com o efeito, um efeito seu
-    entra marcado e sai pelo ×, e a edição leva o efeito como texto e sai inteira."""
+def _esperar_o_b(pagina, efeito_esperado: str, acao):
+    """Faz a ``acao`` e espera o pedido do B (com o efeito) que ela provoca."""
+    alvo = "efeito=" + efeito_esperado.replace("=", "%3D").replace(",", "%2C") + "&"
+    with pagina.expect_request(lambda r: "/api/efeitos/ouvir" in r.url and alvo in r.url,
+                               timeout=15_000) as pedido:
+        acao()
+    return pedido.value
+
+
+def test_estudio_de_voz(navegador, endereco, tmp_path):
+    """O estúdio: a amostra do vídeo vira o A e o B; começar de um pronto e mexer num
+    controle pede o B de novo; o A/B; salvar, renomear, duplicar, apagar, exportar e
+    importar os seus; uma amostra por arquivo; e "Usar no vídeo" leva o efeito ao passo 2."""
+    import json
     import sys
 
     from editor import efeitos_da_voz
 
-    pagina = navegador.new_page(viewport={"width": 1366, "height": 900})
-    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
-    pagina.add_init_script(VIGIAR_A_CSP)
-    erros: list[str] = []
-    pagina.on("pageerror", lambda e: erros.append(str(e)))
-    pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
-    pagina.goto(endereco)
-
-    efeito = pagina.get_by_label("efeito na voz", exact=True)
-    ouvir = efeito.get_by_role("button", name=re.compile("^Ouvir 8 s"))
-    expect(ouvir).to_be_disabled()                       # sem fala, nada para ouvir
-    expect(efeito).to_contain_text("Envie o vídeo para ouvir o efeito")
-    video = fazer_video(tmp_path / "fala.mp4", segundos=4.0)
-    pagina.set_input_files("#passo-envio input[type=file]", str(video))
+    pagina, erros = _pagina_vigiada(navegador, endereco)
+    pagina.on("dialog", lambda d: d.accept())                # o "apagar?" do navegador
+    pagina.set_input_files("#passo-envio input[type=file]",
+                           str(fazer_video(tmp_path / "fala.mp4", segundos=4.0)))
     pagina.locator(".ficha").wait_for(timeout=20_000)
-    expect(ouvir).to_be_enabled()
+    efeito = pagina.get_by_label("efeito na voz", exact=True)
 
-    esquilo = efeito.get_by_role("button", name="Esquilo", exact=True)
-    esquilo.click()
-    expect(esquilo).to_have_attribute("aria-pressed", "true")
-    efeito.locator("summary", has_text="Ajustar").click()
-    expect(efeito.get_by_label("Tom", exact=True)).to_have_value("9")
-    expect(efeito.locator("summary")).to_have_text("Ajustar (2)")
-    _deslizar(efeito.get_by_label("Eco", exact=True), 30)
-    expect(efeito.locator(".pilula.personalizada")).to_have_text("Personalizado")
-    expect(esquilo).to_have_attribute("aria-pressed", "false")
-    expect(efeito.locator("summary")).to_have_text("Ajustar (3)")
+    # abrir: o A (sem efeito) e o B saem da fala do vídeo
+    with pagina.expect_request(lambda r: "/api/efeitos/ouvir" in r.url and "efeito=&" in r.url
+                               ) as pedido_a:
+        efeito.get_by_role("button", name="Abrir o estúdio").click()
+    estudio = pagina.get_by_role("dialog", name="Estúdio de voz")
+    expect(estudio).to_be_visible()
+    assert "fonte=video%3A" in pedido_a.value.url and "segundos=8" in pedido_a.value.url
+    _conferir_o_wav(pagina, pedido_a.value)
+    expect(estudio.get_by_role("button", name="A fala do vídeo")).to_have_attribute(
+        "aria-pressed", "true")
 
-    # o "ouvir antes": 8 s da fala do vídeo, com o efeito que está na tela. O WebKit do
-    # Linux entrega o som ao GStreamer e o Playwright não vê a resposta: o WAV é conferido
-    # à parte, pelo mesmo endereço.
-    with pagina.expect_request(lambda r: "/api/efeitos/ouvir" in r.url) as pedido:
-        efeito.get_by_role("button", name="Ouvir 8 s com o efeito").click()
-    assert "efeito=tom%3D9%2Ceco%3D30%2Cagudos%3D2" in pedido.value.url
-    assert "fonte=video%3A" in pedido.value.url
-    wav = pagina.request.get(pedido.value.url)
-    assert wav.status == 200 and wav.headers["content-type"] == "audio/wav"
-    # o WebKit do Linux (o do CI) pode não ter o decodificador de mídia; no Mac, ele toca
-    # (o wait_for_function avalia texto na página, e a CSP do editor barra; o evaluate não)
+    # começar de um pronto e mexer na sala: o B é pedido de novo, com o efeito novo
+    _esperar_o_b(pagina, "radio=85,distorcao=20",
+                 lambda: estudio.get_by_label("começar de").select_option(label="Rádio antigo"))
+    expect(estudio.get_by_label("o efeito como texto")).to_have_text("radio=85,distorcao=20")
+    pedido_b = _esperar_o_b(pagina, "radio=85,distorcao=20,sala=30",
+                            lambda: _deslizar(estudio.get_by_label("Sala", exact=True), 30))
+    _conferir_o_wav(pagina, pedido_b)
+    expect(estudio).to_contain_text("O B já é o efeito de agora", timeout=15_000)
+    # a forma de onda desenhada (o WebKit do Linux pode não decodificar o som)
     if not (navegador.browser_type.name == "webkit" and sys.platform == "linux"):
-        tocador = efeito.get_by_label("ouvir o efeito na voz")
-        fim = time.monotonic() + 30
-        while (tocador.evaluate("a => a.duration") or 0) <= 3:
-            assert time.monotonic() < fim, "o áudio do efeito não carregou"
-            pagina.wait_for_timeout(200)
+        assert estudio.get_by_label("a forma de onda da amostra").evaluate(
+            "c => c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some(v => v)")
+    comparar = estudio.get_by_role("group", name="comparar")
+    sem = comparar.get_by_role("button", name="A · sem efeito")
+    com = comparar.get_by_role("button", name="B · com efeito")
+    sem.click()
+    expect(sem).to_have_attribute("aria-pressed", "true")
+    expect(com).to_have_attribute("aria-pressed", "false")
 
-    # um efeito seu: o nome de um pronto é recusado na hora; o seu entra marcado
-    efeito.get_by_role("button", name="Salvar como meu efeito").click()
-    formulario = efeito.get_by_label("salvar como meu efeito")
+    # salvar, renomear pelo ✎, duplicar e apagar
+    formulario = estudio.get_by_role("form", name="salvar o efeito")
     formulario.get_by_label("Nome do efeito").fill("Esquilo")
     formulario.get_by_role("button", name="Salvar").click()
-    expect(formulario).to_contain_text("é o nome de um efeito pronto")
-    formulario.get_by_label("Nome do efeito").fill("Meu esquilo")
+    expect(estudio).to_contain_text("é o nome de um efeito pronto")
+    formulario.get_by_label("Nome do efeito").fill("Meu locutor")
     formulario.get_by_role("button", name="Salvar").click()
-    meu = efeito.get_by_role("button", name=re.compile("^Meu esquilo"))
-    expect(meu).to_have_attribute("aria-pressed", "true")
-    expect(efeito.locator(".pilula.personalizada")).to_have_count(0)
-    assert [e.efeito for e in efeitos_da_voz.meus()] == ["tom=9,eco=30,agudos=2"]
+    lista = estudio.get_by_label("os seus efeitos")
+    expect(lista.get_by_role("listitem")).to_have_count(1)
+    expect(lista).to_contain_text("radio=85,distorcao=20,sala=30")
+    formulario.get_by_label("Nome do efeito").fill("Locutor 2")
+    formulario.get_by_role("button", name="Salvar", exact=True).click()       # editando: renomeia
+    expect(lista.get_by_role("listitem")).to_have_count(1)
+    expect(lista).to_contain_text("Locutor 2")
+    assert [e.titulo for e in efeitos_da_voz.meus()] == ["Locutor 2"]
+    lista.get_by_role("button", name="duplicar o efeito Locutor 2").click()
+    expect(formulario.get_by_label("Nome do efeito")).to_have_value("Locutor 2 (cópia)")
+    formulario.get_by_role("button", name="Salvar", exact=True).click()
+    expect(lista.get_by_role("listitem")).to_have_count(2)
+    lista.get_by_role("button", name="apagar o efeito Locutor 2 (cópia)").click()
+    expect(lista.get_by_role("listitem")).to_have_count(1)
 
-    # a edição leva o efeito e sai inteira
-    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/tarefas")
-                               and r.method == "POST") as pedido:
-        pagina.get_by_role("button", name="Editar vídeo").click()
-    assert pedido.value.post_data_json["edicao"]["efeito_da_voz"] == "tom=9,eco=30,agudos=2"
-    pagina.locator(".miniaturas img").first.wait_for(timeout=120_000)
-    assert list((tmp_path / "saida").glob("fala-editado.mp4"))
+    # exportar e importar
+    with pagina.expect_download() as baixado:
+        lista.get_by_role("link", name="Exportar os seus").click()
+    exportado = json.loads(Path(baixado.value.path()).read_text(encoding="utf-8"))
+    assert [e["titulo"] for e in exportado["efeitos"]] == ["Locutor 2"]
+    outro = tmp_path / "de-um-amigo.json"
+    amigo = {"efeitos": [{"titulo": "Do amigo", "efeito": "tom=-3,eco=40"}]}
+    outro.write_text(json.dumps(amigo), encoding="utf-8")
+    lista.get_by_label("importar efeitos").set_input_files(str(outro))
+    expect(estudio.get_by_text("Entraram: Do amigo")).to_be_visible()
+    expect(lista.get_by_role("listitem")).to_have_count(2)
 
-    # o ×: o seu sai, e o efeito na tela volta a ser "Personalizado"
-    efeito.get_by_role("button", name="apagar o efeito Meu esquilo").click()
-    expect(meu).to_have_count(0)
-    expect(efeito.locator(".pilula.personalizada")).to_have_text("Personalizado")
-    assert efeitos_da_voz.meus() == []
+    # uma amostra por arquivo: o A e o B passam a vir dela
+    from tests.test_montagem import audio_wav
+
+    with pagina.expect_request(lambda r: "/api/efeitos/ouvir" in r.url
+                               and "fonte=audio%3A" in r.url):
+        estudio.get_by_label("o arquivo da amostra").set_input_files(
+            str(audio_wav(tmp_path / "amostra.wav", segundos=6.0, falas=((0.5, 5.5),))))
+    expect(estudio.get_by_role("button", name="Um arquivo")).to_have_attribute(
+        "aria-pressed", "true")
+
+    # usar no vídeo: o diálogo fecha e o passo 2 marca o efeito (que é um seu)
+    lista.get_by_role("button", name="editar o efeito Locutor 2").click()
+    estudio.get_by_role("button", name="Usar no vídeo").click()
+    expect(estudio).to_be_hidden()
+    expect(efeito.get_by_role("button", name=re.compile("^Locutor 2"))).to_have_attribute(
+        "aria-pressed", "true")
+    # o ✎ da pílula abre o estúdio nele
+    efeito.get_by_role("button", name="editar o efeito Locutor 2 no estúdio").click()
+    expect(estudio.get_by_role("form", name="salvar o efeito").get_by_label("Nome do efeito")
+           ).to_have_value("Locutor 2")
+    pagina.keyboard.press("Escape")
+    expect(estudio).to_be_hidden()
     assert not _barrados(pagina), _barrados(pagina)
     assert not erros, erros
+
+
+def test_estudio_grava_a_amostra_no_microfone(navegador, endereco):
+    """A amostra gravada no estúdio, pelo MediaRecorder: no Chromium, um microfone falso
+    que toca bipes. A gravação sobe como um áudio e vira o A e o B."""
+    if navegador.browser_type.name != "chromium":
+        pytest.skip("só o Chromium tem o microfone falso")
+    nav = navegador.browser_type.launch(args=["--use-fake-ui-for-media-stream",
+                                              "--use-fake-device-for-media-stream"])
+    try:
+        pagina = nav.new_page()
+        pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+        pagina.goto(endereco)
+        pagina.get_by_label("efeito na voz", exact=True).get_by_role(
+            "button", name="Abrir o estúdio").click()
+        estudio = pagina.get_by_role("dialog", name="Estúdio de voz")
+        # sem vídeo, a amostra começa pelo microfone
+        expect(estudio.get_by_role("button", name="A fala do vídeo")).to_be_disabled()
+        expect(estudio.get_by_role("button", name="Gravar agora")).to_have_attribute(
+            "aria-pressed", "true")
+        estudio.get_by_role("button", name="Gravar", exact=True).click()
+        parar = estudio.get_by_role("button", name="Parar")
+        expect(parar).to_be_visible()
+        pagina.wait_for_timeout(2500)
+        with pagina.expect_request(lambda r: "/api/efeitos/ouvir" in r.url
+                                   and "fonte=audio%3A" in r.url, timeout=20_000):
+            parar.click()
+        expect(estudio).to_contain_text("Tocando a sua gravação")
+        expect(estudio.get_by_role("button", name="Gravar de novo")).to_be_visible()
+    finally:
+        nav.close()
 
 
 def test_a_chave_do_gemini_no_topo(navegador, endereco, monkeypatch):

@@ -5,25 +5,16 @@
  *
  * A narração pronta vira um áudio separado: dali em diante, a montagem é a de sempre.
  */
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {api} from '../api';
 import {duracao, numero} from '../formatar';
+import {useGravador} from '../gravador';
 import type {AudioInfo, GravacaoDaVoz, MotorDeVoz, Narracao, ParagrafoDaLeitura, VozSalva} from '../tipos';
 
 /** De quanto em quanto tempo a página pergunta pela instalação e pela narração. */
 const ESPERA_MS = 800;
 /** Palavras por segundo de uma narração de vídeo, para a estimativa. */
 const PALAVRAS_POR_SEGUNDO = 2.6;
-
-/** O formato que o navegador grava: Opus em WebM (Chrome, Firefox) ou AAC em MP4 (Safari). */
-function formatoDeGravacao(): {mime: string; extensao: string} {
-  const opcoes: [string, string][] = [['audio/webm;codecs=opus', '.webm'], ['audio/webm', '.webm'],
-    ['audio/mp4', '.m4a'], ['audio/ogg;codecs=opus', '.ogg']];
-  for (const [mime, extensao] of opcoes) {
-    if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(mime)) return {mime, extensao};
-  }
-  return {mime: '', extensao: '.webm'};
-}
 
 const comoTexto = (lista: Record<string, string>) => Object.entries(lista).map(([a, b]) => `${a} = ${b}`).join('\n');
 const mensagem = (e: unknown) => (e as Error).message;
@@ -95,26 +86,11 @@ const GravarVoz: React.FC<{aoSalvar: (v: VozSalva) => void; aoFechar: () => void
   const [g, setG] = useState<GravacaoDaVoz | null>(null);
   const [atual, setAtual] = useState(0);
   const [meio, setMeio] = useState<'microfone' | 'arquivo'>('microfone');
-  const [gravando, setGravando] = useState(false);
   const [conferindo, setConferindo] = useState('');
   const [erro, setErro] = useState('');
   const [versoes, setVersoes] = useState<Record<number, number>>({});
   const [salvando, setSalvando] = useState(false);
-  const microfone = useRef<MediaStream | null>(null);
-  const gravador = useRef<MediaRecorder | null>(null);
-  const medidor = useRef<{ctx: AudioContext; quadro: number} | null>(null);
-  const nivel = useRef<HTMLDivElement>(null);
-
-  const soltarMicrofone = () => {
-    if (medidor.current) {
-      cancelAnimationFrame(medidor.current.quadro);
-      void medidor.current.ctx.close();
-      medidor.current = null;
-    }
-    microfone.current?.getTracks().forEach((t) => t.stop());
-    microfone.current = null;
-  };
-  useEffect(() => soltarMicrofone, []);
+  const {gravando, gravar: comecarAGravar, parar, soltar: soltarMicrofone, nivel} = useGravador();
 
   const comecar = async () => {
     setErro('');
@@ -143,31 +119,6 @@ const GravarVoz: React.FC<{aoSalvar: (v: VozSalva) => void; aoFechar: () => void
     }
   };
 
-  const abrirMicrofone = async (): Promise<MediaStream> => {
-    if (microfone.current) return microfone.current;
-    // Sem os "melhoramentos" do navegador: o redutor de ruído deixa a voz metálica, e o
-    // modelo copiaria o metal.
-    const s = await navigator.mediaDevices.getUserMedia({
-      audio: {echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1},
-    });
-    microfone.current = s;
-    const ctx = new AudioContext();
-    const analisador = ctx.createAnalyser();
-    analisador.fftSize = 1024;
-    ctx.createMediaStreamSource(s).connect(analisador);
-    const amostras = new Float32Array(analisador.fftSize);
-    const passo = () => {
-      analisador.getFloatTimeDomainData(amostras);
-      let soma = 0;
-      for (const v of amostras) soma += v * v;
-      const db = 20 * Math.log10(Math.sqrt(soma / amostras.length) + 1e-9);
-      if (nivel.current) nivel.current.style.width = `${Math.min(100, Math.max(0, (db + 60) * 1.8))}%`;
-      if (medidor.current) medidor.current.quadro = requestAnimationFrame(passo);
-    };
-    medidor.current = {ctx, quadro: requestAnimationFrame(passo)};
-    return s;
-  };
-
   const enviarGravacao = async (gid: string, indice: number, audio: Blob, extensao: string) => {
     setConferindo(`Conferindo o parágrafo ${indice + 1}… (o Whisper ouve a gravação)`);
     try {
@@ -184,27 +135,11 @@ const GravarVoz: React.FC<{aoSalvar: (v: VozSalva) => void; aoFechar: () => void
     setErro('');
     const indice = atual;
     try {
-      const s = await abrirMicrofone();
-      const {mime, extensao} = formatoDeGravacao();
-      const r = new MediaRecorder(s, mime ? {mimeType: mime} : undefined);
-      const partes: Blob[] = [];
-      r.ondataavailable = (e) => {
-        if (e.data.size) partes.push(e.data);
-      };
-      r.onstop = () => void enviarGravacao(g.id, indice, new Blob(partes, {type: r.mimeType || mime}), extensao);
-      r.start();
-      gravador.current = r;
-      setGravando(true);
+      await comecarAGravar((audio, extensao) => void enviarGravacao(g.id, indice, audio, extensao));
     } catch (e) {
       setErro(`Não deu para usar o microfone (${mensagem(e)}). Permita o microfone para esta página, no ícone da `
         + 'barra de endereço, ou grave fora e envie o arquivo.');
     }
-  };
-
-  const parar = () => {
-    gravador.current?.stop();
-    gravador.current = null;
-    setGravando(false);
   };
 
   const enviarLeitura = async (arquivo: File) => {
