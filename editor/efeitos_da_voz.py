@@ -361,6 +361,16 @@ _CORAL = ("chorus=0.6:0.9:50|60|40:0.4|0.32|0.3:0.25|0.4|0.3:2|2.3|1.3",
           "chorus=0.6:0.9:45|65|35:0.4|0.3|0.32:0.3|0.35|0.27:2.2|1.9|1.5")
 
 
+def _vibrato(x: np.ndarray, profundidade: float) -> np.ndarray:
+    """O ``vibrato`` do FFmpeg não zera o buffer de atraso (5 ms, alocado com
+    ``av_malloc``): as primeiras amostras saem do lixo da memória, que no Linux veio NaN
+    (no Mac, zero por sorte). Um silêncio de 20 ms na frente recebe o lixo e sai depois."""
+    folga = int(0.02 * TAXA)
+    y = voz.filtrar(np.concatenate([np.zeros(folga, np.float32), x]),
+                    f"vibrato=f=5.5:d={profundidade:.3f}")
+    return y[folga:]
+
+
 def _resposta_da_sala(quanto: float, semente: int) -> np.ndarray:
     """Ruído com decaimento exponencial (RT60 de 0,3 a 2,5 s) e um pré-atraso de 15 ms."""
     rt60 = 0.3 + 2.2 * quanto
@@ -393,8 +403,7 @@ def aplicar_no_ambiente(estereo: np.ndarray, efeito: dict[str, int]) -> np.ndarr
         return estereo
     lados = [estereo[:, 0].copy(), estereo[:, 1].copy()]
     if efeito.get("vibrato"):
-        d = 0.1 + 0.6 * efeito["vibrato"] / 100
-        lados = [voz.filtrar(lado, f"vibrato=f=5.5:d={d:.3f}") for lado in lados]
+        lados = [_vibrato(lado, 0.1 + 0.6 * efeito["vibrato"] / 100) for lado in lados]
     if efeito.get("coral"):
         c = efeito["coral"] / 100
         coros = [voz.filtrar(lado, cadeia) for lado, cadeia in zip(lados, _CORAL, strict=True)]
