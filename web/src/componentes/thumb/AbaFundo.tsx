@@ -190,7 +190,7 @@ export const AbaFundo: React.FC<Props> = ({config, mudar, video, montagem, pexel
             </small>
           </form>
         ) : (
-          <div className="aviso">Para gerar um fundo, cole a chave do Gemini no painel "Thumbnail com IA", acima.</div>
+          <div className="aviso">Para gerar um fundo, cole a chave do Gemini no topo da página.</div>
         )
       ) : null}
 

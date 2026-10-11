@@ -21,6 +21,7 @@ from editor import (
     cenas,
     censura,
     cortes,
+    efeitos_da_voz,
     exportar,
     icones,
     plano,
@@ -260,7 +261,8 @@ def _preparar_fala(arquivos: list[Path], edicao: OpcoesDeEdicao, avisar: Progres
     senão as partes são transcritas uma a uma (cada transcrição fica guardada), juntadas,
     tratadas e bipadas, num WAV da pasta de cache."""
     proibidas = censura.lista(edicao.bipe)
-    if len(arquivos) == 1 and edicao.voz == "original" and not proibidas:
+    efeito = efeitos_da_voz.ler(edicao.efeito_da_voz)
+    if len(arquivos) == 1 and edicao.voz == "original" and not proibidas and not efeito:
         duracao, tem_audio = _duracao_e_audio(arquivos[0])
         return _Preparada(arquivos[0], duracao, tem_audio,
                           fontes=[(Path(arquivos[0]), 0.0, 0.0, duracao)])
@@ -276,17 +278,23 @@ def _preparar_fala(arquivos: list[Path], edicao: OpcoesDeEdicao, avisar: Progres
         por_parte.append(obter_palavras(arquivo, duracao, edicao, parte) if tem_audio else [])
         if parar():
             raise Cancelado
-    avisar("cortando", 0.0, "tratando a voz" if edicao.voz != "original" else
-           "juntando as partes")
+    avisar("cortando", 0.0, "pondo o efeito na voz" if efeito else "tratando a voz"
+           if edicao.voz != "original" else "juntando as partes")
     mono = [video_mod.ler_audio_mono(a, voz.TAXA) for a in arquivos]
     junto, partes = voz.juntar(mono, edicao.voz)
     palavras = voz.palavras_nas_partes(por_parte, partes)
-    estereo = voz.tratar(junto, edicao.voz)
+    # O efeito vem em duas etapas, sem mudar a duração: o tom e o caráter antes do
+    # tratamento; o eco e a sala depois do bipe (a sílaba proibida não volta na cauda) e do
+    # tratamento (o expansor do estúdio não corta a sala). As palavras já saíram da voz
+    # limpa, então a legenda não sofre com o robô.
+    estereo = voz.tratar(efeitos_da_voz.aplicar_na_voz(junto, efeito), edicao.voz)
     bipes = voz.trechos_do_bipe(palavras, junto, proibidas) if proibidas else []
-    estereo = voz.bipar(estereo, bipes)
+    estereo = efeitos_da_voz.aplicar_no_ambiente(voz.bipar(estereo, bipes), efeito)
     chave = hashlib.sha1(json.dumps(
         [transcricao.identidade(a, idioma=edicao.idioma, modelo=edicao.modelo)
-         for a in arquivos] + [edicao.voz, proibidas], sort_keys=True).encode()).hexdigest()
+         for a in arquivos] + [edicao.voz, proibidas]
+        + ([efeitos_da_voz.escrever(efeito)] if efeito else []),     # sem efeito, a chave de antes
+        sort_keys=True).encode()).hexdigest()
     wav = pasta_de_vozes() / f"{chave[:16]}.wav"
     _gravar_wav(wav, estereo)
     fontes = [(Path(a), p.inicio, p.corte, p.duracao) for a, p in zip(arquivos, partes,

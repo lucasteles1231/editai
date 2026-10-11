@@ -802,6 +802,86 @@ class TestOsMeusPresets:
         assert r.status_code == 422
 
 
+class TestOsEfeitosDaVoz:
+    """Os efeitos na voz pela API: o estado, os seus e o "ouvir antes"."""
+
+    @staticmethod
+    def _audio(cliente, tmp_path):
+        from tests.test_montagem import audio_wav
+
+        caminho = audio_wav(tmp_path / "fala.wav", segundos=12.0, falas=((1.0, 11.5),))
+        with open(caminho, "rb") as f:
+            r = cliente.post("/api/audios", headers=CABECA,
+                             files={"arquivo": ("fala.wav", f, "audio/wav")})
+        assert r.status_code == 200, r.text
+        return r.json()["id"]
+
+    def test_o_estado_traz_os_controles_e_os_efeitos(self, cliente):
+        e = cliente.get("/api/estado", headers=CABECA).json()["efeitos_da_voz"]
+        assert {"chave": "tom", "titulo": "Tom", "grupo": "tom", "minimo": -12, "maximo": 12,
+                "unidade": "semitons"} in e["controles"]
+        esquilo = next(x for x in e["efeitos"] if x["nome"] == "esquilo")
+        assert esquilo["efeito"].startswith("tom=9") and not esquilo["meu"]
+
+    def test_salvar_substituir_e_apagar(self, cliente):
+        meu = {"titulo": "Meu robô", "efeito": "robo=70,eco=20"}
+        r = cliente.post("/api/efeitos", headers=CABECA, json=meu)
+        assert r.status_code == 200 and r.json()["salvo"] == "meu-robo"
+        efeitos = r.json()["efeitos_da_voz"]["efeitos"]
+        assert any(x["nome"] == "meu-robo" and x["meu"] for x in efeitos)
+        assert cliente.post("/api/efeitos", headers=CABECA, json=meu).status_code == 409
+        r = cliente.post("/api/efeitos", headers=CABECA, json={**meu, "substituir": True})
+        assert r.status_code == 200
+        r = cliente.delete("/api/efeitos/meu-robo", headers=CABECA)
+        assert r.status_code == 200
+        assert not any(x["meu"] for x in r.json()["efeitos_da_voz"]["efeitos"])
+        assert cliente.delete("/api/efeitos/esquilo", headers=CABECA).status_code == 404
+
+    def test_recusa_com_o_motivo(self, cliente):
+        r = cliente.post("/api/efeitos", headers=CABECA,
+                         json={"titulo": "Esquilo", "efeito": "tom=2"})
+        assert r.status_code == 422 and "efeito pronto" in r.json()["detail"]
+        r = cliente.post("/api/efeitos", headers=CABECA, json={"titulo": "X", "efeito": "tom=99"})
+        assert r.status_code == 422 and "Tom vai de" in r.json()["detail"]
+
+    def test_ouvir_antes(self, cliente, tmp_path):
+        import wave
+
+        aid = self._audio(cliente, tmp_path)
+        r = cliente.get(f"/api/efeitos/ouvir?fonte=audio:{aid}&efeito=tom%3D9%2Ceco%3D30"
+                        f"&tratamento=limpa&t={TOKEN}")
+        assert r.status_code == 200 and r.headers["content-type"] == "audio/wav"
+        assert r.headers["cache-control"] == "no-store"
+        with wave.open(io.BytesIO(r.content)) as w:
+            assert w.getnchannels() == 2 and w.getframerate() == 48_000
+            # 8 s, a partir de um pouco antes da fala (que começa em 1 s)
+            assert 7.0 <= w.getnframes() / 48_000 <= 8.0
+
+    def test_ouvir_antes_de_um_video(self, cliente, tmp_path):
+        v = _enviar(cliente, fazer_video(tmp_path / "v.mp4", segundos=3.0, falas=[(0.5, 2.5)]))
+        r = cliente.get(f"/api/efeitos/ouvir?fonte=video:{v['id']}&efeito=robo%3D80",
+                        headers=CABECA)
+        assert r.status_code == 200 and r.content[:4] == b"RIFF"
+
+    def test_ouvir_antes_recusa(self, cliente, tmp_path):
+        aid = self._audio(cliente, tmp_path)
+        ruim = cliente.get(f"/api/efeitos/ouvir?fonte=audio:{aid}&efeito=tom%3D40", headers=CABECA)
+        assert ruim.status_code == 422 and "Tom vai de" in ruim.json()["detail"]
+        assert cliente.get("/api/efeitos/ouvir?fonte=audio:nao-existe", headers=CABECA
+                           ).status_code == 404
+        assert cliente.get(f"/api/efeitos/ouvir?fonte=disco:{aid}", headers=CABECA
+                           ).status_code == 404
+        assert cliente.get(f"/api/efeitos/ouvir?fonte=audio:{aid}&tratamento=radio",
+                           headers=CABECA).status_code == 422
+        assert cliente.get(f"/api/efeitos/ouvir?fonte=audio:{aid}").status_code == 401
+
+    def test_a_edicao_recusa_o_efeito_torto(self, cliente, tmp_path):
+        v = _enviar(cliente, fazer_video(tmp_path / "x.mp4"))
+        r = cliente.post("/api/tarefas", headers=CABECA, json={
+            "video_id": v["id"], "edicao": {"efeito_da_voz": "pato=3"}})
+        assert r.status_code == 422 and "efeito desconhecido" in r.json()["detail"]
+
+
 
 class TestFotosEOSomDasCenas:
     """Fotos na biblioteca (a capa de uma biblioteca só de fotos vira um vídeo curto) e o

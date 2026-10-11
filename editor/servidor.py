@@ -41,6 +41,7 @@ from editor import (
     __version__,
     catalogo,
     cenas,
+    efeitos_da_voz,
     ia,
     icones,
     imagens,
@@ -51,6 +52,7 @@ from editor import (
     recorte,
     sons,
     transcricao,
+    voz,
     voz_clonada,
 )
 from editor import saida as saida_mod
@@ -138,11 +140,11 @@ def _livre(destino: Path) -> Path:
 
 
 def _wav(amostras: np.ndarray, taxa: int) -> bytes:
-    """Um WAV mono de 16 bits."""
+    """Um WAV de 16 bits: mono, ou estéreo com as amostras × 2."""
     pcm = (np.clip(amostras, -1.0, 1.0) * 32767).astype("<i2").tobytes()
     corpo = io.BytesIO()
     with wave.open(corpo, "wb") as w:
-        w.setnchannels(1)
+        w.setnchannels(1 if amostras.ndim == 1 else amostras.shape[1])
         w.setsampwidth(2)
         w.setframerate(taxa)
         w.writeframes(pcm)
@@ -305,6 +307,7 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
             "pexels": pexels.estado(),
             "geracao": {"restantes": ia.geracoes_restantes(), "teto": ia.TETO_DE_IMAGENS},
             "presets": presets.para_json(),
+            "efeitos_da_voz": efeitos_da_voz.para_json(),
             "temas_dos_sons": sons.temas(),
         }
 
@@ -347,6 +350,52 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
                 "Esse arquivo não é um JSON de presets do editor.")
             raise HTTPException(422, mensagem) from erro
         return {"entraram": entraram, "recusados": recusados, "presets": presets.para_json()}
+
+    # ── os efeitos na voz: os seus e o "ouvir antes" ───────────────────────
+    # Ficam no efeitos-de-voz.json da pasta de dados, como os presets.
+
+    @app.post("/api/efeitos")
+    def salvar_efeito(dados: Annotated[dict, Body()]):
+        try:
+            e = efeitos_da_voz.salvar(dados, substituir=bool(dados.get("substituir")))
+        except efeitos_da_voz.EfeitoJaExiste as erro:
+            raise HTTPException(409, str(erro)) from erro
+        except efeitos_da_voz.EfeitoInvalido as erro:
+            raise HTTPException(422, str(erro)) from erro
+        return {"salvo": e.nome, "efeitos_da_voz": efeitos_da_voz.para_json()}
+
+    @app.delete("/api/efeitos/{nome}")
+    def apagar_efeito(nome: str):
+        try:
+            efeitos_da_voz.apagar(nome)
+        except efeitos_da_voz.EfeitoInvalido as erro:
+            raise HTTPException(404, str(erro)) from erro
+        return {"efeitos_da_voz": efeitos_da_voz.para_json()}
+
+    @app.get("/api/efeitos/ouvir")
+    def ouvir_efeito(fonte: str, efeito: str = "", tratamento: str = "original"):
+        """Oito segundos da fala (``audio:ID`` ou ``video:ID``) com o efeito e o tratamento
+        da voz, pelo mesmo caminho da edição."""
+        tipo, _, ident = fonte.partition(":")
+        if tipo == "audio":
+            caminho = _audio(ident)["caminho"]
+        elif tipo == "video":
+            caminho = _video(ident)["caminho"]
+        else:
+            raise HTTPException(404, "fonte desconhecida")
+        if tratamento not in voz.NIVEIS:
+            raise HTTPException(422, "tratamento desconhecido (use "
+                                     f"{', '.join(voz.NIVEIS)})")
+        try:
+            ajustes = efeitos_da_voz.ler(efeito)
+        except efeitos_da_voz.EfeitoInvalido as erro:
+            raise HTTPException(422, str(erro)) from erro
+        x = video_mod.ler_audio_mono(caminho, video_mod.TAXA, maximo_s=90)
+        estereo = efeitos_da_voz.previa(x, ajustes, tratamento)
+        if not len(estereo):
+            raise HTTPException(422, "Essa fala não tem som para ouvir.")
+        return Response(_wav(estereo, video_mod.TAXA), media_type="audio/wav",
+                        headers={"Cache-Control": "no-store"})
 
     @app.get("/api/sons/{tema}.wav")
     def ouvir_tema(tema: str, volume: float = 1.0):

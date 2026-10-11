@@ -632,7 +632,7 @@ def test_presets_e_sons(navegador, endereco, tmp_path):
     expect(marcado).to_have_text(re.compile("^Short de gameplay"))
 
     with pagina.expect_request(lambda r: "/api/sons/gameplay.wav" in r.url) as pedido:
-        pagina.get_by_role("button", name="Ouvir").click()
+        pagina.get_by_role("button", name="Ouvir", exact=True).click()   # o dos sons
     assert "volume=1.20" in pedido.value.url                 # o volume do preset vai junto
     # O WebKit do Linux entrega o som ao GStreamer, e o Playwright não vê a resposta
     # (status 0): o arquivo é conferido à parte.
@@ -698,4 +698,123 @@ def test_plataformas_e_baixar(navegador, endereco, tmp_path):
         onde.get_by_role("button", name=re.compile(f"^{nome}( recomendado)?$")).click()
     expect(marcadas).to_have_count(1)
     expect(marcadas).to_have_text(re.compile("^Instagram Reels"))
+    assert not erros, erros
+
+
+def _deslizar(controle, ate: int) -> None:
+    """Leva um controle deslizante até o valor pelas setas do teclado: cada tecla é um
+    passo, e o React recebe os eventos como numa pessoa mexendo."""
+    controle.focus()
+    atual = int(controle.input_value())
+    for _ in range(abs(ate - atual)):
+        controle.press("ArrowRight" if ate > atual else "ArrowLeft")
+
+
+def test_efeito_na_voz(navegador, endereco, tmp_path):
+    """O efeito na voz no passo 2: um pronto põe os controles no lugar, mexer num controle
+    vira "Personalizado", o "ouvir antes" toca 8 s da fala com o efeito, um efeito seu
+    entra marcado e sai pelo ×, e a edição leva o efeito como texto e sai inteira."""
+    import sys
+
+    from editor import efeitos_da_voz
+
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 900})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    pagina.add_init_script(VIGIAR_A_CSP)
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
+    pagina.goto(endereco)
+
+    efeito = pagina.get_by_label("efeito na voz", exact=True)
+    ouvir = efeito.get_by_role("button", name=re.compile("^Ouvir 8 s"))
+    expect(ouvir).to_be_disabled()                       # sem fala, nada para ouvir
+    expect(efeito).to_contain_text("Envie o vídeo para ouvir o efeito")
+    video = fazer_video(tmp_path / "fala.mp4", segundos=4.0)
+    pagina.set_input_files("#passo-envio input[type=file]", str(video))
+    pagina.locator(".ficha").wait_for(timeout=20_000)
+    expect(ouvir).to_be_enabled()
+
+    esquilo = efeito.get_by_role("button", name="Esquilo", exact=True)
+    esquilo.click()
+    expect(esquilo).to_have_attribute("aria-pressed", "true")
+    efeito.locator("summary", has_text="Ajustar").click()
+    expect(efeito.get_by_label("Tom", exact=True)).to_have_value("9")
+    expect(efeito.locator("summary")).to_have_text("Ajustar (2)")
+    _deslizar(efeito.get_by_label("Eco", exact=True), 30)
+    expect(efeito.locator(".pilula.personalizada")).to_have_text("Personalizado")
+    expect(esquilo).to_have_attribute("aria-pressed", "false")
+    expect(efeito.locator("summary")).to_have_text("Ajustar (3)")
+
+    # o "ouvir antes": 8 s da fala do vídeo, com o efeito que está na tela. O WebKit do
+    # Linux entrega o som ao GStreamer e o Playwright não vê a resposta: o WAV é conferido
+    # à parte, pelo mesmo endereço.
+    with pagina.expect_request(lambda r: "/api/efeitos/ouvir" in r.url) as pedido:
+        efeito.get_by_role("button", name="Ouvir 8 s com o efeito").click()
+    assert "efeito=tom%3D9%2Ceco%3D30%2Cagudos%3D2" in pedido.value.url
+    assert "fonte=video%3A" in pedido.value.url
+    wav = pagina.request.get(pedido.value.url)
+    assert wav.status == 200 and wav.headers["content-type"] == "audio/wav"
+    # o WebKit do Linux (o do CI) pode não ter o decodificador de mídia; no Mac, ele toca
+    # (o wait_for_function avalia texto na página, e a CSP do editor barra; o evaluate não)
+    if not (navegador.browser_type.name == "webkit" and sys.platform == "linux"):
+        tocador = efeito.get_by_label("ouvir o efeito na voz")
+        fim = time.monotonic() + 30
+        while (tocador.evaluate("a => a.duration") or 0) <= 3:
+            assert time.monotonic() < fim, "o áudio do efeito não carregou"
+            pagina.wait_for_timeout(200)
+
+    # um efeito seu: o nome de um pronto é recusado na hora; o seu entra marcado
+    efeito.get_by_role("button", name="Salvar como meu efeito").click()
+    formulario = efeito.get_by_label("salvar como meu efeito")
+    formulario.get_by_label("Nome do efeito").fill("Esquilo")
+    formulario.get_by_role("button", name="Salvar").click()
+    expect(formulario).to_contain_text("é o nome de um efeito pronto")
+    formulario.get_by_label("Nome do efeito").fill("Meu esquilo")
+    formulario.get_by_role("button", name="Salvar").click()
+    meu = efeito.get_by_role("button", name=re.compile("^Meu esquilo"))
+    expect(meu).to_have_attribute("aria-pressed", "true")
+    expect(efeito.locator(".pilula.personalizada")).to_have_count(0)
+    assert [e.efeito for e in efeitos_da_voz.meus()] == ["tom=9,eco=30,agudos=2"]
+
+    # a edição leva o efeito e sai inteira
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/tarefas")
+                               and r.method == "POST") as pedido:
+        pagina.get_by_role("button", name="Editar vídeo").click()
+    assert pedido.value.post_data_json["edicao"]["efeito_da_voz"] == "tom=9,eco=30,agudos=2"
+    pagina.locator(".miniaturas img").first.wait_for(timeout=120_000)
+    assert list((tmp_path / "saida").glob("fala-editado.mp4"))
+
+    # o ×: o seu sai, e o efeito na tela volta a ser "Personalizado"
+    efeito.get_by_role("button", name="apagar o efeito Meu esquilo").click()
+    expect(meu).to_have_count(0)
+    expect(efeito.locator(".pilula.personalizada")).to_have_text("Personalizado")
+    assert efeitos_da_voz.meus() == []
+    assert not _barrados(pagina), _barrados(pagina)
+    assert not erros, erros
+
+
+def test_a_chave_do_gemini_no_topo(navegador, endereco, monkeypatch):
+    """Sem a chave, o campo dela aparece antes do passo 1 (três passos dependem dela), e o
+    painel da thumbnail leva até ele."""
+    from editor import ia
+
+    monkeypatch.delenv(ia.VARIAVEL_FALSA)
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 900})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
+    pagina.goto(endereco)
+
+    secao = pagina.get_by_label("a chave do Gemini")
+    campo = secao.get_by_label("chave do Gemini", exact=True)
+    expect(campo).to_be_visible()
+    expect(secao).to_contain_text("a matriz da biblioteca de cenas e os cartões animados")
+    assert secao.bounding_box()["y"] < pagina.locator("#passo-envio").bounding_box()["y"]
+    # o painel da IA, no passo 5, não tem mais o campo: ele leva até o do topo
+    painel = pagina.locator("#painel-ia")
+    expect(painel.get_by_label("chave do Gemini", exact=True)).to_have_count(0)
+    painel.get_by_role("button", name="Colar a chave do Gemini no topo da página").click()
+    expect(campo).to_be_focused()
     assert not erros, erros

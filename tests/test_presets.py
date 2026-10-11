@@ -102,6 +102,31 @@ class TestNoTerminal:
         assert cli.main([str(video), "--ritmo", "3"]) == 2
         assert "ritmo" in capsys.readouterr().err
 
+    def test_o_efeito_na_voz_pelo_nome_ou_pelos_ajustes(self, pedido):
+        from editor import efeitos_da_voz
+
+        assert pedido("--efeito-na-voz", "esquilo")["edicao"].efeito_da_voz == (
+            efeitos_da_voz.PRONTOS["esquilo"].efeito)
+        assert pedido("--efeito-na-voz", "eco=30, tom=-2")["edicao"].efeito_da_voz == (
+            "tom=-2,eco=30")
+        assert pedido("--efeito-na-voz", "nenhum")["edicao"].efeito_da_voz == ""
+        assert pedido()["edicao"].efeito_da_voz == ""
+
+    def test_efeito_desconhecido_volta_com_o_motivo(self, tmp_path, capsys):
+        video = tmp_path / "eu.mp4"
+        video.write_bytes(b"x")
+        with pytest.raises(SystemExit):
+            cli.main([str(video), "--efeito-na-voz", "pato"])
+        assert "efeito desconhecido: pato" in capsys.readouterr().err
+
+    def test_lista_os_efeitos(self, capsys):
+        from editor import efeitos_da_voz
+
+        assert cli.main(["--efeitos"]) == 0
+        saida = capsys.readouterr().out
+        for e in efeitos_da_voz.PRONTOS.values():
+            assert e.nome in saida and e.efeito in saida
+
     def test_lista_os_presets(self, capsys):
         assert cli.main(["--presets"]) == 0
         saida = capsys.readouterr().out
@@ -155,6 +180,10 @@ class TestOsMeus:
         pagina = {d["nome"]: d for d in presets.para_json()}
         assert pagina["meu-vlog"]["meu"] is True and pagina["padrao"]["meu"] is False
 
+    def test_o_efeito_na_voz_vai_junto(self):
+        presets.salvar(_meu(efeito_da_voz="tom=5,eco=20"))
+        assert presets.todos()["meu-vlog"].opcoes().efeito_da_voz == "tom=5,eco=20"
+
     def test_o_mesmo_nome_so_com_substituir(self):
         presets.salvar(_meu(ritmo=1.4))
         with pytest.raises(presets.PresetJaExiste):
@@ -170,6 +199,7 @@ class TestOsMeus:
         (_meu(ritmo=9.0), "ritmo"),
         (_meu(cortes="sim"), "cortes"),
         (_meu(tema_dos_sons="nenhum"), "tema de sons"),
+        (_meu(efeito_da_voz="tom=40"), "efeito na voz"),
         ({**_meu(), "saida": {"resolucao": "8k"}}, "saída"),
         ({**_meu(), "thumb": {"modelo": "outro", "cor": "rosa"}}, "thumbnail"),
         ("não é um preset", "não é um preset"),

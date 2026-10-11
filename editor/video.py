@@ -243,9 +243,13 @@ def ler_audio(caminho: Path, duracao: float | None = None) -> np.ndarray:
     return np.ascontiguousarray(np.concatenate(pedacos, axis=1).T.astype(np.float32))
 
 
-def ler_audio_mono(caminho: Path, taxa: int = 16_000) -> np.ndarray:
-    """O áudio em mono, na taxa pedida (16 kHz para o Whisper), ``float32``."""
+def ler_audio_mono(caminho: Path, taxa: int = 16_000, maximo_s: float | None = None
+                   ) -> np.ndarray:
+    """O áudio em mono, na taxa pedida (16 kHz para o Whisper), ``float32``. Com
+    ``maximo_s``, a leitura para (mais ou menos) ali."""
     pedacos = []
+    teto = None if maximo_s is None else int(maximo_s * taxa)
+    lidas = 0
     with av.open(str(caminho)) as c:
         if not c.streams.audio:
             return np.zeros(0, dtype=np.float32)
@@ -253,6 +257,9 @@ def ler_audio_mono(caminho: Path, taxa: int = 16_000) -> np.ndarray:
         for quadro in c.decode(c.streams.audio[0]):
             for r in reamostrador.resample(quadro):
                 pedacos.append(r.to_ndarray().reshape(-1))
+                lidas += len(pedacos[-1])
+            if teto is not None and lidas >= teto:
+                break
         for r in reamostrador.resample(None):
             pedacos.append(r.to_ndarray().reshape(-1))
     if not pedacos:

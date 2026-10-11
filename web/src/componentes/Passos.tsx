@@ -8,9 +8,10 @@ import {ORDEM, PLATAFORMAS, type Plataforma, juntar} from '../plataformas';
 import {apelido} from '../presets';
 import {bytes, duracao, numero} from '../formatar';
 import type {
-  AudioInfo, BibliotecaInfo, CenaDaMatriz, Edicao, EstiloDaLegenda, Estado, Fala, FonteDoFundo, FormatoDoQuadro,
+  AudioInfo, BibliotecaInfo, CenaDaMatriz, Edicao, EfeitosDaVoz, EstiloDaLegenda, Estado, Fala, FonteDoFundo, FormatoDoQuadro,
   Modo, MontagemConfig, PersonagemInfo, PorCima, Preset, PresetsImportados, Saida, VideoInfo, Voz,
 } from '../tipos';
+import {EfeitoNaVoz} from './EfeitoNaVoz';
 import {Interruptor} from './Interruptor';
 import {MinhaVoz} from './MinhaVoz';
 import {RevisaoDaMatriz} from './RevisaoDaMatriz';
@@ -259,7 +260,7 @@ const GerarMatriz: React.FC<PropsDoEnvio> = (p) => {
           onChange={(e) => setAssunto(e.target.value)} />
         <small>
           Ele vê 3 quadros de cada clipe, 12 clipes por pedido da cota grátis, e escreve a descrição, as
-          categorias, a energia e a monetização. Você revisa numa tabela antes de usar. Sem a chave (passo 5), sai
+          categorias, a energia e a monetização. Você revisa numa tabela antes de usar. Sem a chave (no topo da página), sai
           um rascunho com o nome de cada arquivo.
         </small>
       </label>
@@ -530,8 +531,12 @@ export const PassoEdicoes: React.FC<{
   temas: Record<string, string>;
   /** Na montagem, a janela com a câmera vale. */
   naMontagem: boolean;
+  /** Os efeitos na voz (os prontos e os seus) e de onde o "ouvir antes" tira a fala. */
+  efeitosDaVoz: EfeitosDaVoz;
+  aoMudarEfeitos: (c: EfeitosDaVoz) => void;
+  fonteDaVoz: {fonte: string | null; motivo: string};
 }> = ({edicao, mudar, porCima, presets, marcado, aoEscolherPreset, aoSalvarPreset, aoApagarPreset,
-  aoImportarPresets, temas, naMontagem}) => {
+  aoImportarPresets, temas, naMontagem, efeitosDaVoz, aoMudarEfeitos, fonteDaVoz}) => {
   const tocando = useRef<HTMLAudioElement | null>(null);
   const [salvando, setSalvando] = useState<{titulo: string; frase: string; conflito: boolean; erro: string} | null>(
     null);
@@ -677,7 +682,7 @@ export const PassoEdicoes: React.FC<{
             descricao="A cena numa janela 16:9 que cresce e encolhe, com a câmera empurrando, e o personagem em pé na borda dela." />
         ) : null}
         <Interruptor ligado={edicao.animacoes} aoMudar={(v) => mudar({animacoes: v})} titulo="Cartões animados"
-          descricao="Selo, lista, quadro, enquete, carimbo, número e flash, escritos pelo Gemini na palavra certa. Precisa da chave dele (passo 5)." />
+          descricao="Selo, lista, quadro, enquete, carimbo, número e flash, escritos pelo Gemini na palavra certa. Precisa da chave dele (no topo da página)." />
       </div>
       <div className="campos">
         <div className="campo largo">
@@ -697,6 +702,8 @@ export const PassoEdicoes: React.FC<{
           <small>Separadas por vírgula. Uma sílaba vira bipe na voz e asteriscos na legenda: “coca**na”.</small>
         </label>
       </div>
+      <EfeitoNaVoz efeito={edicao.efeito_da_voz} mudar={(e) => mudar({efeito_da_voz: e})} catalogo={efeitosDaVoz}
+        aoMudarCatalogo={aoMudarEfeitos} tratamento={edicao.voz} fonte={fonteDaVoz.fonte} semFonte={fonteDaVoz.motivo} />
       <div className="campos">
         <label className="campo">
           <span>Ritmo: {numero(edicao.ritmo, 1)}×</span>

@@ -3,7 +3,7 @@
  * URL aberta pelo comando `editar` e fica guardado na aba (sessionStorage).
  */
 import type {
-  AudioInfo, BibliotecaInfo, Edicao, Estado, EstadoChave, EstadoIa, FotoPexels, GeracaoDaMatriz, GravacaoDaVoz, Ideia,
+  AudioInfo, BibliotecaInfo, Edicao, EfeitosDaVoz, Estado, EstadoChave, EstadoIa, FotoPexels, GeracaoDaMatriz, GravacaoDaVoz, Ideia,
   ImagemFundo, MotorDeVoz, Narracao, PersonagemInfo, Preset, PresetsImportados, RecorteInfo, Saida, Tarefa,
   VideoInfo, VozSalva,
 } from './tipos';
@@ -225,6 +225,18 @@ export const api = {
   exportarPresetsUrl: () => comToken('/api/presets/exportar'),
   importarPresets: (arquivo: File) =>
     enviarArquivo<PresetsImportados>('/api/presets/importar', arquivo, () => undefined),
+
+  // ── os efeitos na voz: os seus e o "ouvir antes" ──
+  salvarEfeito: (efeito: {titulo: string; efeito: string}, substituir: boolean) =>
+    pedir<{salvo: string; efeitos_da_voz: EfeitosDaVoz}>('/api/efeitos', {
+      method: 'POST', headers: JSON_, body: JSON.stringify({...efeito, substituir}),
+    }),
+  apagarEfeito: (nome: string) =>
+    pedir<{efeitos_da_voz: EfeitosDaVoz}>(`/api/efeitos/${encodeURIComponent(nome)}`, {method: 'DELETE'}),
+  /** Oito segundos da fala com o efeito. ``vez`` muda a URL para o navegador não reaproveitar. */
+  ouvirEfeitoUrl: (fonte: string, efeito: string, tratamento: string, vez: number) =>
+    comToken(`/api/efeitos/ouvir?fonte=${encodeURIComponent(fonte)}&efeito=${encodeURIComponent(efeito)}`
+      + `&tratamento=${encodeURIComponent(tratamento)}&vez=${vez}`),
 
   // ── "Minha voz": o motor, a leitura, as vozes salvas e a narração ──
   vozes: () => pedir<{motor: MotorDeVoz; vozes: VozSalva[]}>('/api/vozes'),

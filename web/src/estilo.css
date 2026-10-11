@@ -534,6 +534,64 @@ button.preset:hover { border-color: var(--linha); }
 .pilula[aria-pressed='true'] { background: var(--amarelo); color: #1a1a1a; box-shadow: 2px 2px 0 var(--linha); }
 .pilula:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* ── o efeito na voz ── */
+.efeito-na-voz { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.efeito-na-voz .rotulo { font-size: 13.5px; font-weight: 700; }
+.efeito-na-voz small { color: var(--tinta-suave); font-size: 12.5px; }
+/* os seus: a mesma pílula, com a marca "seu" e o × de apagar dentro dela */
+.pilula-sua { position: relative; display: inline-flex; }
+.pilula-sua .pilula { padding-right: 32px; }
+.apagar-pilula {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  width: 22px;
+  height: 22px;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tinta-suave);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.apagar-pilula:hover, .apagar-pilula:focus-visible { background: color-mix(in srgb, var(--erro) 18%, var(--papel)); color: var(--tinta); }
+.pilula.personalizada {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--rosa) 18%, var(--papel));
+  cursor: default;
+}
+.ajustes-da-voz summary { cursor: pointer; font-size: 14px; font-weight: 600; }
+.ajustes-da-voz[open] summary { margin-bottom: 10px; }
+.grupos-da-voz {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+.grupos-da-voz fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 12px 10px;
+  border: 2px solid color-mix(in srgb, var(--linha) 22%, transparent);
+  border-radius: 14px;
+  background: var(--papel);
+}
+.grupos-da-voz legend { padding: 0 4px; font-size: 13px; font-weight: 700; }
+.controle-da-voz {
+  display: grid;
+  grid-template-columns: minmax(70px, 0.9fr) 2fr minmax(76px, 0.8fr);
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.controle-da-voz output { color: var(--tinta-suave); font-variant-numeric: tabular-nums; text-align: right; }
+.ajustes-da-voz .link { display: inline-block; margin-top: 8px; }
+.ouvir-efeito { display: flex; flex-direction: column; gap: 4px; }
+.ouvir-efeito audio { width: 100%; max-width: 440px; }
+
 .aviso {
   margin-top: 12px;
   padding: 10px 14px;
@@ -740,6 +798,19 @@ button.link { padding: 0; border: none; background: none; color: inherit; font: 
   background: color-mix(in srgb, var(--roxo) 9%, var(--papel));
 }
 .painel-ia p { margin: 0; color: var(--tinta-suave); font-size: 14px; max-width: 62ch; }
+/* a chave do Gemini, no topo: o mesmo painel; com a chave, uma linha só */
+.chave-gemini {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 4px;
+  padding: 14px 16px;
+  border: 2px dashed color-mix(in srgb, var(--linha) 45%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--roxo) 9%, var(--papel));
+}
+.chave-gemini.pronta { padding: 8px 14px; border-style: solid; border-color: color-mix(in srgb, var(--linha) 22%, transparent); }
+.chave-gemini > small { color: var(--tinta-suave); font-size: 13px; max-width: 70ch; }
+.chave-gemini a { justify-self: start; color: inherit; font-size: 14px; font-weight: 600; }
 .painel-ia a { color: inherit; font-size: 14px; font-weight: 600; }
 .etiqueta {
   margin-left: 6px;

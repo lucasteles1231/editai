@@ -29,6 +29,8 @@ Gera em ``docs/img/``:
 - ``thumb-ideias.png`` e ``thumb-abas.png``: as ideias de thumbnail e a prévia com as
   abas. Saem da IA de teste; com ``--ia-de-verdade``, do Gemini, com a chave salva no
   editor (gasta um ou dois pedidos da cota);
+- ``interface-efeitos.png``: o efeito na voz no passo 2, com um efeito salvo, os
+  controles abertos e o "ouvir antes" (com o ``--so-noticia``; não precisa do exemplo);
 - ``funcoes/*.svg``: os ícones das funções, do Tabler (baixados do unpkg).
 """
 from __future__ import annotations
@@ -691,6 +693,86 @@ def capturas_dos_presets(nav, url: str, pasta: Path) -> None:
         ia.pasta_de_dados = dados_de_verdade
 
 
+def video_com_som(caminho: Path, segundos: float = 6.0) -> Path:
+    """Um vídeo em pé com "fala" para as capturas dos efeitos: um degradê parado e uma voz
+    sintética (pulsos com a nota subindo e descendo, em sílabas), feitos aqui mesmo."""
+    from fractions import Fraction
+
+    import av
+    import numpy as np
+
+    taxa, fps, largura, altura = 48_000, 30, 360, 640
+    t = np.arange(int(segundos * taxa)) / taxa
+    f0 = 140 + 30 * np.sin(2 * np.pi * 0.4 * t)
+    fase = 2 * np.pi * np.cumsum(f0) / taxa
+    som = sum(np.sin(k * fase) / k for k in range(1, 12))
+    som = (0.25 * som / np.abs(som).max() * ((t % 0.45) < 0.32)).astype(np.float32)
+    y = np.linspace(0, 1, altura)[:, None, None]
+    quadro = (np.array([255, 61, 127]) * (1 - y) + np.array([255, 212, 0]) * y)
+    quadro = np.broadcast_to(quadro, (altura, largura, 3)).astype(np.uint8)
+    with av.open(str(caminho), "w") as c:
+        v = c.add_stream("libx264", rate=fps)
+        v.width, v.height, v.pix_fmt = largura, altura, "yuv420p"
+        a = c.add_stream("aac", rate=taxa, layout="mono")
+        imagem = av.VideoFrame.from_ndarray(quadro, format="rgb24")
+        for _ in range(int(segundos * fps)):
+            for pacote in v.encode(imagem):
+                c.mux(pacote)
+        for pacote in v.encode(None):
+            c.mux(pacote)
+        for i in range(0, len(som), 1024):
+            q = av.AudioFrame.from_ndarray(som[i:i + 1024].reshape(1, -1), format="flt",
+                                           layout="mono")
+            q.sample_rate, q.pts, q.time_base = taxa, i, Fraction(1, taxa)
+            for pacote in a.encode(q):
+                c.mux(pacote)
+        for pacote in a.encode(None):
+            c.mux(pacote)
+    return caminho
+
+
+def capturas_dos_efeitos(nav, url: str, pasta: Path) -> None:
+    """O efeito na voz no passo 2: o rádio antigo com um pouco de sala, salvo como um efeito
+    seu, os controles abertos e o "ouvir antes" tocado, numa pasta de dados temporária."""
+    from editor import ia
+
+    dados_de_verdade = ia.pasta_de_dados
+    ia.pasta_de_dados = lambda: pasta / "dados-dos-efeitos"
+    os.environ["EDITOR_TRANSCRITOR"] = "falso"
+    try:
+        ctx = nav.new_context(
+            bypass_csp=True, viewport={"width": 1280, "height": 1400}, device_scale_factor=2,
+            color_scheme="light")
+        ctx.add_init_script(SEM_TOUR)
+        pagina = ctx.new_page()
+        pagina.goto(url)
+        pagina.add_style_tag(content=".cabecalho { position: static !important; }")
+        pagina.set_input_files("#passo-envio input[type=file]",
+                               str(video_com_som(pasta / "fala.mp4")))
+        pagina.locator(".ficha").wait_for(timeout=60_000)
+        efeito = pagina.get_by_label("efeito na voz", exact=True)
+        efeito.get_by_role("button", name="Rádio antigo", exact=True).click()
+        efeito.locator("summary", has_text="Ajustar").click()
+        sala = efeito.get_by_label("Sala", exact=True)
+        sala.focus()
+        for _ in range(30):
+            sala.press("ArrowRight")
+        efeito.get_by_role("button", name="Salvar como meu efeito").click()
+        formulario = efeito.get_by_label("salvar como meu efeito")
+        formulario.get_by_label("Nome do efeito").fill("Meu locutor")
+        formulario.get_by_role("button", name="Salvar").click()
+        efeito.get_by_role("button", name=re.compile("^Meu locutor")).wait_for()
+        efeito.get_by_role("button", name="Ouvir 8 s com o efeito").click()
+        pagina.wait_for_function(
+            "document.querySelector('.ouvir-efeito audio')?.duration > 0", timeout=60_000)
+        pagina.wait_for_timeout(400)
+        salvar(efeito.screenshot(), "interface-efeitos.png", 1200)
+        ctx.close()
+    finally:
+        ia.pasta_de_dados = dados_de_verdade
+        os.environ.pop("EDITOR_TRANSCRITOR", None)
+
+
 def capturas(exemplo: Path, pasta: Path, *, ia_de_verdade: bool = False,
              tela: Path | None = None, com_ideias: bool = True) -> None:
     from playwright.sync_api import sync_playwright
@@ -826,6 +908,7 @@ def so_noticia() -> None:
             capturas_da_noticia(nav, url, Path(tmp))
             capturas_da_voz(nav, url, Path(tmp))
             capturas_dos_presets(nav, url, Path(tmp))
+            capturas_dos_efeitos(nav, url, Path(tmp))
         finally:
             nav.close()
 

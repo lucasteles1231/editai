@@ -53,6 +53,9 @@ class OpcoesDeEdicao:
     bipe: str = ""
     #: O tratamento da voz: "original", "limpa" ou "estudio".
     voz: str = "original"
+    #: O efeito na voz, como texto: "tom=9,coral=20" (ver :mod:`editor.efeitos_da_voz`).
+    #: Vazio, nenhum.
+    efeito_da_voz: str = ""
     #: "classica" (uma linha, karaokê) ou "destaques" (páginas de até 4 palavras que
     #: entram uma a uma, com cores e a frase de efeito numa pílula amarela).
     estilo_da_legenda: str = "classica"
@@ -87,6 +90,12 @@ class OpcoesDeEdicao:
 
         if self.voz not in voz.NIVEIS:
             erros.append(f"voz desconhecida: {self.voz} (use {', '.join(voz.NIVEIS)})")
+        from editor import efeitos_da_voz
+
+        try:
+            efeitos_da_voz.ler(self.efeito_da_voz)
+        except efeitos_da_voz.EfeitoInvalido as erro:
+            erros.append(f"o efeito na voz não serve: {erro}")
         if len(self.bipe) > 500:
             erros.append("a lista do bipe passa de 500 letras")
         if self.tema_dos_sons not in sons.temas():

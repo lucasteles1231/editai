@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 EDICAO = ("cortes", "zoom", "adesivos", "icones", "sons", "mover", "pausa_maxima",
           "nivel_zoom", "ritmo", "empurrao", "respiro", "tema_dos_sons", "som_nos_cortes",
           "sons_por_palavra", "volume_dos_sons", "tamanho_legenda", "caracteres_por_linha",
-          "janela", "animacoes", "bipe", "voz", "estilo_da_legenda")
+          "janela", "animacoes", "bipe", "voz", "efeito_da_voz", "estilo_da_legenda")
 #: As palavras do bipe do vídeo de referência (o ponto de partida do preset de notícia;
 #: cada vídeo tem as suas).
 BIPE_DA_NOTICIA = "cocaína, sexo, sexual, decapitação, desmembramento"

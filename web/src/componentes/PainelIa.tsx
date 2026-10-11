@@ -1,20 +1,18 @@
 /**
- * A thumbnail com IA, dentro do passo 5: a chave do Gemini, o aviso do que sai do
- * computador e as três ideias, cada uma desenhada pela mesma composição da prévia.
+ * A thumbnail com IA, dentro do passo 5: o aviso do que sai do computador e as três ideias,
+ * cada uma desenhada pela mesma composição da prévia. A chave do Gemini fica no topo da
+ * página (ChaveGemini): sem ela, este painel leva até lá.
  */
-import React, {useState} from 'react';
+import React from 'react';
 import {Thumb, type ThumbProps} from '../thumb/Thumb';
 import type {EstadoIa, Ideia} from '../tipos';
+import {irParaAChave} from './ChaveGemini';
 import {Interruptor} from './Interruptor';
-
-const ONDE_PEGAR = 'https://aistudio.google.com/apikey';
 
 type Props = {
   ia: EstadoIa;
   usar: boolean;
   setUsar: (v: boolean) => void;
-  aoSalvarChave: (chave: string) => Promise<void>;
-  aoApagarChave: () => Promise<void>;
   /** A edição terminou: já dá para pedir ideias. */
   pronto: boolean;
   pensando: boolean;
@@ -45,24 +43,6 @@ const Aviso: React.FC = () => (
 );
 
 export const PainelIa: React.FC<Props> = (p) => {
-  const [chave, setChave] = useState('');
-  const [salvando, setSalvando] = useState(false);
-  const [erroChave, setErroChave] = useState('');
-
-  const salvar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSalvando(true);
-    setErroChave('');
-    try {
-      await p.aoSalvarChave(chave.trim());
-      setChave('');
-    } catch (erro) {
-      setErroChave((erro as Error).message);
-    } finally {
-      setSalvando(false);
-    }
-  };
-
   if (!p.ia.configurada) {
     return (
       <div className="painel-ia" id="painel-ia">
@@ -71,16 +51,11 @@ export const PainelIa: React.FC<Props> = (p) => {
           Com uma chave do Gemini, a IA lê o que você falou, olha 8 quadros do vídeo e sugere 3
           thumbnails de acordo com o conteúdo: chamada, quadro, cores, ícone e seta.
         </p>
-        <form className="chave-ia" onSubmit={salvar}>
-          <input type="password" autoComplete="off" spellCheck={false} value={chave}
-            placeholder="Cole aqui a sua chave do Gemini" aria-label="chave do Gemini"
-            onChange={(e) => setChave(e.target.value)} />
-          <button type="submit" className="botao pequeno" disabled={!chave.trim() || salvando}>
-            {salvando ? 'Conferindo…' : 'Salvar chave'}
+        <div className="linha-de-opcoes">
+          <button type="button" className="botao pequeno" onClick={irParaAChave}>
+            Colar a chave do Gemini no topo da página
           </button>
-        </form>
-        {erroChave ? <div className="aviso erro">{erroChave}</div> : null}
-        <a href={ONDE_PEGAR} target="_blank" rel="noreferrer">Pegar uma chave grátis no Google AI Studio</a>
+        </div>
         <Aviso />
       </div>
     );
@@ -90,17 +65,6 @@ export const PainelIa: React.FC<Props> = (p) => {
     <div className="painel-ia" id="painel-ia">
       <Interruptor ligado={p.usar} aoMudar={p.setUsar} titulo="Sugerir thumbnails com IA"
         descricao="Quando a edição terminar, o Gemini sugere 3 ideias de acordo com o que você falou." />
-      <div className="linha-de-opcoes chave-ok">
-        <small>
-          {p.ia.origem === 'variavel' ? 'Chave da variável GEMINI_API_KEY' : p.ia.falsa
-            ? 'IA de teste (sem rede)' : `Chave do Gemini ${p.ia.final}`}
-        </small>
-        {p.ia.origem === 'arquivo' ? (
-          <button type="button" className="botao pequeno" onClick={() => void p.aoApagarChave()}>
-            Remover chave
-          </button>
-        ) : null}
-      </div>
       {p.usar ? (
         <>
           {p.pensando ? <div className="aviso">O Gemini está olhando o vídeo…</div> : null}

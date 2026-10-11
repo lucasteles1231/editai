@@ -6,6 +6,8 @@ O comando ``editar``.
     editar video.mp4 --formato webm --resolucao 720p --sem-cortes
     editar video.mp4 --preset gameplay --ritmo 1.2
     editar --presets             os presets de edição (os prontos e os seus)
+    editar --efeitos             os efeitos na voz (robô, esquilo, cantado... e os seus)
+    editar video.mp4 --efeito-na-voz esquilo
     editar --preset gameplay --ritmo 1.3 --salvar-preset "Meu gameplay"
     editar --formatos            o que este computador consegue gravar
 
@@ -39,6 +41,18 @@ def _ancora(texto: str) -> tuple[float, float]:
     except ValueError as erro:
         raise argparse.ArgumentTypeError("use x,y entre 0 e 1, por exemplo 0.5,0.4") from erro
     return x, y
+
+
+def _efeito(texto: str) -> str:
+    """O nome de um efeito (pronto ou seu) ou os ajustes, como o texto do efeito."""
+    from editor import efeitos_da_voz
+
+    if texto.strip().lower() in ("nenhum", "sem", ""):
+        return ""
+    try:
+        return efeitos_da_voz.resolver(texto)
+    except efeitos_da_voz.EfeitoInvalido as erro:
+        raise argparse.ArgumentTypeError(str(erro)) from erro
 
 
 class _Formato(argparse.HelpFormatter):
@@ -111,6 +125,9 @@ def argumentos() -> argparse.ArgumentParser:
                         "sílaba vira bipe na voz e asteriscos na legenda")
     g.add_argument("--voz", choices=["original", "limpa", "estudio"],
                    help="o tratamento da voz (padrão: original)")
+    g.add_argument("--efeito-na-voz", dest="efeito_da_voz", type=_efeito, metavar="EFEITO",
+                   help='um efeito pronto ou seu (veja --efeitos), ou os ajustes: '
+                        '"tom=9,eco=30"; "nenhum" tira o do preset')
     g.add_argument("--legenda", dest="estilo_da_legenda", choices=["classica", "destaques"],
                    help="classica (uma linha, karaokê) ou destaques (páginas de até 4 "
                         "palavras, cores e a frase de efeito numa pílula)")
@@ -169,6 +186,8 @@ def argumentos() -> argparse.ArgumentParser:
                    help="mostra o que este computador consegue gravar")
     p.add_argument("--presets", action="store_true",
                    help="mostra os presets de edição, os prontos e os seus")
+    p.add_argument("--efeitos", action="store_true",
+                   help="mostra os efeitos na voz, os prontos e os seus, com os ajustes")
     p.add_argument("--salvar-preset", metavar="NOME",
                    help="salva como um preset seu o --preset de partida com as flags de edição "
                         "e de saída por cima (o mesmo nome substitui)")
@@ -373,6 +392,14 @@ def main(argv: list[str] | None = None) -> int:
     if a.presets:
         for pr in presets.todos().values():
             print(f"{pr.nome:13} {pr.titulo}{'  (seu)' if pr.meu else ''}\n{'':13} {pr.frase}")
+        return 0
+
+    if a.efeitos:
+        from editor import efeitos_da_voz
+
+        for e in efeitos_da_voz.todos().values():
+            print(f"{e.nome:13} {e.titulo}{'  (seu)' if e.meu else ''} · {e.efeito}\n"
+                  f"{'':13} {e.frase}")
         return 0
 
     if a.salvar_preset is not None:

@@ -35,6 +35,8 @@ export type Edicao = {
   /** As palavras proibidas, separadas por vírgula (bipe na voz, asteriscos na legenda). */
   bipe: string;
   voz: Voz;
+  /** O efeito na voz, como texto: "tom=9,coral=20" (vazio, nenhum). */
+  efeito_da_voz: string;
   estilo_da_legenda: EstiloDaLegenda;
 };
 
@@ -53,6 +55,21 @@ export type Preset = {
   /** Criado por quem usa (fica no presets.json da pasta de dados dele). */
   meu?: boolean;
 };
+
+/** Um controle do efeito na voz (editor/efeitos_da_voz.py): a faixa e o grupo na tela. */
+export type ControleDaVoz = {
+  chave: string;
+  titulo: string;
+  grupo: 'tom' | 'carater' | 'ambiente' | 'equalizador';
+  minimo: number;
+  maximo: number;
+  unidade: string;
+};
+
+/** Um efeito na voz pronto, ou um seu (no efeitos-de-voz.json da pasta de dados). */
+export type EfeitoDeVoz = {nome: string; titulo: string; frase: string; efeito: string; meu: boolean};
+
+export type EfeitosDaVoz = {controles: ControleDaVoz[]; efeitos: EfeitoDeVoz[]};
 
 /** O resultado de importar um arquivo de presets. */
 export type PresetsImportados = {entraram: string[]; recusados: string[]; presets: Preset[]};
@@ -85,6 +102,7 @@ export type Estado = {
   pexels: EstadoChave;
   geracao: {restantes: number; teto: number};
   presets: Preset[];
+  efeitos_da_voz: EfeitosDaVoz;
   /** O nome de cada tema de sons para quem usa. */
   temas_dos_sons: Record<string, string>;
 };

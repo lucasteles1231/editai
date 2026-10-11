@@ -23,6 +23,7 @@
   <a href="#a-montagem-em-camadas">Camadas</a> ·
   <a href="#a-thumbnail">A thumbnail</a> ·
   <a href="#minha-voz">Minha voz</a> ·
+  <a href="#efeitos-na-voz">Efeitos na voz</a> ·
   <a href="#o-que-cada-função-precisa">Requisitos</a> ·
   <a href="#no-terminal">No terminal</a> ·
   <a href="#desempenho">Desempenho</a> ·
@@ -122,9 +123,11 @@ sugestões do Gemini, com uma chave grátis sua.
   </tr>
   <tr>
     <td><img src="docs/img/funcoes/voz.svg" width="44" alt=""></td>
-    <td><b>Voz e bipe.</b> A voz pode sair limpa (sem eco, sem chiado e no mesmo volume em
-    todas as partes) ou de estúdio. As palavras proibidas ganham um bipe numa sílaba e
-    asteriscos na legenda: "coca**na". Veja <a href="#voz-e-bipe">Voz e bipe</a>.</td>
+    <td><b>Voz, efeitos e bipe.</b> A voz pode sair limpa (sem eco, sem chiado e no mesmo
+    volume em todas as partes) ou de estúdio, e ganhar um efeito: robô, esquilo, cantado,
+    rádio, fantasma ou um seu. As palavras proibidas ganham um bipe numa sílaba e
+    asteriscos na legenda: "coca**na". Veja <a href="#voz-e-bipe">Voz e bipe</a> e
+    <a href="#efeitos-na-voz">Efeitos na voz</a>.</td>
   </tr>
   <tr>
     <td><img src="docs/img/funcoes/minha-voz.svg" width="44" alt=""></td>
@@ -204,7 +207,7 @@ Você traz:
 | **A matriz** | o `cenas.json`, dentro da pasta, com o arquivo e a descrição de cada cena (o formato está em [Biblioteca de cenas](#biblioteca-de-cenas)). Não tem? O botão **Gerar a matriz** escreve para você ([Gerar a matriz](#gerar-a-matriz)) |
 | **A narração** | um arquivo de áudio, ou vários, um por parágrafo, que tocam na ordem do nome. Ou só o roteiro, narrado com a sua voz ([Minha voz](#minha-voz)) |
 | **O personagem** (opcional) | um GIF, PNG animado ou WebP, com a boca fechada no primeiro quadro |
-| **A chave do Gemini** (opcional e grátis) | colada no passo 5. Sem ela, as cenas saem pelas palavras e não há cartões |
+| **A chave do Gemini** (opcional e grátis) | colada no topo da página. Sem ela, as cenas saem pelas palavras e não há cartões |
 
 <img src="docs/img/interface-noticia.png" alt="O passo 1 com a biblioteca de cenas: a pasta enviada com 5 cenas, um personagem de palito por cima e dois parágrafos de narração, e o YouTube Shorts marcado" width="420" align="right">
 
@@ -219,7 +222,7 @@ Você traz:
    cartões animados, a voz de estúdio, o bipe, a legenda em destaques e os sons do tema
    Notícia. A lista do bipe vem com as palavras de um vídeo de exemplo: troque pelas do
    seu.
-5. No passo 5, cole a chave do Gemini, se ainda não colou.
+5. Se ainda não colou a chave do Gemini, cole no topo da página.
 6. Clique em **Editar vídeo**. Uma narração de 50 s leva uns 2 minutos num MacBook M5. O
    resultado diz quantas cenas e cartões o Gemini escreveu e quantos pedidos da cota
    usou.
@@ -354,8 +357,9 @@ thumbnails. Cada ideia escolhe a chamada, o modelo, o quadro, o fundo, a luz, a 
 ícone, e tudo continua editável.
 
 1. Pegue uma chave grátis no [Google AI Studio](https://aistudio.google.com/apikey).
-2. Cole no passo 5. Ela fica só no seu computador, num arquivo que só o seu usuário lê,
-   e nunca volta para a página. A variável `GEMINI_API_KEY` também funciona.
+2. Cole no topo da página, logo abaixo do título: a mesma chave serve às ideias de
+   thumbnail, à matriz das cenas e aos cartões. Ela fica só no seu computador, num
+   arquivo que só o seu usuário lê, e nunca volta para a página. A variável `GEMINI_API_KEY` também funciona.
 3. Ligue **Sugerir thumbnails com IA**. As ideias aparecem quando a edição termina.
 
 > [!IMPORTANT]
@@ -667,6 +671,74 @@ cartões mostram a mesma sílaba em asteriscos: "coca\*\*na", "se\*\*".
   transcrito de novo depois do bipe, o Whisper não reconheceu nenhuma das seis palavras.
 - **Nenhum efeito sonoro** toca em cima de um bipe.
 
+## Efeitos na voz
+
+No passo 2, logo abaixo da voz, o **Efeito na voz** muda o som de quem fala. Vale para
+qualquer voz: a do vídeo, a do áudio separado e a [Minha voz](#minha-voz). Nada precisa
+ser instalado: os filtros são os do FFmpeg que vem no PyAV, e o resto (o cantado, o
+robô, o sussurro e a sala) é feito pelo próprio editor.
+
+<p align="center">
+  <img src="docs/img/interface-efeitos.png" alt="O efeito na voz no passo 2: as pílulas dos 13 efeitos prontos e do Meu locutor, um efeito salvo, marcado; os controles abertos em quatro grupos (Tom, Caráter, Ambiente e Equalizador), com o rádio em 85%, a distorção em 20% e a sala em 30%; e o player do Ouvir 8 s com o efeito" width="640">
+</p>
+
+**Os prontos:**
+
+| Efeito | Como soa | Os ajustes |
+|---|---|---|
+| **Robô** | metálico e sem entonação, com o zumbido de um robô | `tom=-2,robo=85,medios=3` |
+| **Esquilo** | a voz de desenho animado, bem mais aguda e fina | `tom=9,agudos=2` |
+| **Fofo** | mais aguda e suave, com um coral leve | `tom=4,coral=20,agudos=3` |
+| **Monstro** | grave, rouca e com eco de caverna | `tom=-8,distorcao=25,sala=35,graves=6` |
+| **Cantado** | afinada nota a nota, como um autotune | `afinacao=100,coral=25,sala=20` |
+| **Rádio antigo** | a faixa estreita e o chiado de um rádio velho | `radio=85,distorcao=20` |
+| **Telefone** | como numa ligação | `radio=65,medios=4` |
+| **Megafone** | estourada e anasalada, de alto-falante | `radio=60,distorcao=60,medios=5` |
+| **Fantasma** | sussurrada, trêmula e com eco | `sussurro=60,vibrato=40,eco=45,sala=55` |
+| **Alienígena** | metálica, trêmula e um pouco mais aguda | `tom=3,robo=40,vibrato=55` |
+| **Caverna** | eco longo, como num lugar grande e vazio | `eco=55,sala=75` |
+| **Gigante** | grave e encorpada, com um pouco de sala | `tom=-5,graves=6,sala=30` |
+| **Sussurro** | só o ar, sem a voz | `sussurro=100` |
+
+**Os controles**, em **Ajustar**, ficam em quatro grupos:
+
+| Grupo | Controle | Faixa | O que faz |
+|---|---|---|---|
+| Tom | **Tom** | −12 a +12 semitons | sobe ou desce a voz sem mudar a duração; o timbre acompanha, como num desenho animado |
+| Tom | **Cantado** | 0 a 100% | puxa cada trecho da fala para a nota mais perto, como um autotune; o timbre fica |
+| Caráter | **Robô** | 0 a 100% | troca a entonação por um zumbido fixo de 120 Hz |
+| Caráter | **Sussurro** | 0 a 100% | tira a nota da voz e deixa só o ar |
+| Caráter | **Rádio** | 0 a 100% | estreita a faixa, de 100–8.000 Hz até 500–2.800 Hz |
+| Caráter | **Distorção** | 0 a 100% | satura, como um alto-falante estourado |
+| Ambiente | **Vibrato** | 0 a 100% | faz a voz tremer 5,5 vezes por segundo |
+| Ambiente | **Coral** | 0 a 100% | junta cópias atrasadas da voz, diferentes em cada lado |
+| Ambiente | **Eco** | 0 a 100% | duas repetições, a uns 250 e 500 ms |
+| Ambiente | **Sala** | 0 a 100% | a reverberação, de uma sala pequena (0,3 s) até um salão (2,5 s) |
+| Equalizador | **Graves**, **Médios** e **Agudos** | −12 a +12 dB | em 150 Hz, 1 kHz e 4 kHz |
+
+- **Ouvir antes:** **Ouvir 8 s** passa os primeiros 8 s com fala pelo mesmo caminho da
+  edição, com o tratamento escolhido (original, limpa ou estúdio), e toca na página. A
+  fala é a que a edição vai usar: a do vídeo, a do áudio separado ou a narração.
+- **Os seus:** mexeu num controle, o efeito vira **Personalizado**, e **Salvar como meu
+  efeito** guarda com um nome. Ele fica só no seu computador, no `efeitos-de-voz.json`
+  da pasta de dados, e sai pelo ×. Um preset de edição seu também guarda o efeito.
+- **A duração não muda.** Cada efeito devolve o mesmo número de amostras, então os
+  cortes, a legenda e o bipe ficam no lugar.
+- **A legenda não sofre.** O efeito entra depois da transcrição: o Whisper ouve a voz
+  sem efeito.
+- **O bipe vem antes do eco e da sala**, para a sílaba proibida não voltar na cauda.
+- **O volume fica o mesmo** em que a voz entrou.
+
+**Medido** numa gravação de verdade, com a voz em 145 Hz: o esquilo levou a 242 Hz (+9
+semitons dá 244), o fofo a 182 Hz (183) e o monstro a 92 Hz (91). No cantado, os trechos
+a menos de 25 cents de uma nota passaram de 50% para 92%. No M5, um minuto de voz leva
+menos de 1 s no cantado e menos ainda nos outros.
+
+> [!NOTE]
+> Um efeito muda o som, não a emoção: "feliz" ou "triste" dependem de como a frase é
+> dita. Na Minha voz, o motor imita o jeito de falar da sua leitura, e o modelo dele (o
+> Qwen3-TTS que clona a voz) não aceita um pedido como "fale triste".
+
 ## Minha voz
 
 Opcional. Você grava a sua voz uma vez, lendo um texto, e o editor narra qualquer
@@ -856,7 +928,7 @@ sua. As medidas são de um MacBook com Apple M5 (10 núcleos, 16 GB).
 
 | Função | Obrigatória | Como entra | Disco | Memória (pico) | Onde roda | Internet | Tempo no M5 |
 |---|---|---|---|---|---|---|---|
-| **O editor:** a página, os cortes, as legendas, o zoom, os adesivos, os ícones, os sons, os presets, a montagem, a janela, os cartões, a voz limpa e de estúdio, o bipe, a biblioteca de cenas e a exportação | sim | vem na instalação | ~340 MB, com o Python e o uv | 1,3 GB num vídeo falado de 1 min 46 s; 1,7 GB numa notícia de 49 s em 1080×1920 | processador, em todos os núcleos | só para instalar | 51 s para o vídeo de 1 min 46 s; 116 s para a notícia |
+| **O editor:** a página, os cortes, as legendas, o zoom, os adesivos, os ícones, os sons, os presets, a montagem, a janela, os cartões, a voz limpa e de estúdio, os efeitos na voz, o bipe, a biblioteca de cenas e a exportação | sim | vem na instalação | ~340 MB, com o Python e o uv | 1,3 GB num vídeo falado de 1 min 46 s; 1,7 GB numa notícia de 49 s em 1080×1920 | processador, em todos os núcleos | só para instalar | 51 s para o vídeo de 1 min 46 s; 116 s para a notícia |
 | **A transcrição** (Whisper) | sim, para o vídeo com fala | baixa no primeiro uso | 464 MB no `small` (de 75 MB no `tiny` a 1,5 GB no `medium`) | 1,3 GB no `small`; 2,4 GB no `medium` | processador | só na primeira vez | 40 s de fala em 10 s no `small` e em 29 s no `medium` |
 | **O recorte da pessoa** (MODNet), na thumbnail e na montagem | não | baixa no primeiro uso | 26 MB | | processador | só na primeira vez | ~0,07 s por quadro |
 | **O Gemini:** ideias de thumbnail, roteiro, cartões, destaques e matriz | não | serviço, com uma chave grátis | | | nos servidores do Google | sim | segundos por pedido |
@@ -893,6 +965,7 @@ sua. As medidas são de um MacBook com Apple M5 (10 núcleos, 16 GB).
 | A voz sintetizada (Minha voz), só se você instalar: o ambiente e o modelo | ~3,5 GB | `motor-de-voz`, na pasta de dados: `%LOCALAPPDATA%\editor-de-video` (Windows) ou `~/Library/Application Support/editor-de-video` (macOS) |
 | As vozes gravadas: a leitura e a referência de cada uma | ~15 MB cada | `vozes`, na mesma pasta de dados |
 | Os seus presets | poucos KB | `presets.json`, na mesma pasta de dados |
+| Os seus efeitos na voz | poucos KB | `efeitos-de-voz.json`, na mesma pasta de dados |
 | As chaves do Gemini e do Pexels, se você colar | — | `config.json`, em `%LOCALAPPDATA%\editor-de-video` (Windows) ou `~/Library/Application Support/editor-de-video` (macOS) |
 | Os vídeos editados e as thumbnails | — | `editor-de-video`, dentro da pasta **Vídeos** (Windows) ou **Filmes** (macOS) |
 
@@ -971,6 +1044,8 @@ editar --cenas imovel/ --matriz imovel/cenas.json --audio imovel/tour-1.mp4 imov
 editar --cenas cenas/ --matriz cenas/cenas.json --audio p1.m4a p2.m4a p3.m4a \
        --personagem boneco.gif --preset noticia --quadro vertical
 editar video.mp4 --voz limpa --bipe "palavra, outra"  # voz limpa e bipe na lista
+editar video.mp4 --efeito-na-voz esquilo           # a voz de esquilo (veja --efeitos)
+editar video.mp4 --efeito-na-voz "tom=-5,sala=40"  # ou os ajustes, do seu jeito
 editar --instalar-voz                             # a voz sintetizada (Minha voz), ~3,5 GB
 editar --criar-voz "Ana"                          # mostra o texto a ler
 editar --criar-voz "Ana" --gravacao leitura.m4a   # confere a leitura e salva a voz
@@ -1012,6 +1087,8 @@ editar --formatos                                 # o que este computador grava
 | `--animacoes` | os cartões animados, escritos pelo Gemini | |
 | `--legenda` | `classica` ou `destaques` | `classica` |
 | `--voz` | `original`, `limpa` ou `estudio` | `original` |
+| `--efeito-na-voz` | um efeito pronto ou seu (veja `--efeitos`), ou os ajustes: `"tom=9,eco=30"`; `nenhum` tira o do preset | |
+| `--efeitos` | mostra os efeitos na voz, os prontos e os seus, com os ajustes | |
 | `--bipe PALAVRAS` | as palavras proibidas, separadas por vírgula | |
 | `--fundo` | a montagem: o vídeo de fundo, sem pessoa | |
 | `--cenas PASTA` | a montagem com a biblioteca de cenas: a pasta dos clipes | |
@@ -1312,7 +1389,7 @@ cobra pelo uso, conforme a [tabela de preços](https://ai.google.dev/gemini-api/
 
 No `config.json` da pasta de configuração do editor (veja "O que é instalado, e onde"),
 que só o seu usuário consegue ler. A página só mostra os quatro últimos caracteres. Para
-apagar, use o botão **Remover chave** no passo 5, ou apague o arquivo.
+apagar, use o botão **Remover chave** no topo da página, ou apague o arquivo.
 
 </details>
 

@@ -8,6 +8,7 @@ import {aplicarPreset, presetMarcado} from './presets';
 import {Painel} from './componentes/Painel';
 import {type Envio, PassoEdicoes, PassoEnvio, PassoLegenda, PassoSaida, type Revisao} from './componentes/Passos';
 import {paraJson, paraLinhas} from './matriz';
+import {ChaveGemini} from './componentes/ChaveGemini';
 import {ThumbPasso, chaveDoRecorte, propsDaThumb, type Recortes} from './componentes/ThumbPasso';
 import {PROPORCAO} from './componentes/thumb/AbaFundo';
 import {gerarPng} from './thumb/exportar';
@@ -159,6 +160,23 @@ export const App: React.FC = () => {
       ? {info: personagem, recorte: recorteDoPersonagem, tirarFundo: montagem.tirarFundo} : null,
   }), [naMontagem, comPersonagem, fundoEfetivo, personagem, recorteDoPersonagem, montagem.tirarFundo]);
   const fala = falaEfetiva(montagem, comCenas ? null : fundo, pessoa, audios);
+  // O "ouvir antes" do efeito na voz: 8 s da fala que a edição vai usar.
+  const fonteDaVoz = useMemo((): {fonte: string | null; motivo: string} => {
+    const doVideo = (v: VideoInfo | null, falta: string) => (!v ? {fonte: null, motivo: falta}
+      : !v.tem_audio ? {fonte: null, motivo: 'Esse vídeo não tem som.'} : {fonte: `video:${v.id}`, motivo: ''});
+    if (!naMontagem) return doVideo(unico, 'Envie o vídeo para ouvir o efeito na sua voz.');
+    if (fala === 'voz') {
+      return narracao ? {fonte: `audio:${narracao.id}`, motivo: ''}
+        : {fonte: null, motivo: 'Narre o roteiro (passo 1) para ouvir o efeito na narração.'};
+    }
+    if (fala === 'audio') {
+      const primeiro = emOrdem(audios)[0];
+      return primeiro ? {fonte: `audio:${primeiro.id}`, motivo: ''} : {fonte: null, motivo: 'Envie o áudio para ouvir o efeito.'};
+    }
+    if (fala === 'cenas') return {fonte: null, motivo: 'O som das cenas só se ouve no vídeo editado.'};
+    return fala === 'pessoa' ? doVideo(pessoa, 'Envie o vídeo da pessoa para ouvir o efeito.')
+      : doVideo(fundo, 'Envie o vídeo de fundo para ouvir o efeito.');
+  }, [naMontagem, unico, fala, narracao, audios, pessoa, fundo]);
   // "Das cenas": só as marcadas que ainda estão na biblioteca (trocar a pasta tira as outras)
   const cenasDoAudio = useMemo(() => montagem.cenasDoAudio.filter(
     (a) => biblioteca?.com_som.some((c) => c.arquivo === a)), [montagem.cenasDoAudio, biblioteca]);
@@ -591,8 +609,6 @@ export const App: React.FC = () => {
 
   const painelIa = ia ? {
     ia, usar: usarIa, setUsar: setUsarIa,
-    aoSalvarChave: async (chave: string) => setIa(await api.salvarChave(chave)),
-    aoApagarChave: async () => setIa(await api.apagarChave()),
     pronto: tarefa?.estado === 'pronto', pensando, erro: erroIa, ideias, escolhida,
     aoEscolher: (i: number) => {
       setThumb((t) => aplicarIdeia(t, ideias[i]));
@@ -667,6 +683,10 @@ export const App: React.FC = () => {
             <p>Legenda, cortes de silêncio, zoom, palavras que saltam, ícones, sons e thumbnail. Ou uma notícia
               montada a partir de uma pasta de cenas, com cartões animados — tudo feito aqui no seu computador.</p>
           </div>
+          {ia ? (
+            <ChaveGemini ia={ia} aoSalvarChave={async (chave) => setIa(await api.salvarChave(chave))}
+              aoApagarChave={async () => setIa(await api.apagarChave())} />
+          ) : null}
           <PassoEnvio modo={modo} setModo={trocarModo} video={unico} fundo={fundo} pessoa={pessoa}
             personagem={personagem} audios={audios} narracao={narracao} aoNarrar={setNarracao} biblioteca={biblioteca}
             faltaMatriz={Boolean(bibliotecaAberta && !biblioteca)} enviandoBiblioteca={enviandoBiblioteca}
@@ -687,7 +707,9 @@ export const App: React.FC = () => {
               <PassoEdicoes edicao={edicao} mudar={(p) => setEdicao({...edicao, ...p})}
                 porCima={naMontagem ? montagem.porCima : null} presets={estado.presets} marcado={marcado}
                 aoEscolherPreset={escolherPreset} aoSalvarPreset={salvarPreset} aoApagarPreset={apagarPreset}
-                aoImportarPresets={importarPresets} temas={estado.temas_dos_sons} naMontagem={naMontagem} />
+                aoImportarPresets={importarPresets} temas={estado.temas_dos_sons} naMontagem={naMontagem}
+                efeitosDaVoz={estado.efeitos_da_voz} fonteDaVoz={fonteDaVoz}
+                aoMudarEfeitos={(c) => setEstado((e) => (e ? {...e, efeitos_da_voz: c} : e))} />
               <PassoLegenda estado={estado} edicao={edicao} saida={saida}
                 mudar={(p) => setEdicao({...edicao, ...p})} mudarSaida={(p) => setSaida({...saida, ...p})} />
               {/* A biblioteca sai em 1920 × 1080, qualquer que seja o tamanho dos clipes: ela
