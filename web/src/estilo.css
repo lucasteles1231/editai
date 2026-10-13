@@ -359,6 +359,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 /* Um campo com texto ou com três escolhas lado a lado ocupa duas colunas. */
 .campo.largo { grid-column: span 2; }
+.campo.inteiro { grid-column: 1 / -1; }
 @media (max-width: 420px) { .campo.largo { grid-column: auto; } }
 
 .campo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -1223,7 +1224,8 @@ button.link { padding: 0; border: none; background: none; color: inherit; font: 
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.minha-voz textarea {
+.minha-voz textarea,
+.texto-falado textarea {
   width: 100%;
   font: inherit;
   font-size: 14.5px;

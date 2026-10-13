@@ -131,6 +131,9 @@ def argumentos() -> argparse.ArgumentParser:
     g.add_argument("--legenda", dest="estilo_da_legenda", choices=["classica", "destaques"],
                    help="classica (uma linha, karaokê) ou destaques (páginas de até 4 "
                         "palavras, cores e a frase de efeito numa pílula)")
+    g.add_argument("--texto-falado", type=Path, metavar="ARQUIVO",
+                   help="o texto que você falou (.txt): a legenda pega a grafia dele onde ele "
+                        'casa com o que o Whisper ouviu ("Editai", e não "edita aí")')
     g.add_argument("--idioma", default="pt", help="idioma da fala (pt, en, es...)")
     g.add_argument("--modelo", default="small", choices=list(MODELOS),
                    help="tamanho do Whisper (padrão small)")
@@ -446,6 +449,12 @@ def main(argv: list[str] | None = None) -> int:
     if erro:
         print(erro, file=sys.stderr)
         return 2
+    texto_falado = ""
+    if a.texto_falado is not None:
+        if not a.texto_falado.is_file():
+            print(f"o texto falado não existe: {a.texto_falado}", file=sys.stderr)
+            return 2
+        texto_falado = a.texto_falado.read_text(encoding="utf-8", errors="replace")
     # Com a biblioteca, o vídeo sai ao lado da pasta das cenas ("cenas-editado.mp4").
     principal = (a.video if montagem is None
                  else Path(montagem.fundo or montagem.cenas))
@@ -453,7 +462,7 @@ def main(argv: list[str] | None = None) -> int:
     edicao = preset.opcoes(**{k: getattr(a, k) for k in presets.EDICAO
                               if getattr(a, k) is not None},
                            ancora_x=a.ancora[0], ancora_y=a.ancora[1], idioma=a.idioma,
-                           modelo=a.modelo)
+                           modelo=a.modelo, texto_falado=texto_falado)
     # Sem --formato, vale a extensão do -o: "-o final.mov" grava MOV.
     formato = a.formato or _formato_de(a.saida) or "mp4"
     da_saida = {k: getattr(a, k) or preset.saida[k] for k in presets.SAIDA}

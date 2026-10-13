@@ -334,8 +334,130 @@ def ajustar_ao_texto(palavras: list[Palavra], texto: str) -> list[Palavra]:
             for tok, t in zip(tokens, tempos, strict=True) if t is not None]
 
 
-__all__ = ["CASAMENTO_MINIMO", "IDIOMA_PADRAO", "MODELOS", "MODELO_PADRAO", "REVISOES",
-           "VARIAVEL_FALSA",
+#: Um trecho que o Whisper ouviu diferente do texto pega a grafia do texto se as letras
+#: forem pelo menos isto parecidas. Medido em 12/10 numa gravação de verdade: "tambineios"
+#: e "thumbnails" dão 0,50, "processos" e "presets" 0,62, "edita I" e "Editai" 0,92; uma
+#: palavra trocada de verdade fica longe ("ferramenta" e "plataforma" 0,30, "nuvem" e
+#: "internet" 0,31).
+PARECIDO_MINIMO = 0.45
+#: E só em trechos curtos: uma frase inteira diferente é improviso, e fica como foi ouvida.
+TRECHO_MAXIMO = 5
+
+
+def _limpar_texto(texto: str) -> list[str]:
+    """As palavras de um texto colado, sem o que não se fala: as notas entre colchetes
+    ("[pausa]"), o negrito do Markdown e os emojis."""
+    import re
+    import unicodedata
+
+    texto = re.sub(r"\[[^\]]*\]", " ", texto)
+    texto = re.sub(r"[*_#>`~|]", "", texto)
+    simbolos = ("So", "Sk", "Cs", "Co", "Cn")          # emojis, setas, caracteres soltos
+    texto = "".join(c for c in texto if unicodedata.category(c) not in simbolos
+                    and (c.isprintable() or c.isspace()))
+    tokens: list[str] = []
+    for t in texto.split():
+        if chaves(t):
+            tokens.append(t)
+        elif tokens:                           # um travessão solto vai junto da anterior
+            tokens[-1] += f" {t}"
+    return tokens
+
+
+def grafia_do_texto(palavras: list[Palavra], texto: str) -> list[Palavra]:
+    """As palavras que o Whisper ouviu, escritas como no texto que a pessoa diz ter falado.
+
+    Diferente de :func:`ajustar_ao_texto` (a narração sintetizada, que lê o texto inteiro),
+    quem grava pula, troca e improvisa. Por isso só o que foi ouvido vai para a legenda:
+
+    - a palavra que casa com o texto pega a grafia dele ("Editai", e não "editaí");
+    - um trecho curto ouvido diferente pega a do texto se as letras forem parecidas
+      ("tambineios" vira "thumbnails", "edita I" vira "Editai");
+    - o que só está no texto fica de fora (a pessoa pulou, ou a gravação acabou antes);
+    - o que só foi ouvido fica como o Whisper escreveu (o improviso).
+
+    Cada palavra do texto fica nos tempos das ouvidas que ela substitui."""
+    from difflib import SequenceMatcher
+
+    tokens = _limpar_texto(texto)
+    esperadas, de_qual = [], []
+    for i, t in enumerate(tokens):
+        for k in chaves(t):
+            esperadas.append(k)
+            de_qual.append(i)
+    ouvidas, de_quem = [], []
+    for j, w in enumerate(palavras):
+        for k in chaves(w.texto):
+            ouvidas.append(k)
+            de_quem.append(j)
+    if not esperadas or not ouvidas:
+        return palavras
+    comparacao = SequenceMatcher(None, esperadas, ouvidas, autojunk=False)
+    # A gravação pode ter só um pedaço do texto, e o texto só um pedaço da fala: a conta é
+    # sobre o menor dos dois.
+    casadas = sum(n for _a, _b, n in comparacao.get_matching_blocks())
+    if casadas < CASAMENTO_MINIMO * min(len(esperadas), len(ouvidas)):
+        logger.warning("o texto não é o desta fala: a legenda fica com o Whisper")
+        return palavras
+
+    # Os grupos: palavras do texto e palavras ouvidas ligadas entre si (uma união de
+    # conjuntos, porque "3.500" ouvido casa com as quatro de "três mil e quinhentos").
+    pai: dict[tuple[str, int], tuple[str, int]] = {}
+
+    def raiz(n: tuple[str, int]) -> tuple[str, int]:
+        while pai.setdefault(n, n) != n:
+            n = pai[n]
+        return n
+
+    def ligar(i: int, j: int) -> None:
+        pai[raiz(("t", i))] = raiz(("o", j))
+
+    def parecido(a: list[str], b: list[str]) -> bool:
+        return SequenceMatcher(None, "".join(a), "".join(b)).ratio() >= PARECIDO_MINIMO
+
+    for tag, i1, i2, j1, j2 in comparacao.get_opcodes():
+        if tag == "equal":
+            for d in range(i2 - i1):
+                ligar(de_qual[i1 + d], de_quem[j1 + d])
+        elif tag == "replace" and max(i2 - i1, j2 - j1) <= TRECHO_MAXIMO and parecido(
+                esperadas[i1:i2], ouvidas[j1:j2]):
+            for i in range(i1, i2):
+                for j in range(j1, j2):
+                    ligar(de_qual[i], de_quem[j])
+    grupos: dict[tuple[str, int], tuple[list[int], list[int]]] = {}
+    for (lado, n) in list(pai):
+        do_texto, ouvidas_do_grupo = grupos.setdefault(raiz((lado, n)), ([], []))
+        (do_texto if lado == "t" else ouvidas_do_grupo).append(n)
+
+    saida: list[Palavra] = []
+    usadas: set[int] = set()
+    grupo_de = {j: g for g in grupos.values() for j in g[1]}
+    for j, w in enumerate(palavras):
+        if j in usadas:
+            continue
+        if j not in grupo_de:
+            saida.append(w)
+            continue
+        do_texto, ouvidas_do_grupo = (sorted(x) for x in grupo_de[j])
+        usadas.update(ouvidas_do_grupo)
+        vizinhas = [palavras[k] for k in ouvidas_do_grupo]
+        if len(do_texto) == len(vizinhas) == 1:
+            saida.append(Palavra(tokens[do_texto[0]], w.inicio, w.fim, w.prob))
+            continue
+        # As palavras do texto dividem o tempo das ouvidas, pelo número de letras.
+        a, b = min(p.inicio for p in vizinhas), max(p.fim for p in vizinhas)
+        prob = round(sum(p.prob for p in vizinhas) / len(vizinhas), 3)
+        letras = [max(1, len(tokens[i])) for i in do_texto]
+        t = a
+        for i, n in zip(do_texto, letras, strict=True):
+            fim = t + (b - a) * n / sum(letras)
+            saida.append(Palavra(tokens[i], round(t, 3), round(max(fim, t + 0.02), 3), prob))
+            t = fim
+    return saida
+
+
+__all__ = ["CASAMENTO_MINIMO", "IDIOMA_PADRAO", "MODELOS", "MODELO_PADRAO", "PARECIDO_MINIMO",
+           "REVISOES", "TRECHO_MAXIMO", "VARIAVEL_FALSA",
            "Palavra", "ajustar_ao_texto", "carregar", "chaves", "dica_das_palavras",
-           "identidade", "modelo_baixado", "por_extenso", "salvar", "texto_ao_lado",
-           "transcrever"]
+           "grafia_do_texto", "identidade", "modelo_baixado", "por_extenso", "salvar",
+           "texto_ao_lado", "transcrever"]

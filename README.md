@@ -193,7 +193,10 @@ Há dois jeitos, e o tour da página (botão **Tour**, no topo) mostra os dois.
 2. No passo 1, arraste o vídeo e marque onde vai postar.
 3. No passo 2, escolha o preset do tipo de vídeo: vlog, gameplay, review, aula,
    imóveis… ou um seu.
-4. Clique em **Editar vídeo**. O vídeo editado, as legendas e as thumbnails ficam na
+4. Se a fala tem nomes que o Whisper não conhece (o do seu projeto, marcas, termos em
+   inglês), cole no passo 3, em **O que você falou**, o texto que você leu: a legenda
+   pega a grafia dele ([veja como](#o-que-você-falou)).
+5. Clique em **Editar vídeo**. O vídeo editado, as legendas e as thumbnails ficam na
    pasta mostrada no resultado.
 
 ### Uma notícia montada com cenas
@@ -232,7 +235,8 @@ Algumas dicas:
 
 - **Confira a legenda.** O Whisper `small` erra nomes: "leve no" já virou "Levin". O
   `medium`, no passo 3, erra menos e demora mais. Um erro na fala aparece na legenda e
-  pode até virar a pílula de destaque.
+  pode até virar a pílula de destaque. Se a narração não é da Minha voz, cole o texto em
+  [O que você falou](#o-que-você-falou).
 - **O bipe** pega só as palavras da lista do passo 2, e a lista também ajuda o Whisper a
   ouvir essas palavras.
 - **Na primeira vez sem internet,** os quatro sons do tema Notícia que vêm do Remotion
@@ -643,6 +647,24 @@ No passo 3, o **Estilo** da legenda pode ser o clássico (uma linha em karaokê)
 Quem marca as cores e as pílulas é o Gemini, no mesmo pedido dos cartões. Sem ele, os
 nomes próprios ficam em ciano, os números e a palavra mais longa de cada trecho em rosa, e
 não há pílula. Os adesivos de palavra são da legenda clássica.
+
+## O que você falou
+
+O Whisper não conhece o nome do seu projeto. Numa gravação de verdade, "Editai" saiu
+"Edita I", "thumbnails" saiu "tambineios" e "presets" saiu "processos". No passo 3, o
+campo **O que você falou** recebe o texto que você leu ou o roteiro que seguiu, e a
+legenda pega a grafia dele:
+
+- a palavra que bate com o texto fica escrita como no texto, com a pontuação dele;
+- um trecho curto que o Whisper ouviu diferente pega a grafia do texto se as letras forem
+  parecidas: "tambineios" e "thumbnails" são 50% parecidas. Uma palavra trocada de
+  verdade ("plataforma" no lugar de "ferramenta", 30%) fica como foi dita;
+- o que você improvisou fica como o Whisper ouviu, e o que você pulou não entra;
+- as notas entre colchetes ("[pausa]"), o negrito do Markdown e os emojis saem.
+
+Revise o texto antes: um erro de digitação dele vai para a legenda. Se o texto não for o
+desta fala (menos da metade das palavras batem), a legenda fica com o Whisper. O texto
+não entra nos presets, porque é de um vídeo só. No terminal: `--texto-falado texto.txt`.
 
 ## Voz e bipe
 
@@ -1122,6 +1144,7 @@ editai --formatos                                 # o que este computador grava
 | `--sem-sons-por-palavra` | sem o som de cada palavra ("dinheiro" e as moedas) | |
 | `--animacoes` | os cartões animados, escritos pelo Gemini | |
 | `--legenda` | `classica` ou `destaques` | `classica` |
+| `--texto-falado ARQUIVO` | o texto que você falou (.txt): a legenda pega a grafia dele | |
 | `--voz` | `original`, `limpa` ou `estudio` | `original` |
 | `--efeito-na-voz` | um efeito pronto ou seu (veja `--efeitos`), ou os ajustes: `"tom=9,eco=30"`; `nenhum` tira o do preset | |
 | `--efeitos` | mostra os efeitos na voz, os prontos e os seus, com os ajustes | |

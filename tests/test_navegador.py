@@ -790,6 +790,27 @@ def _esperar_o_b(pagina, efeito_esperado: str, acao):
     return pedido.value
 
 
+def test_o_que_voce_falou(navegador, endereco, tmp_path):
+    """O texto colado no passo 3 vai na edição, e a legenda sai com a grafia dele: o
+    transcritor falso ouve "o editor", e o .srt diz "o Editai"."""
+    pagina, erros = _pagina_vigiada(navegador, endereco)
+    pagina.set_input_files("#passo-envio input[type=file]",
+                           str(fazer_video(tmp_path / "fala.mp4", segundos=4.0)))
+    pagina.locator(".ficha").wait_for(timeout=20_000)
+    legenda = pagina.locator("#passo-legenda")
+    legenda.get_by_label("O que você falou (opcional)").fill(
+        "Hoje eu vou mostrar como funciona o **Editai**. [pausa]")
+    legenda.get_by_text("Arquivo .srt", exact=True).click()
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/tarefas")
+                               and r.method == "POST") as pedido:
+        pagina.get_by_role("button", name="Editar vídeo").click()
+    assert pedido.value.post_data_json["edicao"]["texto_falado"].startswith("Hoje eu vou")
+    pagina.locator(".miniaturas img").first.wait_for(timeout=120_000)
+    srt = (tmp_path / "saida" / "fala-editado.srt").read_text(encoding="utf-8")
+    assert "Editai" in srt and "editor" not in srt and "**" not in srt
+    assert not _barrados(pagina), _barrados(pagina)
+    assert not erros, erros
+
 def test_estudio_de_voz(navegador, endereco, tmp_path):
     """O estúdio: a amostra do vídeo vira o A e o B; começar de um pronto e mexer num
     controle pede o B de novo; o A/B; salvar, renomear, duplicar, apagar, exportar e

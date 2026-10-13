@@ -95,13 +95,10 @@ def obter_palavras(entrada: Path, duracao: float, edicao: OpcoesDeEdicao,
                                     dica=dica)
     chave = hashlib.sha1(json.dumps(origem, sort_keys=True).encode()).hexdigest()[:16]
     guardada = pasta_de_cache() / f"{chave}.json"
-    # A narração da voz sintetizada traz o roteiro ao lado: a legenda sai com a grafia
-    # dele ("PEGI", e não o "Peggy" que o Whisper ouviu), nos tempos do Whisper.
-    texto = transcricao.texto_ao_lado(entrada)
     palavras = transcricao.carregar(guardada, origem=origem)
     if palavras is not None:
         progresso("transcrevendo", 1.0, "transcrição reaproveitada")
-        return transcricao.ajustar_ao_texto(palavras, texto) if texto else palavras
+        return _com_a_grafia(palavras, entrada, edicao)
     if not transcricao.modelo_baixado(edicao.modelo):
         progresso("transcrevendo", 0.0,
                   f"baixando o modelo {edicao.modelo} ({transcricao.MODELOS[edicao.modelo]}),"
@@ -110,7 +107,21 @@ def obter_palavras(entrada: Path, duracao: float, edicao: OpcoesDeEdicao,
         entrada, idioma=edicao.idioma, modelo=edicao.modelo, duracao=duracao,
         progresso=lambda f: progresso("transcrevendo", f, ""), dica=dica)
     transcricao.salvar(palavras, guardada, origem=origem)
-    return transcricao.ajustar_ao_texto(palavras, texto) if texto else palavras
+    return _com_a_grafia(palavras, entrada, edicao)
+
+
+def _com_a_grafia(palavras: list[transcricao.Palavra], entrada: Path,
+                  edicao: OpcoesDeEdicao) -> list[transcricao.Palavra]:
+    """As palavras com a grafia de um texto, se houver um. A narração da voz sintetizada
+    traz o roteiro ao lado, que ela leu inteiro: a legenda sai com a grafia dele ("PEGI", e
+    não o "Peggy" que o Whisper ouviu). Num vídeo gravado, vale o texto colado no passo 3,
+    que só corrige a grafia do que foi ouvido (quem grava pula e improvisa)."""
+    texto = transcricao.texto_ao_lado(entrada)
+    if texto:
+        return transcricao.ajustar_ao_texto(palavras, texto)
+    if edicao.texto_falado.strip():
+        return transcricao.grafia_do_texto(palavras, edicao.texto_falado)
+    return palavras
 
 
 def empurrao(p: plano.Plano, t: float) -> float:

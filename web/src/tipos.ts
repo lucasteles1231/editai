@@ -38,6 +38,8 @@ export type Edicao = {
   /** O efeito na voz, como texto: "tom=9,coral=20" (vazio, nenhum). */
   efeito_da_voz: string;
   estilo_da_legenda: EstiloDaLegenda;
+  /** O texto que a pessoa falou: a legenda pega a grafia dele (fora dos presets). */
+  texto_falado: string;
 };
 
 export type Voz = 'original' | 'limpa' | 'estudio';

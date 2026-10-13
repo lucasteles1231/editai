@@ -847,6 +847,17 @@ export const PassoLegenda: React.FC<{
           </select>
           <small>Automático: até 18 em pé e 32 deitado. Menos letras, menos palavras por vez.</small>
         </label>
+        <label className="campo texto-falado inteiro">
+          <span>O que você falou (opcional)</span>
+          <textarea rows={4} value={edicao.texto_falado} maxLength={20000}
+            onChange={(e) => mudar({texto_falado: e.target.value})}
+            placeholder="Cole aqui o texto que você leu ou o roteiro que seguiu." />
+          <small>
+            A legenda pega a grafia do texto onde ele bate com o que o Whisper ouviu: o nome do projeto, as marcas, os
+            termos em inglês. O que você improvisou fica como foi ouvido, e o que você pulou não entra. Revise o texto:
+            um erro de digitação dele vai para a legenda.
+          </small>
+        </label>
       </div>
       <div className="grade" style={{marginTop: 14}}>
         <Interruptor ligado={saida.srt} aoMudar={(v) => mudarSaida({srt: v})} titulo="Arquivo .srt"

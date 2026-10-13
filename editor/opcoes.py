@@ -5,6 +5,9 @@ from dataclasses import asdict, dataclass, fields
 
 from editor.transcricao import IDIOMA_PADRAO, MODELO_PADRAO, MODELOS
 
+#: O texto falado mais longo aceito: uns 40 minutos de fala.
+TEXTO_FALADO_MAXIMO = 20_000
+
 
 @dataclass
 class OpcoesDeEdicao:
@@ -59,6 +62,10 @@ class OpcoesDeEdicao:
     #: "classica" (uma linha, karaokê) ou "destaques" (páginas de até 4 palavras que
     #: entram uma a uma, com cores e a frase de efeito numa pílula amarela).
     estilo_da_legenda: str = "classica"
+    #: O texto que a pessoa falou (ou leu), colado no passo 3: a legenda pega a grafia dele
+    #: onde ele casa com o que o Whisper ouviu (:func:`editor.transcricao.grafia_do_texto`).
+    #: Não entra nos presets, porque é de um vídeo só.
+    texto_falado: str = ""
 
     def problemas(self) -> list[str]:
         erros = []
@@ -98,6 +105,8 @@ class OpcoesDeEdicao:
             erros.append(f"o efeito na voz não serve: {erro}")
         if len(self.bipe) > 500:
             erros.append("a lista do bipe passa de 500 letras")
+        if len(self.texto_falado) > TEXTO_FALADO_MAXIMO:
+            erros.append("o texto falado passa de 20.000 letras")
         if self.tema_dos_sons not in sons.temas():
             erros.append(f"tema de sons desconhecido: {self.tema_dos_sons} "
                          f"(use {', '.join(sons.temas())})")
@@ -112,4 +121,4 @@ class OpcoesDeEdicao:
         return asdict(self)
 
 
-__all__ = ["OpcoesDeEdicao"]
+__all__ = ["TEXTO_FALADO_MAXIMO", "OpcoesDeEdicao"]

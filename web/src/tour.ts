@@ -199,8 +199,8 @@ export function comecarTour(): void {
         align: 'start',
         title: '3. A legenda',
         description: 'O idioma e o tamanho do Whisper, que transcreve no seu computador. O estilo: <b>clássica</b>, '
-          + 'uma linha em karaokê, ou <b>destaques</b>, com cores e a frase de efeito numa pílula. E o tamanho, a '
-          + 'largura e a legenda à parte, em .srt e .vtt.',
+          + 'em karaokê, ou <b>destaques</b>, com cores e uma pílula. Colando <b>o que você falou</b>, a legenda pega '
+          + 'a grafia do texto. E a legenda à parte, em .srt e .vtt.',
       },
     },
     {
