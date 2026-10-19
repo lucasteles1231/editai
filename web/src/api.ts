@@ -3,8 +3,8 @@
  * URL aberta pelo comando `editai` e fica guardado na aba (sessionStorage).
  */
 import type {
-  AudioInfo, BibliotecaInfo, Edicao, EfeitosDaVoz, Estado, EstadoChave, EstadoIa, FotoPexels, GeracaoDaMatriz, GravacaoDaVoz, Ideia,
-  ImagemFundo, MotorDeVoz, Narracao, PersonagemInfo, Preset, PresetsImportados, RecorteInfo, Saida, Tarefa,
+  AudioInfo, BibliotecaInfo, Edicao, EfeitosDaVoz, Estado, EstadoChave, EstadoDasVozes, EstadoIa, FotoPexels,
+  GeracaoDaMatriz, GravacaoDaVoz, Ideia, ImagemFundo, MotorDeVoz, Narracao, PersonagemInfo, Preset, PresetsImportados, RecorteInfo, Saida, Tarefa,
   VideoInfo, VozSalva,
 } from './tipos';
 
@@ -249,7 +249,7 @@ export const api = {
       + `&tratamento=${encodeURIComponent(tratamento)}&segundos=${segundos}&vez=${vez}`),
 
   // ── "Minha voz": o motor, a leitura, as vozes salvas e a narração ──
-  vozes: () => pedir<{motor: MotorDeVoz; vozes: VozSalva[]}>('/api/vozes'),
+  vozes: () => pedir<EstadoDasVozes>('/api/vozes'),
   motorDeVoz: () => pedir<MotorDeVoz>('/api/vozes/motor'),
   instalarVoz: () => pedir<MotorDeVoz>('/api/vozes/motor', {method: 'POST'}),
   cancelarInstalacao: () => pedir<MotorDeVoz>('/api/vozes/motor/cancelar', {method: 'POST'}),

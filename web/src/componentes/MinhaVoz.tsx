@@ -3,13 +3,18 @@
  * parágrafo de cada vez, ou enviando a gravação inteira), e o editor narra qualquer roteiro com a
  * voz dela. O motor (o Qwen3-TTS) é instalado à parte, pelo botão daqui.
  *
- * A narração pronta vira um áudio separado: dali em diante, a montagem é a de sempre.
+ * Duas partes: o ``PainelDaVoz`` (em "Antes de começar": instalar, gravar, ouvir e apagar as
+ * vozes) e a ``MinhaVoz`` da montagem (escolher a voz e narrar o roteiro). A narração pronta
+ * vira um áudio separado: dali em diante, a montagem é a de sempre.
  */
 import React, {useEffect, useState} from 'react';
 import {api} from '../api';
+import {abrirConfiguracao} from '../configurar';
 import {duracao, numero} from '../formatar';
 import {useGravador} from '../gravador';
-import type {AudioInfo, GravacaoDaVoz, MotorDeVoz, Narracao, ParagrafoDaLeitura, VozSalva} from '../tipos';
+import type {
+  AudioInfo, EstadoDasVozes, GravacaoDaVoz, MotorDeVoz, Narracao, ParagrafoDaLeitura, VozSalva,
+} from '../tipos';
 
 /** De quanto em quanto tempo a página pergunta pela instalação e pela narração. */
 const ESPERA_MS = 800;
@@ -264,35 +269,89 @@ const GravarVoz: React.FC<{aoSalvar: (v: VozSalva) => void; aoFechar: () => void
   );
 };
 
-// ── o roteiro narrado ─────────────────────────────────────────────────────
+// ── as vozes (o painel de "Antes de começar") ──────────────────────────────
 
-export const MinhaVoz: React.FC<{narracao: AudioInfo | null; aoNarrar: (a: AudioInfo | null) => void}> = (
-  {narracao, aoNarrar},
+export const PainelDaVoz: React.FC<{estado: EstadoDasVozes | null; aoMudar: (e: EstadoDasVozes) => void}> = (
+  {estado, aoMudar},
 ) => {
-  const [motor, setMotor] = useState<MotorDeVoz | null>(null);
-  const [vozes, setVozes] = useState<VozSalva[]>([]);
-  const [escolhida, setEscolhida] = useState('');
   const [criando, setCriando] = useState(false);
+  const [erro, setErro] = useState('');
+  if (!estado) return <small>Carregando as vozes…</small>;
+  const {motor, vozes} = estado;
+  if (!motor.instalado) return <InstalarMotor motor={motor} aoMudar={(m) => aoMudar({...estado, motor: m})} />;
+  if (criando || !vozes.length) {
+    return (
+      <GravarVoz podeFechar={vozes.length > 0} aoFechar={() => setCriando(false)} aoSalvar={(v) => {
+        aoMudar({...estado, vozes: [...vozes.filter((x) => x.apelido !== v.apelido), v]});
+        setCriando(false);
+      }} />
+    );
+  }
+
+  const apagar = async (v: VozSalva) => {
+    if (!window.confirm(`Apagar a voz de ${v.nome}? A gravação e a referência saem do computador.`)) return;
+    try {
+      aoMudar({...estado, vozes: (await api.apagarVoz(v.apelido)).vozes});
+    } catch (e) {
+      setErro(mensagem(e));
+    }
+  };
+
+  const desinstalar = async () => {
+    if (!window.confirm('Desinstalar a voz sintetizada? O motor e o modelo (uns 3,5 GB) saem do computador; as '
+      + 'vozes gravadas ficam, para quando você instalar de novo.')) return;
+    try {
+      aoMudar({...estado, motor: await api.desinstalarVoz()});
+    } catch (e) {
+      setErro(mensagem(e));
+    }
+  };
+
+  return (
+    <div className="minha-voz" aria-label="as suas vozes">
+      <ul className="lista-de-vozes">
+        {vozes.map((v) => (
+          <li key={v.apelido}>
+            <div>
+              <strong>{v.nome}</strong>
+              <small>{duracao(v.segundos)} de referência · gravada em {v.criada}</small>
+            </div>
+            <audio controls preload="none" src={api.referenciaUrl(v.apelido)} aria-label={`ouvir a voz de ${v.nome}`} />
+            <button type="button" className="botao pequeno" onClick={() => void apagar(v)}>Apagar</button>
+          </li>
+        ))}
+      </ul>
+      <div className="linha-de-opcoes">
+        <button type="button" className="botao pequeno" onClick={() => setCriando(true)}>Gravar outra voz</button>
+      </div>
+      <small>
+        Para narrar um roteiro com a sua voz, escolha "Um fundo e, por cima…" no passo 1 e, em "O áudio vem de",
+        Minha voz.
+      </small>
+      {erro ? <div className="aviso erro">{erro}</div> : null}
+      <small className="custo">
+        <button type="button" className="link" onClick={() => void desinstalar()}>Desinstalar a voz sintetizada</button>
+      </small>
+    </div>
+  );
+};
+
+// ── o roteiro narrado (na montagem) ───────────────────────────────────────
+
+type PropsDaNarracao = {
+  estado: EstadoDasVozes | null;
+  aoMudar: (e: EstadoDasVozes) => void;
+  narracao: AudioInfo | null;
+  aoNarrar: (a: AudioInfo | null) => void;
+};
+
+export const MinhaVoz: React.FC<PropsDaNarracao> = ({estado, aoMudar, narracao, aoNarrar}) => {
+  const [escolhida, setEscolhida] = useState('');
   const [roteiro, setRoteiro] = useState('');
-  const [pronuncia, setPronuncia] = useState('');
+  const [pronuncia, setPronuncia] = useState<string | null>(null);
   const [rodando, setRodando] = useState<Narracao | null>(null);
   const [narrado, setNarrado] = useState('');
   const [erro, setErro] = useState('');
-
-  const escolher = (v: VozSalva) => {
-    setEscolhida(v.apelido);
-    setPronuncia(comoTexto(v.pronuncia));
-  };
-
-  useEffect(() => {
-    api.vozes()
-      .then((e) => {
-        setMotor(e.motor);
-        setVozes(e.vozes);
-        if (e.vozes[0]) escolher(e.vozes[0]);
-      })
-      .catch((e) => setErro(mensagem(e)));
-  }, []);
 
   const emAndamento = rodando?.rodando ? rodando.id : '';
   useEffect(() => {
@@ -308,53 +367,45 @@ export const MinhaVoz: React.FC<{narracao: AudioInfo | null; aoNarrar: (a: Audio
     return () => clearInterval(t);
   }, [emAndamento, aoNarrar]);
 
-  if (!motor) return erro ? <div className="aviso erro">{erro}</div> : <small>Carregando as vozes…</small>;
-  if (!motor.instalado) return <InstalarMotor motor={motor} aoMudar={setMotor} />;
-  if (criando || !vozes.length) {
+  if (!estado) return <small>Carregando as vozes…</small>;
+  if (!estado.motor.instalado || !estado.vozes.length) {
     return (
-      <GravarVoz podeFechar={vozes.length > 0} aoFechar={() => setCriando(false)} aoSalvar={(v) => {
-        setVozes((vs) => [...vs.filter((x) => x.apelido !== v.apelido), v]);
-        escolher(v);
-        setCriando(false);
-      }} />
+      <div className="minha-voz" aria-label="minha voz">
+        <small>
+          {estado.motor.instalado ? 'Nenhuma voz gravada ainda.' : 'A voz sintetizada ainda não está instalada.'} A
+          gravação é feita uma vez, em "Antes de começar", no topo da página.
+        </small>
+        <div className="linha-de-opcoes">
+          <button type="button" className="botao pequeno usar" onClick={() => abrirConfiguracao('voz')}>
+            Gravar a minha voz
+          </button>
+        </div>
+      </div>
     );
   }
 
+  const {motor, vozes} = estado;
   const voz = vozes.find((v) => v.apelido === escolhida) ?? vozes[0];
-  const chave = `${voz.apelido}\n${pronuncia}\n${roteiro}`;
+  const regrasDaVoz = comoTexto(voz.pronuncia);
+  const lista = pronuncia ?? regrasDaVoz;
+  const chave = `${voz.apelido}\n${lista}\n${roteiro}`;
   const palavras = roteiro.trim() ? roteiro.trim().split(/\s+/).length : 0;
-  const regras = pronuncia.split('\n').filter((l) => /\S\s*(=|→|->|:)\s*\S/.test(l)).length;
+  const regras = lista.split('\n').filter((l) => /\S\s*(=|→|->|:)\s*\S/.test(l)).length;
+
+  const escolher = (v: VozSalva) => {
+    setEscolhida(v.apelido);
+    setPronuncia(null);
+  };
 
   const narrar = async () => {
     setErro('');
     try {
-      if (pronuncia !== comoTexto(voz.pronuncia)) {
-        const nova = await api.salvarPronuncia(voz.apelido, pronuncia);
-        setVozes((vs) => vs.map((x) => (x.apelido === nova.apelido ? nova : x)));
+      if (lista !== regrasDaVoz) {
+        const nova = await api.salvarPronuncia(voz.apelido, lista);
+        aoMudar({...estado, vozes: vozes.map((x) => (x.apelido === nova.apelido ? nova : x))});
       }
       setNarrado(chave);
-      setRodando(await api.narrar(voz.apelido, roteiro, pronuncia));
-    } catch (e) {
-      setErro(mensagem(e));
-    }
-  };
-
-  const desinstalar = async () => {
-    if (!window.confirm('Desinstalar a voz sintetizada? O motor e o modelo (uns 3,5 GB) saem do computador; as '
-      + 'vozes gravadas ficam, para quando você instalar de novo.')) return;
-    try {
-      setMotor(await api.desinstalarVoz());
-    } catch (e) {
-      setErro(mensagem(e));
-    }
-  };
-
-  const apagar = async () => {
-    if (!window.confirm(`Apagar a voz de ${voz.nome}? A gravação e a referência saem do computador.`)) return;
-    try {
-      const r = await api.apagarVoz(voz.apelido);
-      setVozes(r.vozes);
-      if (r.vozes[0]) escolher(r.vozes[0]);
+      setRodando(await api.narrar(voz.apelido, roteiro, lista));
     } catch (e) {
       setErro(mensagem(e));
     }
@@ -369,13 +420,8 @@ export const MinhaVoz: React.FC<{narracao: AudioInfo | null; aoNarrar: (a: Audio
             <button key={v.apelido} type="button" className="pilula" aria-pressed={v.apelido === voz.apelido}
               onClick={() => escolher(v)}>{v.nome}</button>
           ))}
-          <button type="button" className="pilula" onClick={() => setCriando(true)}>Gravar outra voz</button>
+          <button type="button" className="pilula" onClick={() => abrirConfiguracao('voz')}>Gravar outra voz</button>
         </div>
-        <div className="linha-de-opcoes voz-escolhida">
-          <audio controls preload="none" src={api.referenciaUrl(voz.apelido)} aria-label="ouvir a referência da voz" />
-          <button type="button" className="botao pequeno" onClick={() => void apagar()}>Apagar esta voz</button>
-        </div>
-        <small>A referência: {duracao(voz.segundos)} da sua leitura, os trechos mais limpos. Gravada em {voz.criada}.</small>
       </div>
       <label className="campo">
         <span>O roteiro</span>
@@ -392,7 +438,7 @@ export const MinhaVoz: React.FC<{narracao: AudioInfo | null; aoNarrar: (a: Audio
       </label>
       <details className="campo pronuncia">
         <summary>Pronúncia{regras ? ` (${regras})` : ''}</summary>
-        <textarea rows={3} value={pronuncia} onChange={(e) => setPronuncia(e.target.value)} aria-label="a lista de pronúncia"
+        <textarea rows={3} value={lista} onChange={(e) => setPronuncia(e.target.value)} aria-label="a lista de pronúncia"
           placeholder={'PEGI = pégui\nGTA = gê tê á'} />
         <small>
           Como o motor deve ler uma palavra: siglas e nomes estrangeiros. Vale só para a voz (a legenda continua com a
@@ -432,8 +478,7 @@ export const MinhaVoz: React.FC<{narracao: AudioInfo | null; aoNarrar: (a: Audio
       <small className="custo">
         Num Mac com chip Apple, narrar leva de 1,5 a 2 vezes a duração da fala, mais uns segundos para o motor carregar
         {motor.aparelho === 'cpu' ? '; aqui ele usa o processador, que é bem mais lento' : ''}. Os trechos já narrados
-        ficam guardados.{' '}
-        <button type="button" className="link" onClick={() => void desinstalar()}>Desinstalar a voz sintetizada</button>
+        ficam guardados.
       </small>
     </div>
   );

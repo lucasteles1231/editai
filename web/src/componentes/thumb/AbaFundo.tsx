@@ -5,6 +5,7 @@
  */
 import React, {useState} from 'react';
 import {api} from '../../api';
+import {abrirConfiguracao} from '../../configurar';
 import {duracao} from '../../formatar';
 import type {EstadoChave, FotoPexels, ImagemFundo, ThumbConfig, VideoInfo} from '../../tipos';
 import {Interruptor} from '../Interruptor';
@@ -22,13 +23,12 @@ type Props = {
   video: VideoInfo | null;
   montagem: boolean;
   pexels: EstadoChave;
-  setPexels: (e: EstadoChave) => void;
   geracao: {restantes: number; teto: number};
   setGeracao: (g: {restantes: number; teto: number}) => void;
   iaConfigurada: boolean;
 };
 
-export const AbaFundo: React.FC<Props> = ({config, mudar, video, montagem, pexels, setPexels, geracao, setGeracao,
+export const AbaFundo: React.FC<Props> = ({config, mudar, video, montagem, pexels, geracao, setGeracao,
   iaConfigurada}) => {
   const origem = config.imagem?.origem;
   const inicial: Fonte = config.fundo === 'video' ? 'video' : config.fundo === 'cor' ? 'cor'
@@ -36,7 +36,6 @@ export const AbaFundo: React.FC<Props> = ({config, mudar, video, montagem, pexel
   const [fonte, setFonte] = useState<Fonte>(inicial);
   const [erro, setErro] = useState('');
   const [ocupado, setOcupado] = useState(false);
-  const [chave, setChave] = useState('');
   const [busca, setBusca] = useState(config.busca);
   const [fotos, setFotos] = useState<FotoPexels[]>([]);
   const [cena, setCena] = useState(config.cena);
@@ -135,33 +134,18 @@ export const AbaFundo: React.FC<Props> = ({config, mudar, video, montagem, pexel
             ) : null}
             <small>
               Fotos do <a href="https://www.pexels.com" target="_blank" rel="noreferrer">Pexels</a>, de uso livre.
-              Só a busca sai do seu computador. Chave {pexels.final}{' '}
-              {pexels.origem === 'arquivo' ? (
-                <button type="button" className="link" onClick={() => void api.apagarChavePexels().then(setPexels)}>
-                  (remover)
-                </button>
-              ) : null}
+              Só a busca sai do seu computador.
             </small>
           </div>
         ) : (
-          <form className="campo" onSubmit={(e) => {
-            e.preventDefault();
-            void tentar(async () => {
-              setPexels(await api.salvarChavePexels(chave.trim()));
-              setChave('');
-            });
-          }}>
-            <small>Para buscar fotos, cole uma chave grátis do Pexels (leva um minuto para criar).</small>
-            <div className="chave-ia">
-              <input type="password" autoComplete="off" spellCheck={false} value={chave}
-                placeholder="Cole aqui a sua chave do Pexels" aria-label="chave do Pexels"
-                onChange={(e) => setChave(e.target.value)} />
-              <button type="submit" className="botao pequeno" disabled={!chave.trim() || ocupado}>
-                {ocupado ? 'Conferindo…' : 'Salvar chave'}
+          <div className="campo">
+            <small>Para buscar fotos, cole uma chave grátis do Pexels em "Antes de começar", no topo da página.</small>
+            <div className="linha-de-opcoes">
+              <button type="button" className="botao pequeno" onClick={() => abrirConfiguracao('pexels')}>
+                Colar a chave do Pexels
               </button>
             </div>
-            <a href="https://www.pexels.com/api/" target="_blank" rel="noreferrer">Pegar uma chave grátis do Pexels</a>
-          </form>
+          </div>
         )
       ) : null}
 
@@ -190,7 +174,10 @@ export const AbaFundo: React.FC<Props> = ({config, mudar, video, montagem, pexel
             </small>
           </form>
         ) : (
-          <div className="aviso">Para gerar um fundo, cole a chave do Gemini no topo da página.</div>
+          <div className="aviso">
+            Para gerar um fundo, cole a chave do Gemini em "Antes de começar".{' '}
+            <button type="button" className="link" onClick={() => abrirConfiguracao('gemini')}>Colar a chave</button>
+          </div>
         )
       ) : null}
 

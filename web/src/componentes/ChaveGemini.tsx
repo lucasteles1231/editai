@@ -1,9 +1,10 @@
 /**
- * A chave do Gemini, no topo da página: ela liga as ideias de thumbnail, a matriz das cenas e
- * os cartões animados, que ficam em passos diferentes. A chave vai para o servidor local e
- * nunca volta: a página só sabe o fim dela.
+ * A chave do Gemini, no painel de "Antes de começar": ela liga as ideias de thumbnail, a matriz
+ * das cenas e os cartões animados, que ficam em passos diferentes. A chave vai para o servidor
+ * local e nunca volta: a página só sabe o fim dela.
  */
 import React, {useState} from 'react';
+import {abrirConfiguracao} from '../configurar';
 import type {EstadoIa} from '../tipos';
 
 const ONDE_PEGAR = 'https://aistudio.google.com/apikey';
@@ -14,10 +15,9 @@ type Props = {
   aoApagarChave: () => Promise<void>;
 };
 
-/** Leva até o campo da chave e põe o foco nele (o PainelIa usa, quando falta a chave). */
+/** Abre o painel da chave, com o foco no campo (o PainelIa usa, quando falta a chave). */
 export function irParaAChave(): void {
-  document.getElementById('chave-gemini')?.scrollIntoView({behavior: 'smooth', block: 'center'});
-  document.querySelector<HTMLInputElement>('#chave-gemini input')?.focus({preventScroll: true});
+  abrirConfiguracao('gemini');
 }
 
 export const ChaveGemini: React.FC<Props> = ({ia, aoSalvarChave, aoApagarChave}) => {
@@ -61,13 +61,12 @@ export const ChaveGemini: React.FC<Props> = ({ia, aoSalvarChave, aoApagarChave})
 
   return (
     <section className="chave-gemini" id="chave-gemini" aria-label="a chave do Gemini">
-      <strong>Chave do Gemini <span className="etiqueta">opcional e grátis</span></strong>
       <small>
         Liga as ideias de thumbnail, a matriz da biblioteca de cenas e os cartões animados. Sem ela, todo o resto
         funciona do mesmo jeito.
       </small>
       <form className="chave-ia" onSubmit={salvar}>
-        <input type="password" autoComplete="off" spellCheck={false} value={chave}
+        <input type="password" autoComplete="off" spellCheck={false} value={chave} data-foco
           placeholder="Cole aqui a sua chave do Gemini" aria-label="chave do Gemini"
           onChange={(e) => setChave(e.target.value)} />
         <button type="submit" className="botao pequeno" disabled={!chave.trim() || salvando}>

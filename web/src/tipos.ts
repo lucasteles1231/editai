@@ -161,6 +161,8 @@ export type MotorDeVoz = {
   erro: string; espaco: string; tempo: string; aparelho: string; pasta: string;
 };
 export type VozSalva = {nome: string; apelido: string; criada: string; segundos: number; pronuncia: Record<string, string>};
+/** O motor da voz sintetizada e as vozes gravadas (``GET /api/vozes``). */
+export type EstadoDasVozes = {motor: MotorDeVoz; vozes: VozSalva[]};
 export type MedidasDaLeitura = {segundos: number; lufs: number; snr_db: number; estouro: number};
 export type ParagrafoDaLeitura = {
   indice: number; texto: string; estado: 'pendente' | 'ok' | 'refazer'; motivos: string[]; cobertura: number;

@@ -46,14 +46,14 @@ export function comecarTour(): void {
       },
     },
     {
-      element: '#chave-gemini',
+      element: '#antes-de-comecar',
       popover: {
         side: 'bottom',
         align: 'start',
-        title: 'A chave do Gemini',
-        description: 'Opcional e grátis. Com ela, o Gemini sugere 3 thumbnails, descreve as cenas da biblioteca e '
-          + 'escreve os cartões animados. A chave fica só no seu computador; para o Google vão só o texto da fala e '
-          + 'quadros pequenos, quando você usa uma dessas funções.',
+        title: 'Antes de começar',
+        description: 'Tudo aqui é opcional e se configura uma vez: <b>a sua voz</b>, gravada para narrar roteiros, e as '
+          + 'chaves grátis do <b>Gemini</b> (ideias de capa, cartões e a matriz das cenas) e do <b>Pexels</b> (fotos '
+          + 'para o fundo da capa). Cada cartão abre o próprio painel.',
       },
     },
     {

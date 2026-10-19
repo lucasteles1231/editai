@@ -117,7 +117,6 @@ type Props = {
   tamanhoDoRecorte: string;
   painelIa: React.ComponentProps<typeof PainelIa> | null;
   pexels: EstadoChave;
-  setPexels: (e: EstadoChave) => void;
   geracao: {restantes: number; teto: number};
   setGeracao: (g: {restantes: number; teto: number}) => void;
   /** O botão "Baixar": desenha, salva na pasta e baixa o JPG deste tamanho. */
@@ -311,7 +310,7 @@ export const ThumbPasso: React.FC<Props> = (p) => {
               ) : null}
               {aba === 'fundo' ? (
                 <AbaFundo config={config} mudar={mudar} video={camadas?.fundo ?? video}
-                  montagem={camadas !== null} pexels={p.pexels} setPexels={p.setPexels}
+                  montagem={camadas !== null} pexels={p.pexels}
                   geracao={p.geracao} setGeracao={p.setGeracao}
                   iaConfigurada={Boolean(p.painelIa?.ia.configurada)} />
               ) : null}

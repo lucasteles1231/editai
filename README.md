@@ -187,6 +187,10 @@ de conserto. O resultado diz quantos foram, contando as tentativas que o Google 
 
 Há dois jeitos, e o tour da página (botão **Tour**, no topo) mostra os dois.
 
+Logo abaixo do título, **Antes de começar** junta o que se configura uma vez e vale para
+todos os vídeos, tudo opcional: a sua voz gravada ([Minha voz](#minha-voz)) e as chaves
+grátis do Gemini e do Pexels. Cada cartão diz se já está pronto e abre o próprio painel.
+
 ### Um vídeo seu falando
 
 1. Digite `editai`. O navegador abre no editor.
@@ -210,7 +214,7 @@ Você traz:
 | **A matriz** | o `cenas.json`, dentro da pasta, com o arquivo e a descrição de cada cena (o formato está em [Biblioteca de cenas](#biblioteca-de-cenas)). Não tem? O botão **Gerar a matriz** escreve para você ([Gerar a matriz](#gerar-a-matriz)) |
 | **A narração** | um arquivo de áudio, ou vários, um por parágrafo, que tocam na ordem do nome. Ou só o roteiro, narrado com a sua voz ([Minha voz](#minha-voz)) |
 | **O personagem** (opcional) | um GIF, PNG animado ou WebP, com a boca fechada no primeiro quadro |
-| **A chave do Gemini** (opcional e grátis) | colada no topo da página. Sem ela, as cenas saem pelas palavras e não há cartões |
+| **A chave do Gemini** (opcional e grátis) | colada em **Antes de começar**, no topo da página. Sem ela, as cenas saem pelas palavras e não há cartões |
 
 <img src="docs/img/interface-noticia.png" alt="O passo 1 com a biblioteca de cenas: a pasta enviada com 5 cenas, um personagem de palito por cima e dois parágrafos de narração, e o YouTube Shorts marcado" width="420" align="right">
 
@@ -219,12 +223,13 @@ Você traz:
    junto. Sem ele, clique em **Gerar a matriz** e revise a tabela. A ficha mostra quantas
    cenas entraram e quantas ficaram de fora.
 2. Em **Por cima**, envie o personagem (ou escolha **Nada**). Em **O áudio vem de**,
-   envie os arquivos da narração, ou escolha **Minha voz** e cole o roteiro.
+   envie os arquivos da narração, ou escolha **Minha voz** e cole o roteiro (a voz se
+   grava antes, uma vez, em **Antes de começar**).
 3. Em **Onde você vai postar**, marque Shorts, TikTok ou Reels para o vídeo sair em pé.
 4. No passo 2, escolha o preset **Notícia com cenas**. Ele liga a janela com câmera, os
    cartões animados, a voz de estúdio, a legenda em destaques e os sons do tema Notícia.
    Se o assunto pede, escreva no **Bipe nas palavras** as que devem ser escondidas.
-5. Se ainda não colou a chave do Gemini, cole no topo da página.
+5. Se ainda não colou a chave do Gemini, cole em **Antes de começar**.
 6. Clique em **Editar vídeo**. Uma narração de 50 s leva uns 2 minutos num MacBook M5. O
    resultado diz quantas cenas e cartões o Gemini escreveu e quantos pedidos da cota
    usou.
@@ -261,8 +266,8 @@ escolher as edições, escolher a saída e, se quiser, a thumbnail.
   </tr>
   <tr>
     <td><b>Tour guiado.</b> Na primeira visita, dezoito balões curtos mostram os dois jeitos
-    de usar e cada parte da página, da chave do Gemini ao resultado, abrindo a montagem em
-    camadas no caminho. O botão <b>Tour</b> refaz quando quiser.</td>
+    de usar e cada parte da página, de "Antes de começar" ao resultado, abrindo a montagem
+    em camadas no caminho. O botão <b>Tour</b> refaz quando quiser.</td>
     <td><b>Thumbnail e resultado.</b> A prévia muda enquanto você escolhe. Toque numa palavra
     do título para ela virar o adesivo.</td>
   </tr>
@@ -270,6 +275,8 @@ escolher as edições, escolher a saída e, se quiser, a thumbnail.
 
 <img src="docs/img/interface-progresso.png" alt="O progresso da edição, etapa por etapa, com o tempo que falta" width="300" align="right">
 
+- **Antes de começar:** os cartões do que é opcional e se configura uma vez: a sua voz
+  (gravar, ouvir e apagar) e as chaves do Gemini e do Pexels.
 - **Envio:** um vídeo só, ou a montagem em camadas: o fundo (um vídeo ou a biblioteca de
   cenas), a pessoa, o personagem ou nada por cima, e a escolha de onde vem o áudio (o
   fundo, a pessoa ou arquivos separados). Embaixo, onde você vai postar: o editor
@@ -322,7 +329,7 @@ antes e depois de editar o vídeo.
 |---|---|---|
 | **Vídeo** | nada | nada. Pode ser outro quadro, que mostra o assunto |
 | **Imagem** | um JPG, PNG ou WebP seu, de até 20 MB | nada |
-| **Pexels** | uma [chave grátis do Pexels](https://www.pexels.com/api/) | o texto da busca. As fotos vêm com o crédito do fotógrafo |
+| **Pexels** | uma [chave grátis do Pexels](https://www.pexels.com/api/), colada em **Antes de começar** | o texto da busca. As fotos vêm com o crédito do fotógrafo |
 | **Gerada pelo Gemini** | uma chave do Gemini com faturamento ativo, uns US$ 0,04 por imagem | a descrição da cena, só quando você clica, e no máximo 10 imagens por sessão |
 | **Cor** | nada | nada |
 
@@ -361,7 +368,8 @@ thumbnails. Cada ideia escolhe a chamada, o modelo, o quadro, o fundo, a luz, a 
 ícone, e tudo continua editável.
 
 1. Pegue uma chave grátis no [Google AI Studio](https://aistudio.google.com/apikey).
-2. Cole no topo da página, logo abaixo do título: a mesma chave serve às ideias de
+2. Cole em **Antes de começar**, logo abaixo do título, no cartão **Chave do Gemini**: a
+   mesma chave serve às ideias de
    thumbnail, à matriz das cenas e aos cartões. Ela fica só no seu computador, num
    arquivo que só o seu usuário lê, e nunca volta para a página. A variável `GEMINI_API_KEY` também funciona.
 3. Ligue **Sugerir thumbnails com IA**. As ideias aparecem quando a edição termina.
@@ -793,18 +801,20 @@ roda no seu computador.
 
 <img src="docs/img/interface-voz-leitura.png" alt="A leitura no teleprompter: os nove parágrafos numerados, todos aprovados, o terceiro aberto em letra grande (o das perguntas e dos números), o botão Regravar, a barra do microfone e a nota do parágrafo: 7 s, volume, fala 43 dB acima do ruído e 100% das palavras" width="420" align="right">
 
-1. **Instale a voz.** No passo 1, em **O áudio vem de**, escolha **Minha voz (de um
-   roteiro)** e clique em **Instalar a voz sintetizada**. Ela fica num ambiente à parte,
-   com uns 3,5 GB, e leva de 5 a 20 minutos, uma vez só. Desinstalar, pelo link da mesma
-   área, apaga a pasta inteira.
+1. **Instale a voz.** Em **Antes de começar**, no cartão **Minha voz**, clique em
+   **Configurar** e em **Instalar a voz sintetizada**. Ela fica num ambiente à parte, com
+   uns 3,5 GB, e leva de 5 a 20 minutos, uma vez só. Desinstalar, pelo link do mesmo
+   painel, apaga a pasta inteira. No painel ficam também as vozes gravadas, para ouvir e
+   apagar.
 2. **Grave a leitura.** Diga o seu nome e leia o texto: 9 parágrafos curtos, uns 2
    minutos. O primeiro é a autorização, com o seu nome. Pelo microfone, a página mostra
    um parágrafo de cada vez, em letra grande. Ou grave o texto inteiro no celular e envie
    o arquivo.
 3. **A conferência.** Cada parágrafo é transcrito pelo Whisper e comparado ao texto,
    palavra por palavra. O que não passar volta com o motivo, e dá para regravar só ele.
-4. **Narre o roteiro.** Cole o texto (ou abra um `.txt`) e clique em **Narrar o
-   roteiro**. A narração vira o áudio da montagem, e o resto é o de sempre: a legenda,
+4. **Narre o roteiro.** No passo 1, escolha **Um fundo e, por cima…** e, em **O áudio
+   vem de**, **Minha voz (de um roteiro)**. Cole o texto (ou abra um `.txt`) e clique em
+   **Narrar o roteiro**. A narração vira o áudio da montagem, e o resto é o de sempre: a legenda,
    os cortes, as cenas, os cartões e o bipe.
 
 <br clear="right">
@@ -1448,7 +1458,8 @@ cobra pelo uso, conforme a [tabela de preços](https://ai.google.dev/gemini-api/
 
 No `config.json` da pasta de configuração do editor (veja "O que é instalado, e onde"),
 que só o seu usuário consegue ler. A página só mostra os quatro últimos caracteres. Para
-apagar, use o botão **Remover chave** no topo da página, ou apague o arquivo.
+apagar, use o botão **Remover chave** no painel do cartão da chave, em **Antes de
+começar**, ou apague o arquivo.
 
 </details>
 

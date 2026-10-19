@@ -343,19 +343,11 @@ def test_minha_voz(navegador, endereco, tmp_path):
     pagina.add_init_script(VIGIAR_A_CSP)
     pagina.goto(endereco)
 
-    pagina.get_by_role("button", name="Um fundo e, por cima").click()
-    fundo = fazer_video(tmp_path / "tela.mp4", largura=320, altura=180, segundos=2.0,
-                        com_audio=False)
-    pagina.set_input_files('[data-envio="fundo"] input', str(fundo))
-    expect(pagina.get_by_label("dados do fundo")).to_contain_text("320×180")
-    pagina.get_by_role("button", name="Nada", exact=True).click()
-    pagina.get_by_role("group", name="de onde vem o áudio").get_by_role(
-        "button", name="Minha voz (de um roteiro)").click()
-    editar = pagina.get_by_role("button", name="Editar vídeo")
-    expect(editar).to_be_disabled()                 # sem a narração, ainda não
-
-    # sem nenhuma voz salva, a gravação abre direto
-    gravar = pagina.get_by_label("gravar a sua voz")
+    # a voz se grava uma vez, pelo cartão de "Antes de começar"; sem nenhuma salva, o
+    # painel já abre na gravação
+    cartao = pagina.get_by_role("article", name="Minha voz")
+    cartao.get_by_role("button", name="Configurar").click()
+    gravar = pagina.get_by_role("dialog", name="Minha voz").get_by_label("gravar a sua voz")
     gravar.get_by_label("Seu nome (vai na autorização)").fill("Ana")
     gravar.get_by_role("button", name="Começar a leitura").click()
     expect(gravar.get_by_label("o parágrafo 1")).to_contain_text("Eu, Ana, autorizo")
@@ -371,10 +363,24 @@ def test_minha_voz(navegador, endereco, tmp_path):
     salvar = gravar.get_by_role("button", name="Salvar a minha voz")
     expect(salvar).to_be_enabled()
     salvar.click()
+    expect(pagina.get_by_label("as suas vozes")).to_contain_text("Ana", timeout=15_000)
+    pagina.get_by_role("button", name="fechar: Minha voz").click()
+    expect(cartao).to_contain_text("a voz de Ana")
 
-    voz = pagina.get_by_label("minha voz")
+    # e narra o roteiro na montagem
+    pagina.get_by_role("button", name="Um fundo e, por cima").click()
+    fundo = fazer_video(tmp_path / "tela.mp4", largura=320, altura=180, segundos=2.0,
+                        com_audio=False)
+    pagina.set_input_files('[data-envio="fundo"] input', str(fundo))
+    expect(pagina.get_by_label("dados do fundo")).to_contain_text("320×180")
+    pagina.get_by_role("button", name="Nada", exact=True).click()
+    pagina.get_by_role("group", name="de onde vem o áudio").get_by_role(
+        "button", name="Minha voz (de um roteiro)").click()
+    editar = pagina.get_by_role("button", name="Editar vídeo")
+    expect(editar).to_be_disabled()                 # sem a narração, ainda não
+    voz = pagina.get_by_label("minha voz", exact=True)
     expect(voz.get_by_role("group", name="as vozes salvas").get_by_role("button", name="Ana")
-           ).to_have_attribute("aria-pressed", "true", timeout=15_000)
+           ).to_have_attribute("aria-pressed", "true")
     voz.get_by_label("o roteiro a narrar").fill(
         "A Rockstar confirmou: o PEGI deu 18 anos.\n\nE aí, passou do ponto? Comenta aí.")
     voz.locator("summary", has_text="Pronúncia").click()
@@ -408,9 +414,8 @@ def test_minha_voz_pelo_microfone(navegador, endereco):
         pagina = nav.new_page()
         pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
         pagina.goto(endereco)
-        pagina.get_by_role("button", name="Um fundo e, por cima").click()
-        pagina.get_by_role("group", name="de onde vem o áudio").get_by_role(
-            "button", name="Minha voz (de um roteiro)").click()
+        pagina.get_by_role("article", name="Minha voz").get_by_role(
+            "button", name="Configurar").click()
         gravar = pagina.get_by_label("gravar a sua voz")
         gravar.get_by_label("Seu nome (vai na autorização)").fill("Ana")
         gravar.get_by_role("button", name="Começar a leitura").click()
@@ -997,9 +1002,10 @@ def test_o_tour_volta_ao_modo_de_quem_usa(navegador, endereco):
     assert not erros, erros
 
 
-def test_a_chave_do_gemini_no_topo(navegador, endereco, monkeypatch):
-    """Sem a chave, o campo dela aparece antes do passo 1 (três passos dependem dela), e o
-    painel da thumbnail leva até ele."""
+def test_antes_de_comecar(navegador, endereco, monkeypatch):
+    """A faixa "Antes de começar" fica acima do passo 1, com um cartão para a voz e para cada
+    chave: o estado de cada um, e o botão que abre o painel dele (a chave com o foco no
+    campo). O painel da thumbnail, sem a chave, abre o mesmo painel."""
     from editor import ia
 
     monkeypatch.delenv(ia.VARIAVEL_FALSA)
@@ -1008,16 +1014,41 @@ def test_a_chave_do_gemini_no_topo(navegador, endereco, monkeypatch):
     erros: list[str] = []
     pagina.on("pageerror", lambda e: erros.append(str(e)))
     pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
+    pagina.add_init_script(VIGIAR_A_CSP)
     pagina.goto(endereco)
 
-    secao = pagina.get_by_label("a chave do Gemini")
-    campo = secao.get_by_label("chave do Gemini", exact=True)
-    expect(campo).to_be_visible()
-    expect(secao).to_contain_text("a matriz da biblioteca de cenas e os cartões animados")
-    assert secao.bounding_box()["y"] < pagina.locator("#passo-envio").bounding_box()["y"]
-    # o painel da IA, no passo 5, não tem mais o campo: ele leva até o do topo
-    painel = pagina.locator("#painel-ia")
-    expect(painel.get_by_label("chave do Gemini", exact=True)).to_have_count(0)
-    painel.get_by_role("button", name="Colar a chave do Gemini no topo da página").click()
+    faixa = pagina.get_by_label("antes de começar")
+    assert faixa.bounding_box()["y"] < pagina.locator("#passo-envio").bounding_box()["y"]
+    gemini = faixa.get_by_role("article", name="Chave do Gemini")
+    expect(gemini).to_contain_text("sem chave")
+    expect(faixa.get_by_role("article", name="Minha voz")).to_contain_text("nenhuma voz gravada")
+    # a chave não está mais solta na página: só dentro do painel
+    expect(pagina.get_by_label("chave do Gemini", exact=True)).to_have_count(0)
+
+    gemini.get_by_role("button", name="Configurar").click()
+    painel = pagina.get_by_role("dialog", name="Chave do Gemini")
+    campo = painel.get_by_label("chave do Gemini", exact=True)
     expect(campo).to_be_focused()
+    expect(painel).to_contain_text("a matriz da biblioteca de cenas e os cartões animados")
+    painel.get_by_role("button", name="fechar: Chave do Gemini").click()
+    expect(painel).to_have_count(0)
+
+    # o painel da IA, no passo 5, abre o mesmo painel
+    pagina.locator("#painel-ia").get_by_role("button", name="Colar a chave do Gemini").click()
+    expect(pagina.get_by_role("dialog", name="Chave do Gemini").get_by_label(
+        "chave do Gemini", exact=True)).to_be_focused()
+    pagina.keyboard.press("Escape")
+    expect(pagina.get_by_role("dialog")).to_have_count(0)
+
+    faixa.get_by_role("article", name="Chave do Pexels").get_by_role("button").click()
+    expect(pagina.get_by_role("dialog", name="Chave do Pexels")).to_contain_text("Pexels")
+    pagina.keyboard.press("Escape")
+
+    # sem voz gravada, o painel da voz já abre na gravação
+    faixa.get_by_role("article", name="Minha voz").get_by_role("button", name="Configurar").click()
+    expect(pagina.get_by_role("dialog", name="Minha voz").get_by_label(
+        "gravar a sua voz")).to_be_visible()
+    pagina.keyboard.press("Escape")
+    expect(pagina.get_by_role("dialog")).to_have_count(0)
+    assert not _barrados(pagina), _barrados(pagina)
     assert not erros, erros

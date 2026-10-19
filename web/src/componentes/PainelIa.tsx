@@ -1,9 +1,10 @@
 /**
  * A thumbnail com IA, dentro do passo 5: o aviso do que sai do computador e as três ideias,
- * cada uma desenhada pela mesma composição da prévia. A chave do Gemini fica no topo da
- * página (ChaveGemini): sem ela, este painel leva até lá.
+ * cada uma desenhada pela mesma composição da prévia. A chave do Gemini fica em "Antes de
+ * começar" (ChaveGemini): sem ela, este painel abre o painel da chave.
  */
 import React from 'react';
+import {abrirConfiguracao} from '../configurar';
 import {Thumb, type ThumbProps} from '../thumb/Thumb';
 import type {EstadoIa, Ideia} from '../tipos';
 import {irParaAChave} from './ChaveGemini';
@@ -53,7 +54,7 @@ export const PainelIa: React.FC<Props> = (p) => {
         </p>
         <div className="linha-de-opcoes">
           <button type="button" className="botao pequeno" onClick={irParaAChave}>
-            Colar a chave do Gemini no topo da página
+            Colar a chave do Gemini
           </button>
         </div>
         <Aviso />
@@ -90,7 +91,12 @@ export const PainelIa: React.FC<Props> = (p) => {
                       </button>
                     ) : null}
                     {ideia.fundo === 'banco' && !ideia.imagem && !p.pexelsConfigurado ? (
-                      <small>A foto vem do Pexels: cole a chave na aba Fundo.</small>
+                      <small>
+                        A foto vem do Pexels:{' '}
+                        <button type="button" className="link" onClick={() => abrirConfiguracao('pexels')}>
+                          cole a chave do Pexels
+                        </button>.
+                      </small>
                     ) : null}
                   </div>
                 );

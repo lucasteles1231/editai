@@ -617,11 +617,9 @@ def capturas_da_voz(nav, url: str, pasta: Path) -> None:
         pagina = ctx.new_page()
         pagina.goto(url)
         pagina.add_style_tag(content=".cabecalho { position: static !important; }")
-        pagina.get_by_role("button", name="Um fundo e, por cima").click()
-        pagina.get_by_role("button", name="Biblioteca de cenas").click()
-        pagina.get_by_role("button", name="Nada", exact=True).click()
-        pagina.get_by_role("group", name="de onde vem o áudio").get_by_role(
-            "button", name="Minha voz (de um roteiro)").click()
+        # a voz se grava pelo cartão de "Antes de começar"; a narração fica na montagem
+        pagina.get_by_role("article", name="Minha voz").get_by_role(
+            "button", name="Configurar").click()
         gravar = pagina.get_by_label("gravar a sua voz")
         gravar.get_by_label("Seu nome (vai na autorização)").fill("Ana Lúcia")
         gravar.get_by_role("button", name="Começar a leitura").click()
@@ -638,7 +636,14 @@ def capturas_da_voz(nav, url: str, pasta: Path) -> None:
         salvar(gravar.screenshot(), "interface-voz-leitura.png", 1200)
 
         gravar.get_by_role("button", name="Salvar a minha voz").click()
-        voz = pagina.get_by_label("minha voz")
+        pagina.get_by_label("as suas vozes").get_by_text("Ana Lúcia").wait_for(timeout=30_000)
+        pagina.get_by_role("button", name="fechar: Minha voz").click()
+        pagina.get_by_role("button", name="Um fundo e, por cima").click()
+        pagina.get_by_role("button", name="Biblioteca de cenas").click()
+        pagina.get_by_role("button", name="Nada", exact=True).click()
+        pagina.get_by_role("group", name="de onde vem o áudio").get_by_role(
+            "button", name="Minha voz (de um roteiro)").click()
+        voz = pagina.get_by_label("minha voz", exact=True)
         voz.get_by_label("o roteiro a narrar").fill(
             "A Rockstar confirmou: o PEGI deu 18 anos para o GTA 6, e ninguém se surpreendeu.\n\n"
             "E aí, a Rockstar tá certa em não censurar nada, ou passou do ponto? Comenta aí!")
@@ -647,7 +652,7 @@ def capturas_da_voz(nav, url: str, pasta: Path) -> None:
         voz.get_by_role("button", name="Narrar o roteiro").click()
         voz.get_by_text("pronta para editar").wait_for(timeout=60_000)
         pagina.wait_for_timeout(500)
-        camada = pagina.locator(".camada", has=pagina.get_by_label("minha voz"))
+        camada = pagina.locator(".camada", has=pagina.get_by_label("minha voz", exact=True))
         salvar(camada.screenshot(), "interface-voz-narrar.png", 1200)
         ctx.close()
     finally:

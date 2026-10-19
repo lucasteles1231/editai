@@ -635,7 +635,7 @@ button.preset:hover { border-color: var(--linha); }
   border-bottom: 2px solid color-mix(in srgb, var(--linha) 15%, transparent);
 }
 .topo-do-estudio h2 { margin: 0; font-family: var(--titulo); font-size: 22px; }
-.fechar-estudio {
+.fechar-estudio, .fechar-dialogo {
   width: 34px;
   height: 34px;
   border: 2px solid var(--linha);
@@ -945,6 +945,70 @@ button.link { padding: 0; border: none; background: none; color: inherit; font: 
 .chave-ok { align-items: center; }
 .chave-ok small { color: var(--tinta-suave); }
 .aviso-ia { color: var(--tinta-suave); font-size: 12.5px; line-height: 1.45; max-width: 70ch; }
+
+/* ── antes de começar: os cartões do que se configura uma vez ── */
+.antes-de-comecar { display: grid; gap: 10px; margin: 18px 0 4px; }
+.titulo-da-faixa { display: flex; align-items: center; font-family: var(--titulo); font-size: 16px; }
+.cartoes-de-config { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.cartao-de-config {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 12px 14px;
+  border: 2px solid var(--linha);
+  border-radius: 14px;
+  background: var(--cartao);
+  box-shadow: 3px 3px 0 var(--linha);
+}
+.cartao-de-config.pronto { background: color-mix(in srgb, var(--lima) 14%, var(--cartao)); }
+.cartao-de-config > small { color: var(--tinta-suave); font-size: 12.5px; line-height: 1.4; }
+.cartao-de-config .botao { justify-self: start; margin-top: 2px; }
+.cabeca-do-cartao { justify-content: space-between; align-items: baseline; gap: 6px; }
+.estado-do-cartao { font-size: 12px; font-weight: 600; color: var(--tinta-suave); }
+.cartao-de-config.pronto .estado-do-cartao { color: var(--ok); }
+
+/* ── as janelas (o <dialog> dos painéis) ── */
+.dialogo {
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0 22px 20px;
+  border: 2px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--papel);
+  color: var(--tinta);
+  box-shadow: var(--sombra);
+  overflow: auto;
+}
+.dialogo.largo { width: min(1100px, calc(100vw - 32px)); }
+.dialogo::backdrop { background: rgb(10 8 5 / 0.55); }
+.topo-do-dialogo {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 -22px 16px;
+  padding: 12px 22px;
+  background: var(--papel);
+  border-bottom: 2px solid color-mix(in srgb, var(--linha) 15%, transparent);
+}
+.topo-do-dialogo h2 { margin: 0; font-family: var(--titulo); font-size: 22px; }
+.corpo-do-dialogo { display: grid; gap: 14px; }
+.dialogo .chave-gemini { margin: 0; padding: 0; border: 0; background: none; }
+.lista-de-vozes { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.lista-de-vozes li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 2px solid color-mix(in srgb, var(--linha) 20%, transparent);
+  border-radius: 12px;
+}
+.lista-de-vozes li > div { display: grid; gap: 2px; flex: 1 1 160px; }
+.lista-de-vozes small { color: var(--tinta-suave); font-size: 12.5px; }
+.lista-de-vozes audio { height: 36px; max-width: 100%; }
 
 .ideias { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .ideia-cartao { display: grid; gap: 6px; align-content: start; }

@@ -8,8 +8,8 @@ import {ORDEM, PLATAFORMAS, type Plataforma, juntar} from '../plataformas';
 import {apelido} from '../presets';
 import {bytes, duracao, numero} from '../formatar';
 import type {
-  AudioInfo, BibliotecaInfo, CenaDaMatriz, Edicao, EfeitosDaVoz, EstiloDaLegenda, Estado, Fala, FonteDoFundo, FormatoDoQuadro,
-  Modo, MontagemConfig, PersonagemInfo, PorCima, Preset, PresetsImportados, Saida, VideoInfo, Voz,
+  AudioInfo, BibliotecaInfo, CenaDaMatriz, Edicao, EfeitosDaVoz, EstadoDasVozes, EstiloDaLegenda, Estado, Fala, FonteDoFundo,
+  FormatoDoQuadro, Modo, MontagemConfig, PersonagemInfo, PorCima, Preset, PresetsImportados, Saida, VideoInfo, Voz,
 } from '../tipos';
 import {EfeitoNaVoz} from './EfeitoNaVoz';
 import {Interruptor} from './Interruptor';
@@ -178,6 +178,8 @@ export type PropsDoEnvio = {
   /** A "Minha voz": a narração do roteiro, quando já saiu. */
   narracao: AudioInfo | null;
   aoNarrar: (a: AudioInfo | null) => void;
+  vozes: EstadoDasVozes | null;
+  aoMudarVozes: (e: EstadoDasVozes) => void;
   /** A biblioteca de cenas, depois da matriz; e o que falta dela enquanto chega. */
   biblioteca: BibliotecaInfo | null;
   /** A pasta já chegou e falta a matriz. */
@@ -444,7 +446,8 @@ const EnvioDaMontagem: React.FC<PropsDoEnvio> = (p) => {
               aceita="audio/*,.mp3,.wav,.m4a" progresso={p.progresso.audio}
               aoEscolher={(f) => p.aoEscolherAudios([f])} aoEscolherVarios={p.aoEscolherAudios} />
           </>
-        ) : fala === 'voz' ? <MinhaVoz narracao={p.narracao} aoNarrar={p.aoNarrar} />
+        ) : fala === 'voz' ? <MinhaVoz estado={p.vozes} aoMudar={p.aoMudarVozes} narracao={p.narracao}
+          aoNarrar={p.aoNarrar} />
           : fala === 'cenas' ? (p.biblioteca && p.bibliotecaId ? (
             <CenasDoAudio biblioteca={p.biblioteca} bibliotecaId={p.bibliotecaId} escolhidas={m.cenasDoAudio}
               aoMudar={(cenasDoAudio) => p.mudarMontagem({cenasDoAudio})} />

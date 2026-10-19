@@ -8,13 +8,15 @@ import {aplicarPreset, presetMarcado} from './presets';
 import {Painel} from './componentes/Painel';
 import {type Envio, PassoEdicoes, PassoEnvio, PassoLegenda, PassoSaida, type Revisao} from './componentes/Passos';
 import {paraJson, paraLinhas} from './matriz';
-import {ChaveGemini} from './componentes/ChaveGemini';
+import {AntesDeComecar} from './componentes/AntesDeComecar';
+import type {Configuracao} from './configurar';
 import {ThumbPasso, chaveDoRecorte, propsDaThumb, type Recortes} from './componentes/ThumbPasso';
 import {PROPORCAO} from './componentes/thumb/AbaFundo';
 import {gerarPng} from './thumb/exportar';
 import {carregarFonte} from './thumb/medida';
 import type {
-  AudioInfo, BibliotecaInfo, Camadas, CenaDaMatriz, Edicao, Estado, EstadoChave, EstadoIa, Ideia, Modo, MontagemConfig,
+  AudioInfo, BibliotecaInfo, Camadas, CenaDaMatriz, Edicao, Estado, EstadoChave, EstadoDasVozes, EstadoIa, Ideia, Modo,
+  MontagemConfig,
   PersonagemInfo, Preset, RecorteInfo, Saida, Tarefa, ThumbConfig, VideoInfo,
 } from './tipos';
 import {comecarTour, tourJaVisto} from './tour';
@@ -112,6 +114,10 @@ export const App: React.FC = () => {
   const [audios, setAudios] = useState<AudioInfo[]>([]);
   // A "Minha voz": a narração do roteiro com a voz salva, que vai como áudio separado.
   const [narracao, setNarracao] = useState<AudioInfo | null>(null);
+  // O motor e as vozes gravadas: o cartão de "Antes de começar" grava, a montagem narra.
+  const [vozes, setVozes] = useState<EstadoDasVozes | null>(null);
+  // O painel de "Antes de começar" que está aberto.
+  const [configurando, setConfigurando] = useState<Configuracao | null>(null);
   const [biblioteca, setBiblioteca] = useState<BibliotecaInfo | null>(null);
   // A pasta já subiu (e falta a matriz): o id da biblioteca aberta no servidor.
   const [bibliotecaAberta, setBibliotecaAberta] = useState<string | null>(null);
@@ -262,6 +268,7 @@ export const App: React.FC = () => {
         `Não consegui falar com o editor (${e.message}). Abra esta página pelo comando "editai".`));
     carregarFonte().then(() => setFonteOk(true)).catch(() => setFonteOk(true));
     api.icones().then(setIcones).catch(() => undefined);
+    api.vozes().then(setVozes).catch(() => undefined);
     if (!tourJaVisto()) setTimeout(comecarTour, 700);
     return () => pararDeAcompanhar.current?.();
   }, []);
@@ -683,12 +690,14 @@ export const App: React.FC = () => {
             <p>Legenda, cortes de silêncio, zoom, palavras que saltam, ícones, sons e thumbnail. Ou uma notícia
               montada a partir de uma pasta de cenas, com cartões animados — tudo feito aqui no seu computador.</p>
           </div>
-          {ia ? (
-            <ChaveGemini ia={ia} aoSalvarChave={async (chave) => setIa(await api.salvarChave(chave))}
-              aoApagarChave={async () => setIa(await api.apagarChave())} />
-          ) : null}
+          <AntesDeComecar ia={ia} aoSalvarChave={async (chave) => setIa(await api.salvarChave(chave))}
+            aoApagarChave={async () => setIa(await api.apagarChave())}
+            pexels={pexels} aoSalvarChavePexels={async (chave) => setPexels(await api.salvarChavePexels(chave))}
+            aoApagarChavePexels={async () => setPexels(await api.apagarChavePexels())}
+            vozes={vozes} aoMudarVozes={setVozes} aberto={configurando} abrir={setConfigurando} />
           <PassoEnvio modo={modo} setModo={trocarModo} video={unico} fundo={fundo} pessoa={pessoa}
             personagem={personagem} audios={audios} narracao={narracao} aoNarrar={setNarracao} biblioteca={biblioteca}
+            vozes={vozes} aoMudarVozes={setVozes}
             faltaMatriz={Boolean(bibliotecaAberta && !biblioteca)} enviandoBiblioteca={enviandoBiblioteca}
             bibliotecaId={bibliotecaAberta} gerandoMatriz={gerandoMatriz} revisao={revisao}
             salvandoMatriz={salvandoMatriz} aoGerarMatriz={(a) => void gerarMatriz(a)}
@@ -720,7 +729,7 @@ export const App: React.FC = () => {
               <ThumbPasso video={video} config={thumb} mudar={(p) => setThumb((t) => ({...t, ...p}))}
                 icones={icones} fonteOk={fonteOk} recorte={recorteDe(video, thumb.t)} camadas={camadas}
                 tamanhoDoRecorte={estado.recorte.tamanho} painelIa={painelIa}
-                pexels={pexels} setPexels={setPexels} geracao={geracao} setGeracao={setGeracao}
+                pexels={pexels} geracao={geracao} setGeracao={setGeracao}
                 aoBaixar={baixarThumb} baixando={baixando} baixadas={baixadas} erro={erroThumb} />
             </>
           ) : null}
