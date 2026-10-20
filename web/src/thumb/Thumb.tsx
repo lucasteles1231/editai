@@ -49,6 +49,8 @@ export type ThumbProps = {
   pessoaEscala: number;
   espelhar: boolean;
   contorno: boolean;
+  /** Pixel art (o avatar): ampliada sem suavizar. */
+  pixelada?: boolean;
   luz: Luz;
   realce: boolean;
   // ── a mão ──
@@ -626,7 +628,7 @@ export const Thumb: React.FC<ThumbProps> = (p) => {
             <g mask={someEmCima ? `url(#${id}someTopo)` : undefined}>
               <g filter={`url(#${id}pessoa)`}>
                 <image href={p.recorte} x={pessoa.x} y={pessoa.y} width={pessoa.w} height={pessoa.h}
-                  preserveAspectRatio="none"
+                  preserveAspectRatio="none" imageRendering={p.pixelada ? 'pixelated' : undefined}
                   transform={p.espelhar ? `translate(${2 * pessoa.x + pessoa.w} 0) scale(-1 1)` : undefined} />
               </g>
             </g>

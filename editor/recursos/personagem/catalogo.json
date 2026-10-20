@@ -1,0 +1,639 @@
+{
+ "editai": "catalogo-do-personagem",
+ "versao": 1,
+ "categorias": {
+  "cabelo": {
+   "rotulo": "Cabelo",
+   "nenhum": {
+    "pt": "careca",
+    "en": "bald, no hair at all"
+   },
+   "opcoes": [
+    {
+     "id": "curto",
+     "pt": "curto",
+     "en": "short neat hair, tapered sides, a little volume on top",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "topete",
+     "pt": "topete",
+     "en": "short quiff: tapered sides, volume on top swept up and back",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "raspado",
+     "pt": "raspado",
+     "en": "very short buzz cut, an even thin layer of shaved hair",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "franja",
+     "pt": "com franja",
+     "en": "short hair with straight bangs covering the forehead",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "lateral",
+     "pt": "repartido de lado",
+     "en": "medium-short hair with a side part, combed to one side",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "baguncado",
+     "pt": "bagunçado",
+     "en": "messy, tousled medium-length hair with loose spiky locks",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "longo",
+     "pt": "longo liso",
+     "en": "long straight hair with a center part, falling onto the shoulders",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "ondulado",
+     "pt": "longo ondulado",
+     "en": "long wavy hair with a side part, falling onto the shoulders",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "afro",
+     "pt": "black power",
+     "en": "big round afro of tight curls",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "cachos-curtos",
+     "pt": "cachos curtos",
+     "en": "short tight curls close to the head",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "coque",
+     "pt": "coque",
+     "en": "hair pulled back tight into a round bun on top of the head",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "rabo",
+     "pt": "rabo de cavalo",
+     "en": "long hair slicked back into a ponytail",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "trancas",
+     "pt": "tranças",
+     "en": "long box braids falling onto the shoulders",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "chanel",
+     "pt": "chanel",
+     "en": "chin-length bob haircut with a side part",
+     "cores": [
+      "cabelo"
+     ]
+    },
+    {
+     "id": "calvo",
+     "pt": "calvo",
+     "en": "male pattern baldness: bald on top, short hair only on the sides and back",
+     "cores": [
+      "cabelo"
+     ]
+    }
+   ]
+  },
+  "barba": {
+   "rotulo": "Barba",
+   "nenhum": {
+    "pt": "sem barba",
+    "en": "clean-shaven, no facial hair"
+   },
+   "opcoes": [
+    {
+     "id": "rala",
+     "pt": "por fazer",
+     "en": "light stubble, a few days of growth",
+     "cores": [
+      "barba"
+     ]
+    },
+    {
+     "id": "bigode",
+     "pt": "bigode",
+     "en": "mustache only, no beard",
+     "cores": [
+      "barba"
+     ]
+    },
+    {
+     "id": "cavanhaque",
+     "pt": "cavanhaque",
+     "en": "thin mustache and a small goatee on the chin",
+     "cores": [
+      "barba"
+     ]
+    },
+    {
+     "id": "curta",
+     "pt": "curta",
+     "en": "short well-trimmed beard with mustache, close to the jaw",
+     "cores": [
+      "barba"
+     ]
+    },
+    {
+     "id": "cheia",
+     "pt": "cheia",
+     "en": "full beard with mustache covering the jaw and the chin",
+     "cores": [
+      "barba"
+     ]
+    }
+   ]
+  },
+  "oculos": {
+   "rotulo": "Óculos",
+   "nenhum": {
+    "pt": "sem óculos",
+    "en": "no glasses"
+   },
+   "opcoes": [
+    {
+     "id": "redondos",
+     "pt": "redondos",
+     "en": "thin round metal-frame glasses",
+     "cores": [
+      "pele",
+      "oculos"
+     ]
+    },
+    {
+     "id": "retangulares",
+     "pt": "retangulares sem aro",
+     "en": "thin rectangular rimless glasses",
+     "cores": [
+      "pele",
+      "oculos"
+     ]
+    },
+    {
+     "id": "quadrados",
+     "pt": "quadrados grossos",
+     "en": "thick square plastic-frame glasses",
+     "cores": [
+      "pele",
+      "oculos"
+     ]
+    },
+    {
+     "id": "sol",
+     "pt": "de sol",
+     "en": "dark sunglasses",
+     "cores": [
+      "pele",
+      "oculos"
+     ]
+    }
+   ]
+  },
+  "acessorio": {
+   "rotulo": "Acessório",
+   "nenhum": {
+    "pt": "nenhum",
+    "en": "no hat, no headphones, no earrings"
+   },
+   "opcoes": [
+    {
+     "id": "bone",
+     "pt": "boné",
+     "en": "baseball cap facing forward",
+     "cores": [
+      "pele",
+      "acessorio"
+     ]
+    },
+    {
+     "id": "gorro",
+     "pt": "gorro",
+     "en": "knitted beanie",
+     "cores": [
+      "pele",
+      "acessorio"
+     ]
+    },
+    {
+     "id": "fone",
+     "pt": "fone de ouvido",
+     "en": "big over-ear headphones on the head",
+     "cores": [
+      "pele",
+      "acessorio"
+     ]
+    },
+    {
+     "id": "brincos",
+     "pt": "brincos",
+     "en": "small round earrings",
+     "cores": [
+      "pele",
+      "acessorio"
+     ]
+    }
+   ]
+  },
+  "roupa": {
+   "rotulo": "Roupa",
+   "nenhum": {
+    "pt": "suéter",
+    "en": "plain crew-neck sweater or T-shirt"
+   },
+   "opcoes": [
+    {
+     "id": "moletom",
+     "pt": "moletom",
+     "en": "hoodie with the hood down and two drawstrings",
+     "cores": [
+      "pele",
+      "roupa"
+     ]
+    },
+    {
+     "id": "camisa",
+     "pt": "camisa social",
+     "en": "button-up shirt with a collar",
+     "cores": [
+      "pele",
+      "roupa"
+     ]
+    },
+    {
+     "id": "jaqueta",
+     "pt": "jaqueta aberta",
+     "en": "open jacket over a crew-neck T-shirt",
+     "cores": [
+      "pele",
+      "roupa"
+     ]
+    }
+   ]
+  }
+ },
+ "fixas": {
+  "cabeca": "manequim",
+  "olhos": "ia",
+  "sobrancelhas": "ia",
+  "nariz": "nenhum",
+  "boca": "ia",
+  "bracos": "ia"
+ },
+ "cores": {
+  "pele": {
+   "rotulo": "Pele",
+   "sugestoes": {
+    "#f7d2b6": "muito clara",
+    "#f4bf96": "clara",
+    "#e2a57c": "média clara",
+    "#c68642": "média",
+    "#a26a42": "morena",
+    "#8a5636": "escura",
+    "#5c3a24": "muito escura"
+   }
+  },
+  "cabelo": {
+   "rotulo": "Cabelo",
+   "sugestoes": {
+    "#1f1611": "preto",
+    "#3b2a1e": "castanho escuro",
+    "#6b4a2b": "castanho",
+    "#b5562c": "ruivo",
+    "#d9b26a": "loiro",
+    "#ecd59a": "loiro claro",
+    "#9a9a9a": "grisalho",
+    "#e6e2da": "branco"
+   }
+  },
+  "sobrancelha": {
+   "rotulo": "Sobrancelha",
+   "vazia": "o cabelo, mais escuro",
+   "sugestoes": {}
+  },
+  "barba": {
+   "rotulo": "Barba",
+   "vazia": "o cabelo",
+   "sugestoes": {}
+  },
+  "olho": {
+   "rotulo": "Olhos",
+   "sugestoes": {
+    "#2a1d14": "preto",
+    "#5a3a22": "castanho",
+    "#9a6b2f": "mel",
+    "#4c8a52": "verde",
+    "#3d6fa8": "azul",
+    "#7d8a91": "cinza"
+   }
+  },
+  "roupa": {
+   "rotulo": "Roupa",
+   "sugestoes": {
+    "#3c7542": "verde",
+    "#2b4c7e": "azul",
+    "#1f2430": "preta",
+    "#c2185b": "rosa",
+    "#f0a500": "amarela",
+    "#9aa0a6": "cinza",
+    "#5b3b8a": "roxa",
+    "#b23a2e": "vermelha"
+   }
+  },
+  "roupa2": {
+   "rotulo": "Detalhe da roupa",
+   "sugestoes": {
+    "#e8e4da": "branco",
+    "#1f2430": "preto"
+   }
+  },
+  "oculos": {
+   "rotulo": "Óculos",
+   "sugestoes": {
+    "#2f2f2f": "preto",
+    "#8a6a3b": "tartaruga",
+    "#b8b8b8": "prata"
+   }
+  },
+  "acessorio": {
+   "rotulo": "Acessório",
+   "sugestoes": {
+    "#2b4c7e": "azul",
+    "#1f2430": "preto",
+    "#d4a017": "dourado",
+    "#b23a2e": "vermelho"
+   }
+  }
+ },
+ "padrao": {
+  "cabelo": "curto",
+  "barba": "nenhum",
+  "oculos": "nenhum",
+  "acessorio": "nenhum",
+  "roupa": "moletom",
+  "cores": {
+   "pele": "#f4bf96",
+   "cabelo": "#3b2a1e",
+   "sobrancelha": "",
+   "barba": "",
+   "olho": "#5a3a22",
+   "roupa": "#3c7542",
+   "roupa2": "#e8e4da",
+   "oculos": "#2f2f2f",
+   "acessorio": "#2b4c7e"
+  }
+ },
+ "arquivos": {
+  "acessorio/bone.svg": {
+   "bytes": 3187,
+   "sha256": "38629de0731f94b4485ff07de532c542774d452de70443ea925f11a311892fc9"
+  },
+  "acessorio/brincos.svg": {
+   "bytes": 528,
+   "sha256": "4973f7ba51fd43a2a861bb29db2e215341c27fee4c9aef851f1db7e3ec46956a"
+  },
+  "acessorio/fone.svg": {
+   "bytes": 7770,
+   "sha256": "97e4dbe7d850a63fad0d71041c342e571e9d45fc911f138a4a2e26dd51708203"
+  },
+  "acessorio/gorro.svg": {
+   "bytes": 5550,
+   "sha256": "14b6e2638f58765a0beedf131b3a65e045f0a08eef94142a3ef22086788403bc"
+  },
+  "barba/bigode.svg": {
+   "bytes": 1071,
+   "sha256": "5b14fc75d3eb5ac3c4a8f5780ebcb922ec5684a30d90ca037ded9ac3792c2bde"
+  },
+  "barba/cavanhaque.svg": {
+   "bytes": 938,
+   "sha256": "19e447a30d06f3943bd3f3dd61c8c53d12d3ac3adec9f05faf1967bbfddb54aa"
+  },
+  "barba/cheia.svg": {
+   "bytes": 3767,
+   "sha256": "ded889e6a46d30d12e8551fbd97da38149f780b6f0727f477218a31d60b380ed"
+  },
+  "barba/curta.svg": {
+   "bytes": 3844,
+   "sha256": "bd54d8559f3c66953330089b77b81b22b1972c339bcb797c2ed3866eb55ad022"
+  },
+  "barba/rala.svg": {
+   "bytes": 1304,
+   "sha256": "07ece03d2854895a6f8bb7393023a936cb34d5e2b138b20dedc294d26084f029"
+  },
+  "boca/ia.aberta.svg": {
+   "bytes": 954,
+   "sha256": "3305f93180f77b2efe2735801c123b103267af2514ec19ed2848252f6f27388f"
+  },
+  "boca/ia.meia.svg": {
+   "bytes": 719,
+   "sha256": "7e070f05e397a16c36f9b706b535b3c4419ce1121c72dfc453d950d921a0fc45"
+  },
+  "boca/ia.neutra.svg": {
+   "bytes": 561,
+   "sha256": "721ee44f9baecccfd05721f4258c4a06374c89475534c99804be08175217c2c8"
+  },
+  "boca/ia.o.svg": {
+   "bytes": 697,
+   "sha256": "d9f9d22721d95aba9fe466285c9c0f560ecd312dd422848ac29d0a92bb8a66ee"
+  },
+  "boca/ia.rindo.svg": {
+   "bytes": 1394,
+   "sha256": "b183bc56fd705822975739449df441da8af0c2c3bdc8c736c465b5a778062eab"
+  },
+  "bracos/ia.apontando_cima.svg": {
+   "bytes": 12938,
+   "sha256": "08ac24ff5e9c1dc0ce5c4a0d02d5788d192d5b3981b5f3d4c2b9f8f6aebb9204"
+  },
+  "bracos/ia.apontando_lado.svg": {
+   "bytes": 4980,
+   "sha256": "6845abd1806668d037769faf6bda942a49cff7a79aa1af10074f23799ae4a96d"
+  },
+  "bracos/ia.apontando_voce.svg": {
+   "bytes": 7691,
+   "sha256": "6c465576549dae7bab2cef6df2499181c1d8a2df74455de71d4d41f7457295eb"
+  },
+  "bracos/ia.bracos_cruzados.svg": {
+   "bytes": 7500,
+   "sha256": "bbf70d479874af60a6b49ee6820f63a0a42ce5d59a3909e8e5e1c22372ce31a6"
+  },
+  "bracos/ia.cafe.svg": {
+   "bytes": 9738,
+   "sha256": "e87042cef797ff225d1f65b21cc72390025c4fae421a0fd2a6b5a74c379b17bd"
+  },
+  "bracos/ia.explicando.svg": {
+   "bytes": 11874,
+   "sha256": "48f3b1621c34d7704b29166f7d8ab580eed9228cdbc6765af65e99b3ff22be62"
+  },
+  "bracos/ia.joinha.svg": {
+   "bytes": 8251,
+   "sha256": "3d720ea8c04e831a8f8f4aac0f04734beff79b37d7e1158c940469f0e294c583"
+  },
+  "bracos/ia.mao_no_peito.svg": {
+   "bytes": 5533,
+   "sha256": "98835a1fb3dd3bb51b0d6d01726c8e2139667ad91715d91cf565093ca0ca653b"
+  },
+  "bracos/ia.pensando.svg": {
+   "bytes": 6135,
+   "sha256": "268ce046341b4bf183b2fcb0fd0d84f5f36f2c10e484f08d2b5b25d6c24df3fe"
+  },
+  "bracos/ia.rindo.svg": {
+   "bytes": 4781,
+   "sha256": "cd1bb28f16c5e51b90dc210541ebf4e2dcd4a372e8a8f76affa79e9e1a618b82"
+  },
+  "bracos/ia.surpreso.svg": {
+   "bytes": 18673,
+   "sha256": "01e66016192891e591672279781b0db384c4a6bf7612d4e614ae9669bfbf5dea"
+  },
+  "cabeca/manequim.svg": {
+   "bytes": 20874,
+   "sha256": "2cc138ec5cac8452761558a1b9da3e8f44b97b4831f73a4ceb7356c43023b5c5"
+  },
+  "cabelo/afro.svg": {
+   "bytes": 15892,
+   "sha256": "2c1f8aac46cdc5008478846337aef2544c7064a482eae70531365129f9f256d5"
+  },
+  "cabelo/baguncado.svg": {
+   "bytes": 10000,
+   "sha256": "ba67c916abc6c23b2873407fa72abefae08e01cf8a3e72e36810d728a3915297"
+  },
+  "cabelo/cachos-curtos.svg": {
+   "bytes": 9534,
+   "sha256": "de87b86de018b906e475af2fceea5db06ae5de7c22d3f29f229b3b956202290e"
+  },
+  "cabelo/calvo.svg": {
+   "bytes": 2779,
+   "sha256": "7aeb6e0eb0f62b8c8539af5d2efeb61183debee1fb1786ed285a2bf23d09489d"
+  },
+  "cabelo/chanel.svg": {
+   "bytes": 11852,
+   "sha256": "1eeab2925f1478777dd8f65882d2957df188ac1287a88233e3d4073290a46190"
+  },
+  "cabelo/coque.svg": {
+   "bytes": 5789,
+   "sha256": "13aa52cc1bd210bce4273f8f753e8e99a0b03b1f70e2277653af84e677b2a049"
+  },
+  "cabelo/curto.svg": {
+   "bytes": 4430,
+   "sha256": "130d782360b75e20195456d9e42517fd6b73875cfd693d120470a5de663bae80"
+  },
+  "cabelo/franja.svg": {
+   "bytes": 7214,
+   "sha256": "6f5245230dd3aab34fc692c76707f17ab03ab374ba2ba2d0803528941416a593"
+  },
+  "cabelo/lateral.svg": {
+   "bytes": 4895,
+   "sha256": "aecf5d44535fffa2b1aa695daae1ac126ea20dab73babd5de56d85a0d2265054"
+  },
+  "cabelo/longo.svg": {
+   "bytes": 25941,
+   "sha256": "a914764b9246cfaba8f3db6ad640ab04f849b2407fc1cf7ee5fe4868d7308841"
+  },
+  "cabelo/ondulado.svg": {
+   "bytes": 26654,
+   "sha256": "df7236b8487d6b0c7c07d55c217f71550136d427259ed4c18389ac646463b66f"
+  },
+  "cabelo/rabo.svg": {
+   "bytes": 9070,
+   "sha256": "dce2d3069e13762f1a4b448a1770e26edac7c8fbc7aeaf76d9ba5932927073f9"
+  },
+  "cabelo/raspado.svg": {
+   "bytes": 2309,
+   "sha256": "bcf2e8f21369a9432eed811a0d40d3e61e109473581b8492945aac550724593a"
+  },
+  "cabelo/topete.svg": {
+   "bytes": 6069,
+   "sha256": "f34542059d488b341e571b5c4ecf81734297f435814ca3fea5f8e3073e380206"
+  },
+  "cabelo/trancas.svg": {
+   "bytes": 22568,
+   "sha256": "c2a6b806bc063c1eab5c7874fd3fd0e211c390c938ef4cd5c2b6c02984db6001"
+  },
+  "oculos/quadrados.svg": {
+   "bytes": 1351,
+   "sha256": "f4f50c548af73d02c6dbafba7abcd1f667292405a3b926661f4fd16e37a5339d"
+  },
+  "oculos/redondos.svg": {
+   "bytes": 1368,
+   "sha256": "cb7412029de2196d63ebe612444f6c6ccc9cccd4d2b783b260c7fd54733db638"
+  },
+  "oculos/retangulares.svg": {
+   "bytes": 2016,
+   "sha256": "d7d950c600765bd308e2bd08055fbf65e7e26da9caa5d662e9bac8dff800d90e"
+  },
+  "oculos/sol.svg": {
+   "bytes": 1230,
+   "sha256": "082db63191bcdf5f5df83836a2f6d5480949511cb13fe72817f75066e351d90d"
+  },
+  "olhos/ia.apertado.svg": {
+   "bytes": 964,
+   "sha256": "9bd0da396f34d27b4c3c32ce00e48c229a2b078725183d3ff7f2f8c34dfe4144"
+  },
+  "olhos/ia.arregalado.svg": {
+   "bytes": 1026,
+   "sha256": "595cba2db0e9d10eff4ee289aa39f93d27fa300108cccfae59691c5104b66b99"
+  },
+  "olhos/ia.cima.svg": {
+   "bytes": 466,
+   "sha256": "98be466a06125a6d2bb78eb7cc6a28ffee918f3ac8fbc71dcfb4c58753c63b60"
+  },
+  "olhos/ia.lado.svg": {
+   "bytes": 606,
+   "sha256": "af9b85f371c520752ad724ac2e1f0213159ab523dadb38db36ae2d00055574d8"
+  },
+  "olhos/ia.meio.svg": {
+   "bytes": 685,
+   "sha256": "84a1cb2cae0c52c16767b1bf99d2d2e626c6a0d7eb3c733f93f26a2aeebc8082"
+  },
+  "roupa/camisa.svg": {
+   "bytes": 11558,
+   "sha256": "dd209d7fdf08e8c68ac06b7020c2f878902d0bb65437abad6642ea5e304eadd8"
+  },
+  "roupa/jaqueta.svg": {
+   "bytes": 15744,
+   "sha256": "892b3a11b656f1a688a9d2be28ca53680b777ccf8c946047aaaa597d1b1cf418"
+  },
+  "roupa/moletom.svg": {
+   "bytes": 13247,
+   "sha256": "e3769cb9f729ec5242d100d4d2943d2b1b1744e9b06755e8f8e088b152d9bdfb"
+  },
+  "sobrancelhas/ia.erguida.svg": {
+   "bytes": 1337,
+   "sha256": "a7d4315f8ce5ccc2ec0dfa85a0e541dc3412904ad5ef30831bef1c0142a72250"
+  }
+ }
+}

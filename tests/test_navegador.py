@@ -13,6 +13,7 @@ import threading
 import time
 from pathlib import Path
 
+import numpy as np
 import pytest
 from PIL import Image
 
@@ -1050,5 +1051,70 @@ def test_antes_de_comecar(navegador, endereco, monkeypatch):
         "gravar a sua voz")).to_be_visible()
     pagina.keyboard.press("Escape")
     expect(pagina.get_by_role("dialog")).to_have_count(0)
+    assert not _barrados(pagina), _barrados(pagina)
+    assert not erros, erros
+
+
+def test_o_avatar(navegador, endereco, tmp_path):
+    """O cartão "Avatar": a foto vai ao Gemini (o falso) e volta com as partes; troca-se o
+    cabelo e a cor à mão, aprova-se, e os 36 quadros desenhados na página chegam ao servidor.
+    Dali, o avatar aparece no cartão, no "Por cima" da montagem e no pacote para baixar."""
+    from editor import avatar
+
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 900})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
+    pagina.add_init_script(VIGIAR_A_CSP)
+    pagina.goto(endereco)
+
+    faixa = pagina.get_by_label("antes de começar")
+    cartao = faixa.get_by_role("article", name="Avatar")
+    expect(cartao).to_contain_text("nenhum")
+    cartao.get_by_role("button", name="Configurar").click()
+    painel = pagina.get_by_role("dialog", name="O seu avatar")
+    expect(painel.get_by_alt_text("a prévia do avatar")).to_be_visible()
+
+    # pela foto: o Gemini falso devolve o padrão do catálogo
+    foto = tmp_path / "eu.png"
+    Image.new("RGB", (640, 480), (190, 140, 110)).save(foto)
+    painel.locator("input[type=file]").set_input_files(str(foto))
+    painel.get_by_role("button", name="Montar pela foto com o Gemini (grátis)").click()
+    expect(painel).to_contain_text("O Gemini viu: a IA falsa dos testes")
+
+    # à mão: o cabelo e a cor da pele
+    afro = painel.get_by_role("group", name="Cabelo", exact=True).get_by_role(
+        "button", name="black power")
+    afro.click()
+    expect(afro).to_have_attribute("aria-pressed", "true")
+    painel.get_by_role("button", name="Pele escura", exact=True).click()
+    painel.get_by_label("Nome do avatar").fill("Lucas")
+    painel.get_by_role("button", name="Aprovar e criar os quadros").click()
+    expect(painel.get_by_role("status")).to_contain_text("Pronto: o avatar Lucas", timeout=60_000)
+
+    salvo = avatar.ler("lucas")
+    assert salvo["escolhas"]["cabelo"] == "afro" and salvo["escolhas"]["cores"]["pele"] == "#8a5636"
+    for nome in avatar.nomes_dos_quadros():
+        with Image.open(avatar.quadro("lucas", nome)) as q:
+            assert q.size == (900, 900) and q.mode == "RGBA"
+    # os quadros de uma pose mudam só na boca; os de poses diferentes, nos braços
+    def alfa(nome):
+        with Image.open(avatar.quadro("lucas", nome)) as q:
+            return np.asarray(q)[..., 3] > 0
+
+    assert (alfa("neutro_fechada.png") == alfa("neutro_aberta.png")).mean() > 0.995
+    assert (alfa("neutro_fechada.png") != alfa("surpreso_fechada.png")).sum() > 2000
+    pacote = painel.get_by_role("article", name="avatar Lucas").get_by_role(
+        "link", name="Baixar o pacote")
+    expect(pacote).to_have_attribute("href", re.compile(r"/api/avatares/lucas/pacote\.zip\?t="))
+    pagina.keyboard.press("Escape")
+    expect(cartao).to_contain_text("Lucas")
+
+    # na montagem: "Por cima → Meu avatar" já vem com ele
+    pagina.get_by_role("button", name="Um fundo e, por cima").click()
+    pagina.get_by_role("button", name="Meu avatar").click()
+    expect(pagina.get_by_role("group", name="qual avatar").get_by_role(
+        "button", name="Lucas")).to_have_attribute("aria-pressed", "true")
     assert not _barrados(pagina), _barrados(pagina)
     assert not erros, erros

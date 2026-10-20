@@ -151,8 +151,10 @@ def borrar(x: np.ndarray, raio: float) -> np.ndarray:
     return x
 
 
-def colar(tela: Image.Image, camada: Image.Image, tr: Transformacao) -> None:
-    """Põe a camada (RGBA) na tela (RGBA), já transformada.
+def colar(tela: Image.Image, camada: Image.Image, tr: Transformacao,
+          filtro: int = Image.BILINEAR) -> None:
+    """Põe a camada (RGBA) na tela (RGBA), já transformada (``filtro``: ``Image.NEAREST``
+    na pixel art, que não pode borrar).
 
     Só a parte que cai dentro da tela é redimensionada: um ``resize`` com ``box`` em
     frações de pixel, que custa metade de uma transformação afim do quadro inteiro e
@@ -170,7 +172,7 @@ def colar(tela: Image.Image, camada: Image.Image, tr: Transformacao) -> None:
              min(max((oy0 - tr.dy) / s, 0.0), camada.height),
              min(max((ox1 - tr.dx) / s, 0.0), camada.width),
              min(max((oy1 - tr.dy) / s, 0.0), camada.height))
-    parte = camada.resize((ox1 - ox0, oy1 - oy0), Image.BILINEAR, box=caixa)
+    parte = camada.resize((ox1 - ox0, oy1 - oy0), filtro, box=caixa)
     tela.alpha_composite(parte, dest=(ox0, oy0))
 
 

@@ -20,6 +20,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 1500,
   },
   server: {
+    // as partes do avatar vêm de editor/recursos/personagem, fora da pasta da página
+    fs: {allow: ['..']},
     proxy: {
       '/api': repassar,
       '/fontes': repassar,

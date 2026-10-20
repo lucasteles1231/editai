@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import {api} from '../../api';
+import {PADRAO, POSES} from '../../avatar/desenhar';
 import {duracao} from '../../formatar';
 import type {Lado, Luz, ThumbConfig, VideoInfo} from '../../tipos';
 import {Interruptor} from '../Interruptor';
@@ -20,13 +21,23 @@ type Props = {
   temAlvo: boolean;
   /** Na montagem com personagem: ele já vem recortado, e não há quadro da pessoa. */
   personagem?: boolean;
+  /** Na montagem com o avatar: escolhe-se a pose dele. */
+  avatar?: boolean;
 };
 
-export const AbaPessoa: React.FC<Props> = ({config, mudar, video, situacaoDoRecorte, temAlvo, personagem}) => {
+export const AbaPessoa: React.FC<Props> = ({config, mudar, video, situacaoDoRecorte, temAlvo, personagem, avatar}) => {
   const mexida = config.pessoaDx !== 0 || config.pessoaDy !== 0 || config.pessoaEscala !== 1;
   return (
     <div className="aba">
-      {personagem ? (
+      {avatar ? (
+        <label className="campo">
+          <span>Pose do avatar</span>
+          <select value={config.poseDoAvatar} onChange={(e) => mudar({poseDoAvatar: e.target.value})}>
+            {POSES.map((p) => <option key={p} value={p}>{p.replace(/_/g, ' ')}: {PADRAO.poses[p].descricao}</option>)}
+          </select>
+          <small>O avatar vira sozinho para o lado do texto; o "Espelhar" inverte.</small>
+        </label>
+      ) : personagem ? (
         <small>O personagem já vem sem fundo: ele fica no lugar da pessoa.</small>
       ) : (
         <Interruptor ligado={config.recorte} aoMudar={(v) => mudar({recorte: v})} titulo="Recortar a pessoa"
@@ -47,8 +58,10 @@ export const AbaPessoa: React.FC<Props> = ({config, mudar, video, situacaoDoReco
           </div>
           <Interruptor ligado={config.espelhar} aoMudar={(v) => mudar({espelhar: v})} titulo="Espelhar"
             descricao="Vira a pessoa para o outro lado, para olhar para o texto." />
-          <Interruptor ligado={config.contorno} aoMudar={(v) => mudar({contorno: v})} titulo="Contorno branco"
-            descricao="O visual de adesivo, que destaca a pessoa de qualquer fundo." />
+          {avatar ? null : (
+            <Interruptor ligado={config.contorno} aoMudar={(v) => mudar({contorno: v})} titulo="Contorno branco"
+              descricao="O visual de adesivo, que destaca a pessoa de qualquer fundo." />
+          )}
           <div className="campo">
             <span>Luz</span>
             <div className="linha-de-opcoes" role="group" aria-label="luz na pessoa">

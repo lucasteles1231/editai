@@ -126,7 +126,8 @@ export type VideoInfo = {
 /** Como é o vídeo: um só, com a pessoa falando; ou um fundo e, por cima, a pessoa ou um
  *  personagem animado. */
 export type Modo = 'um' | 'montagem';
-export type PorCima = 'pessoa' | 'personagem' | 'nada';
+/** ``avatar``: o seu avatar em pixel art (o cartão de "Antes de começar"). */
+export type PorCima = 'pessoa' | 'personagem' | 'avatar' | 'nada';
 /** De onde vem o fundo da montagem: um vídeo, ou a biblioteca de cenas (a pasta e a matriz). */
 export type FonteDoFundo = 'video' | 'cenas';
 export type FormatoDoQuadro = 'fundo' | 'vertical' | 'horizontal' | 'quadrado';
@@ -144,7 +145,24 @@ export type MontagemConfig = {
   fala: Fala | null;
   /** "Das cenas": os vídeos da biblioteca de onde vem o som, na ordem em que tocam. */
   cenasDoAudio: string[];
+  /** O avatar escolhido no "Meu avatar" (o apelido dele). */
+  avatar: string | null;
 };
+
+/** Um avatar salvo (``editor/avatar.py``): as escolhas, para reabrir no criador, e a caixa
+ *  da silhueta de cada pose, para a thumbnail encaixar. */
+export type AvatarSalvo = {
+  nome: string;
+  apelido: string;
+  criado: string;
+  padrao: number;
+  escolhas: import('./avatar/desenhar').Escolhas;
+  caixas: Record<string, Caixa>;
+  rosto: Caixa;
+};
+
+/** O que o Gemini escolheu pela foto. */
+export type PartesDaFoto = {escolhas: import('./avatar/desenhar').Escolhas; descricao: string; por: string};
 
 export type PersonagemInfo = {
   id: string; nome: string; tamanho_bytes: number; largura: number; altura: number;
@@ -296,6 +314,8 @@ export type ThumbConfig = {
   /** O que a ideia sugeriu buscar no Pexels e a cena para gerar. */
   busca: string;
   cena: string;
+  /** A pose do avatar na thumbnail (na montagem com o avatar). */
+  poseDoAvatar: string;
   /** Onde o vídeo vai ser postado (passo 1); ``tamanhos`` sai delas, um por formato. */
   plataformas: Plataforma[];
   tamanhos: string[];
@@ -339,6 +359,8 @@ export type RecorteInfo = {ok: boolean; pessoa: Caixa | null; rosto: Caixa | nul
 export type Camadas = {
   fundo: VideoInfo | null;
   personagem: {info: PersonagemInfo; recorte: RecorteInfo | null; tirarFundo: boolean} | null;
+  /** O avatar no lugar da pessoa: o quadro da pose escolhida. */
+  avatar?: {salvo: AvatarSalvo; pose: string} | null;
 };
 
 export type FotoPexels = {

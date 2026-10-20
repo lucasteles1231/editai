@@ -97,12 +97,14 @@ class Montagem:
 
     O fundo é um vídeo (``fundo``) ou uma biblioteca de cenas (``cenas``, a pasta dos
     clipes, e ``matriz``, o catálogo): aí o fundo é montado com as cenas que combinam com
-    a fala. Por cima vai a pessoa, o personagem ou nada. O áudio separado pode vir em
-    várias partes (``audios``, um arquivo por parágrafo), juntadas na ordem."""
+    a fala. Por cima vai a pessoa, o personagem, o avatar (``avatar``, o apelido de um
+    avatar salvo) ou nada. O áudio separado pode vir em várias partes (``audios``, um
+    arquivo por parágrafo), juntadas na ordem."""
 
     fundo: Path | None = None
     pessoa: Path | None = None
     personagem: Path | None = None
+    avatar: str | None = None
     audio: Path | None = None
     cenas: Path | None = None
     matriz: Path | None = None
@@ -121,8 +123,8 @@ class Montagem:
             erros.append("o fundo é um vídeo ou uma biblioteca de cenas, um dos dois")
         if self.cenas is not None and self.matriz is None:
             erros.append("a biblioteca de cenas precisa da matriz (o cenas.json)")
-        if self.pessoa is not None and self.personagem is not None:
-            erros.append("por cima vai o vídeo da pessoa ou um personagem, não os dois")
+        if sum(x is not None for x in (self.pessoa, self.personagem, self.avatar)) > 1:
+            erros.append("por cima vai o vídeo da pessoa, um personagem ou o avatar, um só")
         if self.fundo is None and self.fala == "fundo":
             erros.append("as cenas da biblioteca não têm som: o áudio vem de um áudio "
                          "separado ou do vídeo da pessoa")
@@ -397,6 +399,92 @@ class CamadaDePersonagem(Camada):
         return self.personagem.quadro_em(t_saida)
 
 
+#: O pulinho ao trocar de pose (o de um projeto anterior): cresce de 0,95 a 1 neste tempo.
+PULINHO_ESCALA = 0.95
+PULINHO_S = 0.16
+#: Com o centro dele além desta fração da largura, o avatar está do lado direito: espelhado,
+#: ele aponta para o meio da tela.
+DIREITA_DESDE = 0.55
+
+
+class CamadaDeAvatar(Camada):
+    """O avatar (:mod:`editor.avatar`): os quadros desenhados na página, a pose de cada
+    frase e a boca de cada quadro, pelo tempo de saída.
+
+    Os 36 quadros são recortados todos na mesma caixa (a união do que aparece neles): a
+    cabeça continua no mesmo lugar em todas as poses. A caixa da silhueta é medida com os
+    quadros e os espelhos deles, para o espelho não mudar o lugar dele na tela."""
+
+    #: Pixel art: ampliado sem suavizar.
+    filtro = Image.NEAREST
+
+    def __init__(self, quadros: dict[tuple[str, str], np.ndarray],
+                 poses: Sequence[tuple[float, float, str]], bocas: Sequence[str], fps: float):
+        alfas = np.max(np.stack([q[..., 3] for q in quadros.values()]), axis=0)
+        ys, xs = np.nonzero(alfas)
+        y0, y1, x0, x1 = int(ys.min()), int(ys.max()) + 1, int(xs.min()), int(xs.max()) + 1
+        self.quadros = {k: np.ascontiguousarray(q[y0:y1, x0:x1]) for k, q in quadros.items()}
+        self.altura, self.largura = y1 - y0, x1 - x0
+        self.poses = list(poses)
+        self.bocas = list(bocas)
+        self.fps = float(fps)
+        uniao = (alfas[y0:y1, x0:x1].astype(np.float32) / 255.0)
+        self._medir([uniao, uniao[:, ::-1]])
+
+    @classmethod
+    def do_avatar(cls, slug: str, poses: Sequence[tuple[float, float, str]],
+                  bocas: Sequence[str], fps: float) -> CamadaDeAvatar:
+        from editor import avatar as avatar_mod
+
+        quadros = {}
+        for pose in avatar_mod.poses():
+            for boca in avatar_mod.bocas():
+                nome = avatar_mod.padrao()["pacote"]["nome_do_quadro"].format(pose=pose, boca=boca)
+                with Image.open(avatar_mod.quadro(slug, nome)) as img:
+                    quadros[(pose, boca)] = np.asarray(img.convert("RGBA"), dtype=np.uint8)
+        return cls(quadros, poses, bocas, fps)
+
+    def pose_em(self, t: float) -> tuple[str, float | None]:
+        """A pose em ``t`` (a da última frase que já começou; antes da primeira, a dela) e
+        há quanto tempo ela começou (``None`` na primeira: ela não pula)."""
+        if not self.poses:
+            return "neutro", None
+        i = 0
+        for k, (a0, _a1, _pose) in enumerate(self.poses):
+            if a0 > t:
+                break
+            i = k
+        return self.poses[i][2], (None if i == 0 else t - self.poses[i][0])
+
+    def boca_em(self, t: float) -> str:
+        k = round(t * self.fps)
+        return self.bocas[k] if 0 <= k < len(self.bocas) else "fechada"
+
+    def quadro_em(self, t: float, direita: bool = False) -> np.ndarray:
+        pose, desde = self.pose_em(t)
+        q = self.quadros.get((pose, self.boca_em(t)))
+        if q is None:
+            q = self.quadros[("neutro", "fechada")]
+        if direita:
+            q = np.ascontiguousarray(q[:, ::-1])
+        if desde is not None and desde < PULINHO_S:
+            s = PULINHO_ESCALA + (1 - PULINHO_ESCALA) * suave(desde / PULINHO_S)
+            h, w = q.shape[:2]
+            nw, nh = max(1, round(w * s)), max(1, round(h * s))
+            menor = np.asarray(Image.fromarray(q, "RGBA").resize((nw, nh), Image.NEAREST))
+            saida = np.zeros_like(q)
+            x = (w - nw) // 2
+            saida[h - nh:, x:x + nw] = menor             # pela base: os pés no lugar
+            q = saida
+        return q
+
+    def rgba(self, t_origem: float, t_saida: float) -> np.ndarray:
+        return self.quadro_em(t_saida)
+
+    def a_direita(self, centro_x: float, largura_da_tela: int) -> bool:
+        return centro_x > DIREITA_DESDE * largura_da_tela
+
+
 # ── onde ela fica ────────────────────────────────────────────────────────
 
 
@@ -582,21 +670,27 @@ class Montador:
         tela = self.tela_do_fundo(t_origem, nivel, t_saida).convert("RGBA")
         if self.camada is None:
             return tela.convert("RGB")
-        if (isinstance(self.camada, CamadaDePersonagem) and self.falas
+        tr = self.transformacao(t_saida, extra)
+        if isinstance(self.camada, CamadaDeAvatar):
+            p = self.camada.pessoa
+            centro = tr.dx + tr.escala * (p.x0 + p.x1) / 2 * self.camada.largura
+            rgba = self.camada.quadro_em(t_saida, self.camada.a_direita(centro, self.largura))
+        elif (isinstance(self.camada, CamadaDePersonagem) and self.falas
                 and not falando(self.falas, t_saida)):
             rgba = self.camada.personagem.quadros[0]       # a boca fechada, nas pausas
         else:
             rgba = self.camada.rgba(t_origem, t_saida)
-        tr = self.transformacao(t_saida, extra)
         r = self._rampa(tr)
         if r is not None:
             rgba = rgba.copy()
             rgba[..., 3] = (rgba[..., 3] * r).astype(np.uint8)
-        colar(tela, Image.fromarray(rgba, "RGBA"), tr)
+        colar(tela, Image.fromarray(rgba, "RGBA"), tr,
+              filtro=getattr(self.camada, "filtro", Image.BILINEAR))
         return tela.convert("RGB")
 
 
-__all__ = ["FALAS", "FORMATOS", "RECORTES", "Camada", "CamadaComAlfa", "CamadaDePersonagem",
+__all__ = ["FALAS", "FORMATOS", "RECORTES", "Camada", "CamadaComAlfa", "CamadaDeAvatar",
+           "CamadaDePersonagem",
            "CamadaRecortada", "Montador", "Montagem", "Personagem", "PersonagemInvalido",
            "alvo", "camada_da_montagem", "casa", "cor_do_fundo", "encaixe", "falando",
            "ler_personagem", "sobras",

@@ -6,9 +6,10 @@ import {api} from '../api';
 import {falaEfetiva, opcoesDeFala, semSom} from '../fala';
 import {ORDEM, PLATAFORMAS, type Plataforma, juntar} from '../plataformas';
 import {apelido} from '../presets';
+import {abrirConfiguracao} from '../configurar';
 import {bytes, duracao, numero} from '../formatar';
 import type {
-  AudioInfo, BibliotecaInfo, CenaDaMatriz, Edicao, EfeitosDaVoz, EstadoDasVozes, EstiloDaLegenda, Estado, Fala, FonteDoFundo,
+  AudioInfo, AvatarSalvo, BibliotecaInfo, CenaDaMatriz, Edicao, EfeitosDaVoz, EstadoDasVozes, EstiloDaLegenda, Estado, Fala, FonteDoFundo,
   FormatoDoQuadro, Modo, MontagemConfig, PersonagemInfo, PorCima, Preset, PresetsImportados, Saida, VideoInfo, Voz,
 } from '../tipos';
 import {EfeitoNaVoz} from './EfeitoNaVoz';
@@ -173,6 +174,8 @@ export type PropsDoEnvio = {
   fundo: VideoInfo | null;
   pessoa: VideoInfo | null;
   personagem: PersonagemInfo | null;
+  /** Os avatares salvos (o cartão "Avatar" de "Antes de começar" cria). */
+  avatares: AvatarSalvo[] | null;
   /** Os áudios separados, na ordem em que tocam. */
   audios: AudioInfo[];
   /** A "Minha voz": a narração do roteiro, quando já saiu. */
@@ -246,8 +249,8 @@ const CenasDoAudio: React.FC<{
 };
 
 const FONTES_DO_FUNDO: [FonteDoFundo, string][] = [['video', 'Um vídeo'], ['cenas', 'Biblioteca de cenas']];
-const POR_CIMA: [PorCima, string][] = [['pessoa', 'Vídeo da pessoa'], ['personagem', 'Personagem animado'],
-  ['nada', 'Nada']];
+const POR_CIMA: [PorCima, string][] = [['pessoa', 'Vídeo da pessoa'], ['avatar', 'Meu avatar'],
+  ['personagem', 'Personagem animado'], ['nada', 'Nada']];
 
 /** Sem matriz (ou para trocar a que veio): o Gemini descreve as cenas, e a pessoa revisa. */
 const GerarMatriz: React.FC<PropsDoEnvio> = (p) => {
@@ -379,6 +382,37 @@ const EnvioDaMontagem: React.FC<PropsDoEnvio> = (p) => {
               </>
             ) : null}
           </>
+        ) : m.porCima === 'avatar' ? (
+          !p.avatares?.length ? (
+            <div className="sem-avatar">
+              <small>Você ainda não tem um avatar. Ele é feito uma vez, pela sua foto, e fala por você: a pose
+                muda a cada frase e a boca abre nas sílabas.</small>
+              <button type="button" className="botao pequeno" onClick={() => abrirConfiguracao('avatar')}>
+                Criar o meu avatar
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="linha-de-opcoes avatares-da-montagem" role="group" aria-label="qual avatar">
+                {p.avatares.map((a) => {
+                  const escolhido = (m.avatar ?? p.avatares![0].apelido) === a.apelido;
+                  return (
+                    <button key={a.apelido} type="button" className="pilula com-imagem" aria-pressed={escolhido}
+                      onClick={() => p.mudarMontagem({avatar: a.apelido})}>
+                      <img className="pixel" src={api.quadroDoAvatarUrl(a.apelido, 'neutro_fechada.png', a.criado)}
+                        alt="" width={32} height={32} />
+                      {a.nome}
+                    </button>
+                  );
+                })}
+                <button type="button" className="botao pequeno" onClick={() => abrirConfiguracao('avatar')}>
+                  Criar ou ajustar
+                </button>
+              </div>
+              <small>A pose muda a cada frase (pergunta pensando, "você" apontando, número com o dedo para cima…)
+                e a boca abre nas sílabas da voz. Do lado direito da tela, ele vira para o meio.</small>
+            </>
+          )
         ) : m.porCima === 'personagem' ? (
           <>
             <Soltar nome="personagem" rotulo="Arraste o personagem" dica="GIF, PNG animado ou WebP, em loop"
@@ -678,7 +712,8 @@ export const PassoEdicoes: React.FC<{
           descricao="Quando a fala cita “dinheiro”, “celular”, “foguete”… o ícone aparece." />
         {porCima && porCima !== 'nada' ? (
           <Interruptor ligado={edicao.mover} aoMudar={(v) => mudar({mover: v})}
-            titulo={porCima === 'personagem' ? 'Mover o personagem' : 'Mover a pessoa'}
+            titulo={porCima === 'personagem' ? 'Mover o personagem' : porCima === 'avatar' ? 'Mover o avatar'
+              : 'Mover a pessoa'}
             descricao="Em alguns cortes, vai para um lado, para o meio, para cima, para baixo, para perto ou para longe." />
         ) : null}
         {naMontagem ? (

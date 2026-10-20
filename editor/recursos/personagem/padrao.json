@@ -1,0 +1,240 @@
+{
+  "editai": "padrao-do-personagem",
+  "versao": 1,
+  "origem": "O apresentador de um projeto anterior (um projeto anterior), de 12 a 16/10/2026: as mesmas 12 poses, as 3 bocas, as regras da fala e da cena.",
+  "quadro": {
+    "lado": 900,
+    "grade": 150,
+    "escala": 6,
+    "fundo": "transparente",
+    "corte_y": 125
+  },
+  "estilo": {
+    "contorno": "#1b1410",
+    "adesivo": "#ffffff",
+    "adesivo_px": 3,
+    "sombra": 0.24,
+    "luz": 0.16,
+    "aro": 0.16,
+    "fixas": {
+      "contorno": "#1b1410",
+      "branco": "#fbfaf6",
+      "boca": "#6e1f25",
+      "dente": "#f4f1ea",
+      "lingua": "#cf5d67",
+      "lente": "#e8f1f4",
+      "caneca": "#f2efe8",
+      "cafe": "#4a2c1d",
+      "vapor": "#ffffff"
+    }
+  },
+  "cabeca": {
+    "centro_x": 75,
+    "topo_do_rosto": 32,
+    "queixo": 85,
+    "nota": "Toda parte é desenhada nas mesmas coordenadas, com a cabeça no mesmo lugar: trocar de pose não faz o personagem pular (num projeto anterior, o recortar.py alinhava as poses pela cabeça depois)."
+  },
+  "camadas": [
+    "cabelo-tras",
+    "braco-tras",
+    "pescoco",
+    "corpo",
+    "orelhas",
+    "cabeca",
+    "barba",
+    "nariz",
+    "olhos",
+    "sobrancelhas",
+    "boca",
+    "sombra-do-cabelo",
+    "cabelo-frente",
+    "oculos",
+    "acessorio",
+    "apaga",
+    "braco-frente",
+    "objeto"
+  ],
+  "sem_contorno": [
+    "sombra-do-cabelo",
+    "barba",
+    "nariz",
+    "olhos",
+    "sobrancelhas",
+    "boca",
+    "oculos"
+  ],
+  "espacos_de_cor": {
+    "pele": "a pele (o rosto, as orelhas, o pescoço e as mãos)",
+    "cabelo": "o cabelo",
+    "sobrancelha": "as sobrancelhas (vazia: o cabelo, mais escuro)",
+    "barba": "a barba e o bigode (vazia: o cabelo)",
+    "olho": "a íris",
+    "roupa": "a roupa",
+    "roupa2": "os detalhes da roupa: os cordões do moletom, os botões, a gola",
+    "oculos": "a armação dos óculos",
+    "acessorio": "o boné ou o fone"
+  },
+  "poses": {
+    "neutro": {
+      "bracos": "neutro",
+      "olhos": "aberto",
+      "sobrancelhas": "neutra",
+      "boca": "sorriso",
+      "descricao": "parado, olhando para quem assiste",
+      "quando": "a fala comum; abre o vídeo"
+    },
+    "explicando": {
+      "bracos": "explicando",
+      "olhos": "aberto",
+      "sobrancelhas": "neutra",
+      "boca": "sorriso",
+      "descricao": "as duas mãos abertas, explicando",
+      "quando": "explicação, \"é assim:\", a maior parte das falas longas"
+    },
+    "apontando_cima": {
+      "bracos": "apontando_cima",
+      "olhos": "aberto",
+      "sobrancelhas": "erguida",
+      "boca": "sorriso",
+      "descricao": "o dedo para cima: a ideia importante",
+      "quando": "a ideia principal, um número, um \"!\""
+    },
+    "apontando_lado": {
+      "bracos": "apontando_lado",
+      "olhos": "lado",
+      "sobrancelhas": "neutra",
+      "boca": "sorriso",
+      "descricao": "apontando para o lado da tela (para a direita do quadro; espelhado do outro lado)",
+      "quando": "\"olha\", \"aqui\", \"isso\": o que está na tela; a capa"
+    },
+    "apontando_voce": {
+      "bracos": "apontando_voce",
+      "olhos": "aberto",
+      "sobrancelhas": "neutra",
+      "boca": "sorriso",
+      "descricao": "apontando para quem assiste",
+      "quando": "\"você\", \"te\", um convite"
+    },
+    "bracos_cruzados": {
+      "bracos": "bracos_cruzados",
+      "olhos": "meio",
+      "sobrancelhas": "neutra",
+      "boca": "sorriso",
+      "descricao": "braços cruzados, confiante",
+      "quando": "uma certeza, \"simples assim\", o fecho"
+    },
+    "joinha": {
+      "bracos": "joinha",
+      "olhos": "aberto",
+      "sobrancelhas": "neutra",
+      "boca": "sorriso",
+      "descricao": "joinha, aprovando",
+      "quando": "\"funciona\", \"pronto\", \"é isso\""
+    },
+    "pensando": {
+      "bracos": "pensando",
+      "olhos": "cima",
+      "sobrancelhas": "erguida",
+      "boca": "neutra",
+      "descricao": "a mão no queixo, pensando",
+      "quando": "uma pergunta, \"?\", \"será que\""
+    },
+    "surpreso": {
+      "bracos": "surpreso",
+      "olhos": "arregalado",
+      "sobrancelhas": "erguida",
+      "boca": "o",
+      "descricao": "as mãos abertas do lado do rosto, surpreso",
+      "quando": "o inesperado, \"!\", \"incrível\""
+    },
+    "mao_no_peito": {
+      "bracos": "mao_no_peito",
+      "olhos": "aberto",
+      "sobrancelhas": "neutra",
+      "boca": "sorriso",
+      "descricao": "a mão no peito, sincero",
+      "quando": "\"eu\", \"meu\", \"sinceramente\""
+    },
+    "cafe": {
+      "bracos": "cafe",
+      "olhos": "meio",
+      "sobrancelhas": "neutra",
+      "boca": "neutra",
+      "objeto": "caneca",
+      "descricao": "tomando café, tranquilo",
+      "quando": "uma pausa, \"calma\", \"tranquilo\""
+    },
+    "rindo": {
+      "bracos": "rindo",
+      "olhos": "apertado",
+      "sobrancelhas": "erguida",
+      "boca": "rindo",
+      "descricao": "rindo",
+      "quando": "risada, \"haha\", uma piada"
+    }
+  },
+  "bocas": {
+    "fechada": "a boca da expressão da pose (sorriso, neutra, \"o\" ou rindo)",
+    "meia": "meio aberta: abre e fecha a sílaba, e é a da sílaba fraca",
+    "aberta": "aberta, mostrando um pouco dos dentes e da língua",
+    "ja_aberta": [
+      "surpreso",
+      "rindo"
+    ],
+    "nota": "Nas poses em que a boca fechada já é aberta (o \"o\" do surpreso, a risada), a meia e a aberta continuam a da pose: a boca não fecha no meio da expressão."
+  },
+  "fala": {
+    "envelope_ms": 25,
+    "passo_ms": 10,
+    "pico": {
+      "altura": 0.2,
+      "proeminencia": 0.07,
+      "distancia_ms": 130
+    },
+    "abre_antes_quadros": 1,
+    "aberta_quadros": [
+      2,
+      6
+    ],
+    "sustenta": 0.45,
+    "fraca": 0.85,
+    "vizinhas": 3,
+    "nota": "A boca abre um quadro antes do pico de cada sílaba (o som começa antes da vogal), sempre pela meia, e fica aberta enquanto a vogal se sustenta (acima de 0,45 do pico), fechando pelo menos dois quadros antes da sílaba seguinte. A sílaba fraca (abaixo de 0,85 da mediana das 3 vizinhas de cada lado) abre só até a meia. Medido num projeto anterior: 57% fechada, 26% meia, 17% aberta."
+  },
+  "cena": {
+    "pose_por_fala": true,
+    "lugar": {
+      "comeca": "esquerda",
+      "trocas": [
+        1,
+        3
+      ],
+      "espelha_a_direita": true
+    },
+    "troca_de_pose": {
+      "escala": [
+        0.95,
+        1.0
+      ],
+      "segundos": 0.16
+    },
+    "troca_de_lugar": {
+      "segundos": 0.35
+    },
+    "legenda_some_ao_atravessar": true
+  },
+  "capa": {
+    "pose": "apontando_lado",
+    "espelhada_para_o_texto": true,
+    "altura": 0.86
+  },
+  "pacote": {
+    "nome_do_quadro": "{pose}_{boca}.png",
+    "bocas": [
+      "fechada",
+      "meia",
+      "aberta"
+    ],
+    "quadros": 36
+  }
+}

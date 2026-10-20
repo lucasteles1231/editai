@@ -3,8 +3,8 @@
  * URL aberta pelo comando `editai` e fica guardado na aba (sessionStorage).
  */
 import type {
-  AudioInfo, BibliotecaInfo, Edicao, EfeitosDaVoz, Estado, EstadoChave, EstadoDasVozes, EstadoIa, FotoPexels,
-  GeracaoDaMatriz, GravacaoDaVoz, Ideia, ImagemFundo, MotorDeVoz, Narracao, PersonagemInfo, Preset, PresetsImportados, RecorteInfo, Saida, Tarefa,
+  AudioInfo, AvatarSalvo, BibliotecaInfo, Edicao, EfeitosDaVoz, Estado, EstadoChave, EstadoDasVozes, EstadoIa, FotoPexels,
+  GeracaoDaMatriz, GravacaoDaVoz, Ideia, ImagemFundo, MotorDeVoz, Narracao, PartesDaFoto, PersonagemInfo, Preset, PresetsImportados, RecorteInfo, Saida, Tarefa,
   VideoInfo, VozSalva,
 } from './tipos';
 
@@ -67,6 +67,8 @@ function enviarArquivo<T>(rota: string, arquivo: File, aoProgresso: (fracao: num
  *  ordem em que tocam. */
 export type PedidoDeMontagem = {
   fundo_id?: string; biblioteca_id?: string; pessoa_id?: string; personagem_id?: string;
+  /** O avatar salvo (o apelido), no lugar da pessoa. */
+  avatar?: string;
   audio_ids?: string[];
   /** "Das cenas": os vídeos da biblioteca de onde vem o som, na ordem. */
   audio_das_cenas?: string[];
@@ -279,4 +281,26 @@ export const api = {
   narracao: (id: string) => pedir<Narracao>(`/api/vozes/narracoes/${id}`),
   cancelarNarracao: (id: string) => pedir(`/api/vozes/narracoes/${id}/cancelar`, {method: 'POST'}),
   audioUrl: (id: string) => comToken(`/api/audios/${id}/arquivo`),
+
+  // ── o avatar: a página desenha os quadros, o servidor guarda ──
+  avatares: () => pedir<{avatares: AvatarSalvo[]}>('/api/avatares'),
+  /** O Gemini escolhe as partes e as cores pela foto (a foto não fica guardada). */
+  partesPelaFoto: (foto: Blob) => {
+    const dados = new FormData();
+    dados.append('foto', foto, 'foto.jpg');
+    return pedir<PartesDaFoto>('/api/avatares/partes', {method: 'POST', body: dados});
+  },
+  salvarAvatar: (nome: string, escolhas: unknown, quadros: {nome: string; png: Blob}[]) => {
+    const dados = new FormData();
+    dados.append('nome', nome);
+    dados.append('escolhas', JSON.stringify(escolhas));
+    for (const q of quadros) dados.append('quadros', q.png, q.nome);
+    return pedir<{avatar: AvatarSalvo; avatares: AvatarSalvo[]}>('/api/avatares', {method: 'POST', body: dados});
+  },
+  apagarAvatar: (apelido: string) =>
+    pedir<{avatares: AvatarSalvo[]}>(`/api/avatares/${apelido}`, {method: 'DELETE'}),
+  /** Um quadro do avatar; ``versao`` (a data dele) troca a URL quando ele é refeito. */
+  quadroDoAvatarUrl: (apelido: string, nome: string, versao = '') =>
+    comToken(`/api/avatares/${apelido}/quadros/${nome}?v=${encodeURIComponent(versao)}`),
+  pacoteDoAvatarUrl: (apelido: string) => comToken(`/api/avatares/${apelido}/pacote.zip`),
 };

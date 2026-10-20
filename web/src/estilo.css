@@ -996,6 +996,93 @@ button.link { padding: 0; border: none; background: none; color: inherit; font: 
 .topo-do-dialogo h2 { margin: 0; font-family: var(--titulo); font-size: 22px; }
 .corpo-do-dialogo { display: grid; gap: 14px; }
 .dialogo .chave-gemini { margin: 0; padding: 0; border: 0; background: none; }
+
+/* ── o criador de avatar ── */
+.pixel { image-rendering: pixelated; }
+.desenhando {
+  display: inline-block;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--tinta) 8%, var(--papel));
+}
+.aviso.ok { background: color-mix(in srgb, var(--lima) 22%, var(--papel)); border-color: var(--ok); }
+.criador-de-avatar { display: grid; gap: 16px; }
+.avatares-salvos { display: flex; flex-wrap: wrap; gap: 10px; }
+.avatar-salvo {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px 8px 8px;
+  border: 2px solid var(--linha);
+  border-radius: 14px;
+  background: var(--cartao);
+}
+.avatar-salvo > div { display: grid; gap: 2px; }
+.avatar-salvo small { color: var(--tinta-suave); font-size: 12px; }
+.avatar-salvo img { border-radius: 10px; background: var(--papel-2); }
+.mesa-do-avatar { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; align-items: start; }
+.previa-do-avatar {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  padding: 12px;
+  border: 2px solid var(--linha);
+  border-radius: var(--raio);
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--ciano) 22%, var(--papel)), var(--papel-2));
+}
+.previa-do-avatar > small { color: var(--tinta-suave); font-size: 12.5px; text-align: center; }
+.avatar-falando { display: grid; gap: 8px; justify-items: center; width: 100%; }
+.avatar-falando > img, .avatar-falando > .desenhando { width: 100%; max-width: 300px; height: auto; aspect-ratio: 1; }
+.poses-da-previa { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; width: 100%; }
+.poses-da-previa > img, .poses-da-previa > .desenhando { width: 100%; height: auto; aspect-ratio: 1; }
+.partes-do-avatar { display: grid; gap: 14px; min-width: 0; }
+.opcoes-do-avatar { display: flex; flex-wrap: wrap; gap: 6px; }
+.opcao-do-avatar {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 84px;
+  padding: 6px 4px;
+  border: 2px solid color-mix(in srgb, var(--linha) 30%, transparent);
+  border-radius: 12px;
+  background: var(--cartao);
+  color: var(--tinta);
+  cursor: pointer;
+}
+.opcao-do-avatar small { font-size: 11px; line-height: 1.2; text-align: center; }
+.opcao-do-avatar[aria-pressed='true'] {
+  border-color: var(--linha);
+  background: color-mix(in srgb, var(--amarelo) 40%, var(--cartao));
+  box-shadow: 2px 2px 0 var(--linha);
+}
+.opcao-do-avatar:focus-visible, .amostra:focus-visible { outline: 3px solid var(--ciano); outline-offset: 2px; }
+.cor-do-avatar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cor-do-avatar > small { width: 92px; font-weight: 700; font-size: 13px; }
+.amostra {
+  width: 28px;
+  height: 28px;
+  border: 2px solid color-mix(in srgb, var(--linha) 35%, transparent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.amostra[aria-pressed='true'] { border-color: var(--linha); box-shadow: 0 0 0 2px var(--papel), 0 0 0 4px var(--linha); }
+.amostra.vazia { background: var(--papel-2); color: var(--tinta); font-weight: 700; }
+.cor-do-avatar input[type='color'] { width: 36px; height: 30px; padding: 0; border: 0; background: none; }
+.foto-escolhida { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.foto-escolhida img { width: 96px; height: 96px; object-fit: cover; border: 2px solid var(--linha); border-radius: 12px; }
+.camera-do-avatar { display: grid; gap: 8px; }
+.camera-do-avatar video { width: min(100%, 420px); border: 2px solid var(--linha); border-radius: 12px; }
+.aprovar-avatar { display: grid; gap: 10px; }
+.aprovar-avatar .botao.rosa { justify-self: start; }
+.sem-avatar { display: grid; gap: 8px; justify-items: start; }
+.pilula.com-imagem { display: inline-flex; align-items: center; gap: 6px; padding-left: 4px; }
+.pilula.com-imagem img { border-radius: 8px; background: var(--papel-2); }
+.cartao-de-config .miniatura-do-avatar { width: 56px; height: 56px; border-radius: 10px; background: var(--papel-2); }
+@media (max-width: 760px) {
+  .mesa-do-avatar { grid-template-columns: 1fr; }
+  .previa-do-avatar { position: static; }
+}
 .lista-de-vozes { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .lista-de-vozes li {
   display: flex;

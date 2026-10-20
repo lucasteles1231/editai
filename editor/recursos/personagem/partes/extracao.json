@@ -1,0 +1,289 @@
+{
+ "geometria": {
+  "topo": 48,
+  "largura": 312,
+  "fase": [
+   3,
+   4
+  ]
+ },
+ "marcos": {
+  "topo": 7,
+  "sobrancelha": [
+   33,
+   37
+  ],
+  "olhos": [
+   41,
+   44
+  ],
+  "boca": 61,
+  "roupa_desde": 82,
+  "rosto_x": [
+   47,
+   102
+  ]
+ },
+ "partes": [
+  {
+   "categoria": "acessorio",
+   "id": "bone",
+   "pixels": 1101
+  },
+  {
+   "categoria": "acessorio",
+   "id": "brincos",
+   "pixels": 46
+  },
+  {
+   "categoria": "acessorio",
+   "id": "fone",
+   "pixels": 1605
+  },
+  {
+   "categoria": "acessorio",
+   "id": "gorro",
+   "pixels": 1048
+  },
+  {
+   "categoria": "barba",
+   "id": "bigode",
+   "pixels": 144
+  },
+  {
+   "categoria": "barba",
+   "id": "cavanhaque",
+   "pixels": 150
+  },
+  {
+   "categoria": "barba",
+   "id": "cheia",
+   "pixels": 585
+  },
+  {
+   "categoria": "barba",
+   "id": "curta",
+   "pixels": 525
+  },
+  {
+   "categoria": "barba",
+   "id": "rala",
+   "pixels": 99
+  },
+  {
+   "categoria": "boca",
+   "id": "aberta",
+   "pixels": 137
+  },
+  {
+   "categoria": "boca",
+   "id": "neutra",
+   "pixels": 53
+  },
+  {
+   "categoria": "boca",
+   "id": "o",
+   "pixels": 68
+  },
+  {
+   "categoria": "boca",
+   "id": "rindo",
+   "pixels": 238
+  },
+  {
+   "categoria": "bracos",
+   "id": "apontando_cima",
+   "pixels": 1788
+  },
+  {
+   "categoria": "bracos",
+   "id": "apontando_lado",
+   "pixels": 1288
+  },
+  {
+   "categoria": "bracos",
+   "id": "apontando_voce",
+   "pixels": 1418
+  },
+  {
+   "categoria": "bracos",
+   "id": "bracos_cruzados",
+   "pixels": 1728
+  },
+  {
+   "categoria": "bracos",
+   "id": "cafe",
+   "pixels": 1864
+  },
+  {
+   "categoria": "bracos",
+   "id": "explicando",
+   "pixels": 1813
+  },
+  {
+   "categoria": "bracos",
+   "id": "joinha",
+   "pixels": 1704
+  },
+  {
+   "categoria": "bracos",
+   "id": "mao_no_peito",
+   "pixels": 1190
+  },
+  {
+   "categoria": "bracos",
+   "id": "pensando",
+   "pixels": 1238
+  },
+  {
+   "categoria": "bracos",
+   "id": "rindo",
+   "pixels": 1109
+  },
+  {
+   "categoria": "bracos",
+   "id": "surpreso",
+   "pixels": 4025
+  },
+  {
+   "categoria": "cabelo",
+   "id": "afro",
+   "pixels": 4391
+  },
+  {
+   "categoria": "cabelo",
+   "id": "baguncado",
+   "pixels": 1796
+  },
+  {
+   "categoria": "cabelo",
+   "id": "cachos-curtos",
+   "pixels": 1309
+  },
+  {
+   "categoria": "cabelo",
+   "id": "calvo",
+   "pixels": 333
+  },
+  {
+   "categoria": "cabelo",
+   "id": "chanel",
+   "pixels": 1696
+  },
+  {
+   "categoria": "cabelo",
+   "id": "coque",
+   "pixels": 906
+  },
+  {
+   "categoria": "cabelo",
+   "id": "curto",
+   "pixels": 745
+  },
+  {
+   "categoria": "cabelo",
+   "id": "franja",
+   "pixels": 987
+  },
+  {
+   "categoria": "cabelo",
+   "id": "lateral",
+   "pixels": 772
+  },
+  {
+   "categoria": "cabelo",
+   "id": "longo",
+   "pixels": 3640
+  },
+  {
+   "categoria": "cabelo",
+   "id": "ondulado",
+   "pixels": 3866
+  },
+  {
+   "categoria": "cabelo",
+   "id": "rabo",
+   "pixels": 1454
+  },
+  {
+   "categoria": "cabelo",
+   "id": "raspado",
+   "pixels": 545
+  },
+  {
+   "categoria": "cabelo",
+   "id": "topete",
+   "pixels": 922
+  },
+  {
+   "categoria": "cabelo",
+   "id": "trancas",
+   "pixels": 3011
+  },
+  {
+   "categoria": "oculos",
+   "id": "quadrados",
+   "pixels": 297
+  },
+  {
+   "categoria": "oculos",
+   "id": "redondos",
+   "pixels": 101
+  },
+  {
+   "categoria": "oculos",
+   "id": "retangulares",
+   "pixels": 270
+  },
+  {
+   "categoria": "oculos",
+   "id": "sol",
+   "pixels": 409
+  },
+  {
+   "categoria": "olhos",
+   "id": "apertado",
+   "pixels": 125
+  },
+  {
+   "categoria": "olhos",
+   "id": "arregalado",
+   "pixels": 126
+  },
+  {
+   "categoria": "olhos",
+   "id": "cima",
+   "pixels": 32
+  },
+  {
+   "categoria": "olhos",
+   "id": "lado",
+   "pixels": 42
+  },
+  {
+   "categoria": "olhos",
+   "id": "meio",
+   "pixels": 79
+  },
+  {
+   "categoria": "roupa",
+   "id": "camisa",
+   "pixels": 5302
+  },
+  {
+   "categoria": "roupa",
+   "id": "jaqueta",
+   "pixels": 5255
+  },
+  {
+   "categoria": "roupa",
+   "id": "moletom",
+   "pixels": 5371
+  },
+  {
+   "categoria": "sobrancelhas",
+   "id": "erguida",
+   "pixels": 178
+  }
+ ]
+}

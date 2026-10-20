@@ -16,6 +16,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+from editor import avatar as avatar_mod
 from editor import cartoes as cartoes_mod
 from editor import (
     cenas,
@@ -35,7 +36,13 @@ from editor import janela as janela_mod
 from editor import saida as saida_mod
 from editor import video as video_mod
 from editor.legenda import Legenda
-from editor.montagem import Montador, Montagem, camada_da_montagem, tamanho_do_quadro
+from editor.montagem import (
+    CamadaDeAvatar,
+    Montador,
+    Montagem,
+    camada_da_montagem,
+    tamanho_do_quadro,
+)
 from editor.opcoes import OpcoesDeEdicao
 
 logger = logging.getLogger(__name__)
@@ -159,9 +166,9 @@ def janela(largura: int, altura: int, nivel: float, ax: float, ay: float
     return x0, y0, x0 + cw, y0 + ch
 
 
-def montar_audio(audio: np.ndarray, linha: cortes.Linha, plano_: plano.Plano,
-                 volume: float = 1.0) -> np.ndarray:
-    """O áudio só com os trechos que ficam, com fade nas bordas, e os efeitos por baixo."""
+def voz_cortada(audio: np.ndarray, linha: cortes.Linha) -> np.ndarray:
+    """A fala só com os trechos que ficam, com fade nas bordas (sem os efeitos: é dela que
+    sai a boca do avatar)."""
     taxa = video_mod.TAXA
     fade = max(1, int(FADE_S * taxa))
     pedacos = []
@@ -176,6 +183,14 @@ def montar_audio(audio: np.ndarray, linha: cortes.Linha, plano_: plano.Plano,
     alvo = round(linha.duracao * taxa)
     if len(voz) < alvo:
         voz = np.concatenate([voz, np.zeros((alvo - len(voz), 2), np.float32)])
+    return voz
+
+
+def montar_audio(audio: np.ndarray, linha: cortes.Linha, plano_: plano.Plano,
+                 volume: float = 1.0) -> np.ndarray:
+    """O áudio só com os trechos que ficam, com fade nas bordas, e os efeitos por baixo."""
+    taxa = video_mod.TAXA
+    voz = voz_cortada(audio, linha)
     if plano_.sons:
         voz = sons.misturar(voz, sons.trilha(plano_.sons, linha.duracao, taxa, volume))
     return np.ascontiguousarray(voz.astype(np.float32))
@@ -579,7 +594,17 @@ def _editar_montagem(montagem: Montagem, destino: Path, edicao: OpcoesDeEdicao,
         fundo = video_mod.Cursor(montagem.fundo, info_do_fundo.rotacao,
                                  duracao=info_do_fundo.duracao)
     na_saida = biblioteca is not None
-    camada = camada_da_montagem(montagem)
+    fps = saida_mod.fps_de_saida(fps_base, saida_r.fps, saida_r.formato)
+    if montagem.avatar is not None:
+        # a pose de cada frase da legenda, e a boca pelas sílabas da voz cortada
+        total = max(1, round(linha.duracao * float(fps)))
+        bocas = (avatar_mod.bocas_por_quadro(voz_cortada(f.audio, linha), video_mod.TAXA,
+                                             float(fps), total)
+                 if f.audio is not None else ["fechada"] * total)
+        camada = CamadaDeAvatar.do_avatar(montagem.avatar, avatar_mod.poses_das_falas(p.blocos),
+                                          bocas, float(fps))
+    else:
+        camada = camada_da_montagem(montagem)
     falas = janela_mod.falas(f.no_editado)
     deitado = largura > altura * 1.2
     if edicao.janela:
@@ -595,7 +620,6 @@ def _editar_montagem(montagem: Montagem, destino: Path, edicao: OpcoesDeEdicao,
         montador = Montador(montagem, p, largura, altura, info_do_fundo, mover=edicao.mover,
                             fundo=fundo if na_saida else None, fundo_na_saida=na_saida,
                             camada=camada, falas=falas)
-    fps = saida_mod.fps_de_saida(fps_base, saida_r.fps, saida_r.formato)
     legenda = Legenda(largura, altura, vertical=altura > largura,
                       tamanho=edicao.tamanho_legenda)
     passo = 1.0 / float(fps)

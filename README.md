@@ -188,8 +188,8 @@ de conserto. O resultado diz quantos foram, contando as tentativas que o Google 
 Há dois jeitos, e o tour da página (botão **Tour**, no topo) mostra os dois.
 
 Logo abaixo do título, **Antes de começar** junta o que se configura uma vez e vale para
-todos os vídeos, tudo opcional: a sua voz gravada ([Minha voz](#minha-voz)) e as chaves
-grátis do Gemini e do Pexels. Cada cartão diz se já está pronto e abre o próprio painel.
+todos os vídeos, tudo opcional: a sua voz gravada ([Minha voz](#minha-voz)), o seu avatar em
+pixel art ([Meu avatar](#meu-avatar)) e as chaves grátis do Gemini e do Pexels. Cada cartão diz se já está pronto e abre o próprio painel.
 
 ### Um vídeo seu falando
 
@@ -276,7 +276,7 @@ escolher as edições, escolher a saída e, se quiser, a thumbnail.
 <img src="docs/img/interface-progresso.png" alt="O progresso da edição, etapa por etapa, com o tempo que falta" width="300" align="right">
 
 - **Antes de começar:** os cartões do que é opcional e se configura uma vez: a sua voz
-  (gravar, ouvir e apagar) e as chaves do Gemini e do Pexels.
+  (gravar, ouvir e apagar), o seu [avatar](#meu-avatar) e as chaves do Gemini e do Pexels.
 - **Envio:** um vídeo só, ou a montagem em camadas: o fundo (um vídeo ou a biblioteca de
   cenas), a pessoa, o personagem ou nada por cima, e a escolha de onde vem o áudio (o
   fundo, a pessoa ou arquivos separados). Embaixo, onde você vai postar: o editor
@@ -399,6 +399,8 @@ separados. No passo 1, escolha **Um fundo e, por cima, você ou um personagem**:
     próprio arquivo, sem custo nenhum;
   - senão, o MODNet recorta o vídeo inteiro no seu computador, e a página mostra quanto
     tempo isso leva.
+- **Ou por cima, o seu avatar:** o personagem em pixel art feito no cartão
+  [Avatar](#meu-avatar), com a pose de cada frase e a boca nas sílabas da voz.
 - **Ou por cima, um personagem animado:** um GIF, PNG animado ou WebP de até 64 MB, em
   loop do começo ao fim. Se ele tem um fundo de cor única, essa cor sai.
 - **Ou nada por cima:** só o fundo, com a legenda e as animações.
@@ -865,6 +867,58 @@ Tudo fica no computador: a gravação, a voz salva (na pasta `vozes`, ao lado do
 com `editai --criar-voz "Seu Nome" --gravacao leitura.m4a` e usada com `--minha-voz`
 (veja [No terminal](#no-terminal)).
 
+## Meu avatar
+
+Opcional. Um personagem seu em pixel art, no estilo do apresentador de um projeto anterior, que
+fala no seu lugar na montagem e aparece na thumbnail. Ele é feito uma vez e não custa nada:
+não há IA de imagem desenhando quadro a quadro. É a lógica dos jogos de montar personagem:
+um cabelo, uma barba, uns óculos, uma roupa e as cores de cada coisa.
+
+<p align="center">
+  <img src="docs/img/interface-avatar.png" alt="O criador de avatar: a prévia grande do personagem à esquerda, com quatro poses pequenas embaixo; à direita, a foto opcional, as opções de cabelo, barba, óculos, acessório e roupa, cada uma desenhada no próprio avatar, as cores e o botão Aprovar e criar os quadros" width="640">
+</p>
+
+1. **Abra o cartão.** Em **Antes de começar**, no cartão **Avatar**, clique em
+   **Configurar**.
+2. **Pela foto (opcional).** Escolha uma foto sua, ou tire uma pela câmera, e clique em
+   **Montar pela foto com o Gemini (grátis)**. O Gemini olha a foto e escolhe uma opção de
+   cada categoria e as cores, só entre as do catálogo. A foto não fica guardada; na cota
+   grátis, o Google pode usar o que recebe para melhorar os produtos dele.
+3. **Ajuste à mão.** Cada opção aparece desenhada no seu avatar, com as suas cores: são 16
+   cabelos, 6 barbas, 5 óculos, 5 acessórios, 4 roupas e as cores da pele, do cabelo, da
+   barba, dos olhos e da roupa. A prévia mostra o avatar falando. Sem a chave do Gemini, é
+   assim que se monta.
+4. **Aprove.** Dê um nome e clique em **Aprovar e criar os quadros**. A página desenha os
+   36 quadros do avatar (12 poses, cada uma com 3 bocas) e guarda tudo no seu computador.
+   Para mudar alguma coisa depois, **Ajustar** reabre o avatar no criador.
+
+**Onde ele entra:**
+
+- **Na montagem:** em **Por cima**, escolha **Meu avatar**.
+  - **A pose muda a cada frase da legenda**, pela própria fala: numa pergunta, ele pensa; em
+    "você", aponta para quem assiste; em "eu", põe a mão no peito; num número, levanta o
+    dedo; em "olha aqui", aponta para o lado. Numa frase comprida, a pose também troca na
+    vírgula.
+  - **A boca abre nas sílabas** da voz: um quadro antes de cada sílaba, sempre pela meia boca.
+    A sílaba fraca abre só até a meia. A regra é a de um projeto anterior, e num vídeo real a boca
+    ficou 52% do tempo fechada, 29% meia e 19% aberta.
+  - **Do lado direito da tela, ele vira** para apontar para o meio. Ao trocar de pose, dá um
+    pulinho, e o pixel art é ampliado sem borrar.
+- **Na thumbnail:** ele fica no lugar da pessoa. Na aba **Pessoa**, escolha a pose (a
+  padrão é apontando para o lado). Ele vira sozinho para o lado do texto.
+- **No pacote:** **Baixar o pacote** entrega os 36 PNG (900 × 900, fundo transparente), o
+  padrão e um LEIA-ME com quando usar cada pose. Servem em qualquer outro editor.
+
+**De onde vêm as partes:** do repositório
+[editai-personagens](https://github.com/lucasteles1231/editai-personagens), em domínio
+público (CC0). O Editai leva uma cópia dele, de uns 360 KB, e a página pede só as partes que
+desenha. Cada parte nasceu de uma edição de um manequim no Nano Banana 2, foi vetorizada e
+teve os tons separados por espaço de cor: por isso dá para pintar qualquer pele, cabelo ou
+roupa. O padrão das poses, das bocas e da fala está em
+[`editor/recursos/personagem/padrao.json`](editor/recursos/personagem/padrao.json).
+
+No terminal: `editai --fundo tela.mp4 --audio narracao.m4a --avatar "Seu Nome"`.
+
 ## Efeitos sonoros
 
 Os sons tocam em três momentos:
@@ -989,6 +1043,8 @@ sua. As medidas são de um MacBook com Apple M5 (10 núcleos, 16 GB).
 | **O Gemini:** ideias de thumbnail, roteiro, cartões, destaques e matriz | não | serviço, com uma chave grátis | | | nos servidores do Google | sim | segundos por pedido |
 | **O fundo gerado** pelo Gemini | não | serviço pago, uns US$ 0,04 por imagem | | | nos servidores do Google | sim | |
 | **As fotos do Pexels**, na thumbnail | não | serviço, com uma chave grátis | | | nos servidores do Pexels | sim | |
+| **O avatar:** o criador, os 36 quadros e o avatar na montagem e na thumbnail | não | vem na instalação | ~360 KB de partes | | os quadros, no navegador; a montagem, no processador | não | menos de 3 s para os 36 quadros |
+| **O avatar pela foto** (o Gemini escolhe as partes) | não | serviço, com a chave grátis | | | nos servidores do Google | sim | segundos |
 | **Os 4 sons do tema Notícia** sem licença livre | não | baixam no primeiro uso | ~0,6 MB | | | só na primeira vez; sem ela, toca um parecido | |
 | **Minha voz** (Qwen3-TTS) | não | instalação à parte, por um botão | ~3,5 GB: o ambiente (1,2 GB) e o modelo (2,3 GB) | 5,4 GB na placa do Mac (memória unificada); 7,5 GB só no processador | chip Apple ou placa NVIDIA, de preferência; também só no processador, mais devagar | só para instalar | de 1,4 a 1,8 vez a duração da fala na placa; ~3,4 vezes só no processador |
 | **O navegador**, para a página | sim | já está no computador | | | | não | |
@@ -1106,6 +1162,7 @@ editai video.mp4 --tema-dos-sons humor --som-nos-cortes
 editai video.mp4 --sem-zoom --sem-sons            # sem zoom e sem efeitos sonoros
 editai eu.mp4 --fundo tela.mp4 --quadro vertical  # você por cima da tela gravada, em pé
 editai --fundo jogo.mp4 --personagem boneco.gif --audio narracao.m4a
+editai --fundo jogo.mp4 --avatar "Ana" --audio narracao.m4a   # o seu avatar, falando
 editai --gerar-matriz cenas/ --assunto "trailers do GTA 6"   # escreve cenas/cenas.json
 editai --cenas imovel/ --matriz imovel/cenas.json --audio imovel/tour-1.mp4 imovel/tour-2.mp4 \
        --preset imoveis               # fotos e vídeos de um imóvel, o som de dois vídeos dela
@@ -1167,6 +1224,7 @@ editai --formatos                                 # o que este computador grava
 | `--janela`, `--sem-janela` | a cena numa janela 16:9 com câmera | sem |
 | `--pessoa` | o vídeo de você falando, por cima do fundo | o vídeo do argumento |
 | `--personagem` | um GIF, PNG animado ou WebP, em loop por cima | |
+| `--avatar NOME` | o seu avatar (criado na página), por cima: a pose de cada frase e a boca nas sílabas | |
 | `--audio` | um ou vários áudios separados (a narração gravada à parte), tocados em ordem | |
 | `--fala` | de onde vem o áudio: `fundo`, `pessoa` ou `audio` | o `--audio`; senão a pessoa, se tiver som; senão o fundo |
 | `--instalar-voz` | instala a voz sintetizada (Minha voz), num ambiente à parte | |
@@ -1305,6 +1363,7 @@ protege a página, como o que é baixado é conferido e o que a última verifica
 | o texto da fala | Google (Gemini) | só com a sua chave e o roteiro ligado (cenas, cartões e destaques) |
 | 3 quadros pequenos de cada clipe | Google (Gemini) | só quando você clica em **Gerar a matriz** |
 | a descrição de uma cena | Google (Gemini) | só quando você gera um fundo (pago) |
+| a foto do avatar, reduzida a 1024 px e sem os metadados (o lugar e o aparelho) | Google (Gemini) | só quando você clica em **Montar pela foto com o Gemini**; o Editai não guarda a foto |
 | o texto da busca | Pexels | só com a chave do Pexels, quando você busca uma foto |
 | os pedidos de download | PyPI, Hugging Face e `remotion.media` | na instalação e no primeiro uso de cada modelo ou som |
 
@@ -1322,8 +1381,9 @@ protege a página, como o que é baixado é conferido e o que a última verifica
   endereço, com o token, nunca vai no `Referer`. Os testes da página, nos três
   navegadores, falham se a política barrar qualquer coisa.
 - **Os arquivos que chegam** perdem o caminho e os caracteres estranhos no nome. As
-  fontes e as mãos saem de uma lista fixa, as vozes, de um nome validado, e há tetos para
-  a matriz (2 MB) e o roteiro (20.000 letras).
+  fontes e as mãos saem de uma lista fixa, as vozes e os avatares, de um nome validado, os
+  36 quadros do avatar precisam ser PNG de 900 × 900, e há tetos para a matriz (2 MB), o
+  roteiro (20.000 letras) e a foto do avatar (20 MB).
 
 **As chaves** (Gemini e Pexels) ficam no `config.json`, que só o seu usuário consegue ler
 (permissão 0600). Elas vão no cabeçalho do pedido, nunca no endereço, e nunca voltam para

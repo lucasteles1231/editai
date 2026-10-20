@@ -15,14 +15,14 @@ import {PROPORCAO} from './componentes/thumb/AbaFundo';
 import {gerarPng} from './thumb/exportar';
 import {carregarFonte} from './thumb/medida';
 import type {
-  AudioInfo, BibliotecaInfo, Camadas, CenaDaMatriz, Edicao, Estado, EstadoChave, EstadoDasVozes, EstadoIa, Ideia, Modo,
+  AudioInfo, AvatarSalvo, BibliotecaInfo, Camadas, CenaDaMatriz, Edicao, Estado, EstadoChave, EstadoDasVozes, EstadoIa, Ideia, Modo,
   MontagemConfig,
   PersonagemInfo, Preset, RecorteInfo, Saida, Tarefa, ThumbConfig, VideoInfo,
 } from './tipos';
 import {comecarTour, tourJaVisto} from './tour';
 
 const MONTAGEM_PADRAO: MontagemConfig = {fonteDoFundo: 'video', porCima: 'pessoa', recorte: 'modnet', formato: 'fundo',
-  tirarFundo: true, fala: null, cenasDoAudio: []};
+  tirarFundo: true, fala: null, cenasDoAudio: [], avatar: null};
 const NADA_ENVIANDO: Record<Envio, number | null> = {video: null, fundo: null, pessoa: null, personagem: null, audio: null,
   biblioteca: null};
 const SEM_ERRO: Record<Envio, string> = {video: '', fundo: '', pessoa: '', personagem: '', audio: '', biblioteca: ''};
@@ -44,7 +44,8 @@ const THUMB_PADRAO: ThumbConfig = {
   vinheta: false, tom: false, recorte: true, lado: 'esquerda', pessoaDx: 0, pessoaDy: 0, pessoaEscala: 1,
   espelhar: false, contorno: true, luz: 'nenhuma', realce: true, mao: 'nenhuma', maoEstilo: '3d',
   maoTom: 'default', maoX: null, maoY: null, maoEscala: 1, seta: false, alvo: null, rosto: null,
-  rostoT: null, busca: '', cena: '', plataformas: ['youtube'], tamanhos: ['1280x720'],
+  rostoT: null, busca: '', cena: '', poseDoAvatar: 'apontando_lado', plataformas: ['youtube'],
+  tamanhos: ['1280x720'],
 };
 
 /** Baixa um arquivo que o servidor entrega como anexo, sem sair da página. */
@@ -116,6 +117,8 @@ export const App: React.FC = () => {
   const [narracao, setNarracao] = useState<AudioInfo | null>(null);
   // O motor e as vozes gravadas: o cartão de "Antes de começar" grava, a montagem narra.
   const [vozes, setVozes] = useState<EstadoDasVozes | null>(null);
+  // Os avatares salvos (o cartão de "Antes de começar" cria; a montagem e a thumbnail usam).
+  const [avatares, setAvatares] = useState<AvatarSalvo[] | null>(null);
   // O painel de "Antes de começar" que está aberto.
   const [configurando, setConfigurando] = useState<Configuracao | null>(null);
   const [biblioteca, setBiblioteca] = useState<BibliotecaInfo | null>(null);
@@ -156,6 +159,11 @@ export const App: React.FC = () => {
   // de onde saem os quadros de trás dele).
   const naMontagem = modo === 'montagem';
   const comPersonagem = naMontagem && montagem.porCima === 'personagem';
+  // O avatar da montagem: o escolhido no "Meu avatar", ou o primeiro salvo.
+  const comAvatar = naMontagem && montagem.porCima === 'avatar';
+  const avatarDaMontagem = avatares?.find((a) => a.apelido === montagem.avatar) ?? avatares?.[0] ?? null;
+  // Com o personagem ou o avatar, a pessoa já vem desenhada: não há o que recortar do vídeo.
+  const desenhado = comPersonagem || comAvatar;
   // O fundo da montagem: o vídeo, ou a capa da biblioteca de cenas (uma cena forte dela).
   const comCenas = montagem.fonteDoFundo === 'cenas';
   const fundoEfetivo = comCenas ? biblioteca?.capa ?? null : fundo;
@@ -164,7 +172,9 @@ export const App: React.FC = () => {
     fundo: fundoEfetivo,
     personagem: comPersonagem && personagem
       ? {info: personagem, recorte: recorteDoPersonagem, tirarFundo: montagem.tirarFundo} : null,
-  }), [naMontagem, comPersonagem, fundoEfetivo, personagem, recorteDoPersonagem, montagem.tirarFundo]);
+    avatar: comAvatar && avatarDaMontagem ? {salvo: avatarDaMontagem, pose: thumb.poseDoAvatar} : null,
+  }), [naMontagem, comPersonagem, fundoEfetivo, personagem, recorteDoPersonagem, montagem.tirarFundo, comAvatar,
+    avatarDaMontagem, thumb.poseDoAvatar]);
   const fala = falaEfetiva(montagem, comCenas ? null : fundo, pessoa, audios);
   // O "ouvir antes" do efeito na voz: 8 s da fala que a edição vai usar.
   const fonteDaVoz = useMemo((): {fonte: string | null; motivo: string} => {
@@ -191,7 +201,8 @@ export const App: React.FC = () => {
   const recomendacao = useMemo(() => recomendadas(videoPrincipal), [videoPrincipal]);
   const plataformas: Plataforma[] = plataformasEscolhidas ?? (recomendacao.length ? recomendacao : ['youtube']);
   const chaveDasPlataformas = plataformas.join(',');
-  const porCimaPronto = montagem.porCima === 'nada' || Boolean(comPersonagem ? personagem : pessoa);
+  const porCimaPronto = montagem.porCima === 'nada'
+    || Boolean(comAvatar ? avatarDaMontagem : comPersonagem ? personagem : pessoa);
   const podeEditar = !naMontagem ? Boolean(unico)
     : Boolean(fundoEfetivo && porCimaPronto && (fala === 'voz' ? narracao
       : fala === 'cenas' ? cenasDoAudio.length : fala !== 'audio' || audios.length));
@@ -234,16 +245,16 @@ export const App: React.FC = () => {
 
   // O recorte do quadro da prévia: espera o controle deslizante parar.
   useEffect(() => {
-    if (!video || !thumb.recorte || comPersonagem) return;
+    if (!video || !thumb.recorte || desenhado) return;
     const espera = setTimeout(() => pedirRecorte(video, thumb.t), 250);
     return () => clearTimeout(espera);
-  }, [video, thumb.t, thumb.recorte, comPersonagem, pedirRecorte]);
+  }, [video, thumb.t, thumb.recorte, desenhado, pedirRecorte]);
 
   // E o de cada ideia, para os cartões.
   useEffect(() => {
-    if (!video || comPersonagem) return;
+    if (!video || desenhado) return;
     for (const ideia of ideias) if (ideia.recorte) pedirRecorte(video, ideia.t);
-  }, [video, ideias, comPersonagem, pedirRecorte]);
+  }, [video, ideias, desenhado, pedirRecorte]);
 
   // O personagem é medido uma vez (e de novo se o fundo de cor dele sair ou voltar).
   useEffect(() => {
@@ -269,6 +280,7 @@ export const App: React.FC = () => {
     carregarFonte().then(() => setFonteOk(true)).catch(() => setFonteOk(true));
     api.icones().then(setIcones).catch(() => undefined);
     api.vozes().then(setVozes).catch(() => undefined);
+    api.avatares().then((r) => setAvatares(r.avatares)).catch(() => setAvatares([]));
     if (!tourJaVisto()) setTimeout(comecarTour, 700);
     return () => pararDeAcompanhar.current?.();
   }, []);
@@ -304,7 +316,7 @@ export const App: React.FC = () => {
           novoQuadroDaThumb(v);
         } else if (qual === 'fundo') {
           setFundo(v);
-          if (montagem.porCima === 'personagem') novoQuadroDaThumb(v);
+          if (montagem.porCima === 'personagem' || montagem.porCima === 'avatar') novoQuadroDaThumb(v);
         } else {
           setPessoa(v);
           // O vídeo já sem fundo dispensa o MODNet: a página escolhe sozinha.
@@ -454,7 +466,7 @@ export const App: React.FC = () => {
     setGerandoThumbs(true);
     const feitas: {nome: string; url: string; jpgBytes: number}[] = [];
     try {
-      const recorte = config.recorte && !c?.personagem ? await api.recorteInfo(v.id, config.t).catch(() => null) : null;
+      const recorte = config.recorte && !c?.personagem && !c?.avatar ? await api.recorteInfo(v.id, config.t).catch(() => null) : null;
       for (const tamanho of config.tamanhos) {
         const blob = await gerarPng(propsDaThumb(config, v, tamanho, icones, recorte, c));
         const r = await api.salvarThumbnail(tarefaId, blob, tamanho);
@@ -536,6 +548,7 @@ export const App: React.FC = () => {
     const alvo = !naMontagem || !fundoEfetivo ? {videoId: video.id} : {montagem: {
       ...(comCenas && biblioteca ? {biblioteca_id: biblioteca.id} : {fundo_id: fundoEfetivo.id}),
       ...(comPersonagem && personagem ? {personagem_id: personagem.id} : {}),
+      ...(comAvatar && avatarDaMontagem ? {avatar: avatarDaMontagem.apelido} : {}),
       ...(montagem.porCima === 'pessoa' && pessoa ? {pessoa_id: pessoa.id} : {}),
       ...(fala === 'audio' && audios.length ? {audio_ids: audios.map((a) => a.id)}
         : fala === 'voz' && narracao ? {audio_ids: [narracao.id]}
@@ -555,7 +568,8 @@ export const App: React.FC = () => {
       setErroEdicao((e as Error).message);
     }
   }, [video, edicao, saida, previa, quandoTerminar, podeEditar, naMontagem, fundoEfetivo, comCenas, biblioteca,
-    comPersonagem, personagem, pessoa, audios, narracao, cenasDoAudio, montagem, camadas, fala]);
+    comPersonagem, personagem, comAvatar, avatarDaMontagem, pessoa, audios, narracao, cenasDoAudio, montagem, camadas,
+    fala]);
 
   const marcado = useMemo(() => (estado && edicao && saida ? presetMarcado(estado.presets, edicao, saida) : null),
     [estado, edicao, saida]);
@@ -594,7 +608,7 @@ export const App: React.FC = () => {
     setBaixando(tamanho);
     setErroThumb('');
     try {
-      const recorte = thumb.recorte && !camadas?.personagem
+      const recorte = thumb.recorte && !camadas?.personagem && !camadas?.avatar
         ? recorteDe(video, thumb.t) ?? await api.recorteInfo(video.id, thumb.t).catch(() => null) : null;
       const blob = await gerarPng(propsDaThumb(thumb, video, tamanho, icones, recorte, camadas));
       const pronta = tarefa?.estado === 'pronto' ? tarefa.id : '';
@@ -627,6 +641,7 @@ export const App: React.FC = () => {
     propsDaIdeia: (ideia: Ideia) => {
       if (!video || !fonteOk) return null;
       const config = aplicarIdeia(thumb, ideia);
+      if (camadas?.avatar) return propsDaThumb(config, video, config.tamanhos[0], icones, null, camadas);
       if (camadas?.personagem) {
         return camadas.personagem.recorte ? propsDaThumb(config, video, config.tamanhos[0], icones, null, camadas) : null;
       }
@@ -665,7 +680,9 @@ export const App: React.FC = () => {
         url: montagem.recorte === 'transparente' || estado?.recorte.baixado
           ? api.recorteUrl(pessoa.id, Math.min(1, pessoa.duracao / 2), 480) : api.quadroUrl(pessoa.id, 1, 480),
         emPe}
-        : null;
+        : comAvatar && avatarDaMontagem ? {
+          url: api.quadroDoAvatarUrl(avatarDaMontagem.apelido, 'explicando_aberta.png', avatarDaMontagem.criado), emPe}
+          : null;
 
   return (
     <>
@@ -694,10 +711,11 @@ export const App: React.FC = () => {
             aoApagarChave={async () => setIa(await api.apagarChave())}
             pexels={pexels} aoSalvarChavePexels={async (chave) => setPexels(await api.salvarChavePexels(chave))}
             aoApagarChavePexels={async () => setPexels(await api.apagarChavePexels())}
-            vozes={vozes} aoMudarVozes={setVozes} aberto={configurando} abrir={setConfigurando} />
+            vozes={vozes} aoMudarVozes={setVozes} avatares={avatares} aoMudarAvatares={setAvatares}
+            aberto={configurando} abrir={setConfigurando} />
           <PassoEnvio modo={modo} setModo={trocarModo} video={unico} fundo={fundo} pessoa={pessoa}
             personagem={personagem} audios={audios} narracao={narracao} aoNarrar={setNarracao} biblioteca={biblioteca}
-            vozes={vozes} aoMudarVozes={setVozes}
+            vozes={vozes} aoMudarVozes={setVozes} avatares={avatares}
             faltaMatriz={Boolean(bibliotecaAberta && !biblioteca)} enviandoBiblioteca={enviandoBiblioteca}
             bibliotecaId={bibliotecaAberta} gerandoMatriz={gerandoMatriz} revisao={revisao}
             salvandoMatriz={salvandoMatriz} aoGerarMatriz={(a) => void gerarMatriz(a)}

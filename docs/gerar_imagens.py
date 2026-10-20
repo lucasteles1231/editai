@@ -32,6 +32,8 @@ Gera em ``docs/img/``:
 - ``interface-estudio.png`` e ``interface-efeitos.png``: o estúdio de voz com um efeito
   montado e salvo, e o passo 2 com ele marcado e o "ouvir antes" (com o ``--so-noticia``;
   não precisam do exemplo);
+- ``interface-avatar.png``: o criador de avatar, com as partes trocadas à mão (com o
+  ``--so-noticia``; não precisa do exemplo nem de foto);
 - ``funcoes/*.svg``: os ícones das funções, do Tabler (baixados do unpkg).
 """
 from __future__ import annotations
@@ -658,6 +660,37 @@ def capturas_da_voz(nav, url: str, pasta: Path) -> None:
     finally:
         ia.pasta_de_dados = dados_de_verdade
         voz_clonada.pasta_das_narracoes = narracoes_de_verdade
+
+
+def capturas_do_avatar(nav, url: str, pasta: Path) -> None:
+    """O criador de avatar, com as partes escolhidas à mão (sem foto: nenhum rosto de
+    ninguém entra). A pasta de dados é temporária."""
+    from editor import ia
+
+    dados_de_verdade = ia.pasta_de_dados
+    ia.pasta_de_dados = lambda: pasta / "dados"
+    try:
+        ctx = nav.new_context(bypass_csp=True, viewport={"width": 1280, "height": 2000},
+                              device_scale_factor=2, color_scheme="light",
+                              reduced_motion="reduce")
+        ctx.add_init_script(SEM_TOUR)
+        pagina = ctx.new_page()
+        pagina.goto(url)
+        pagina.get_by_role("article", name="Avatar").get_by_role(
+            "button", name="Configurar").click()
+        painel = pagina.get_by_role("dialog", name="O seu avatar")
+        for grupo, opcao in (("Cabelo", "cachos curtos"), ("Barba", "cavanhaque"),
+                             ("Óculos", "redondos")):
+            painel.get_by_role("group", name=grupo, exact=True).get_by_role(
+                "button", name=opcao).click()
+        painel.get_by_role("button", name="Pele média", exact=True).click()
+        painel.get_by_role("button", name="Roupa azul", exact=True).click()
+        pagina.wait_for_timeout(2500)          # as miniaturas desenham uma a uma
+        pagina.evaluate("document.querySelector('dialog').scrollTop = 0")
+        salvar(painel.screenshot(), "interface-avatar.png", 1400)
+        ctx.close()
+    finally:
+        ia.pasta_de_dados = dados_de_verdade
         for nome in ("EDITOR_VOZ", "EDITOR_TRANSCRITOR"):
             os.environ.pop(nome, None)
 
@@ -873,6 +906,7 @@ def _capturas(exemplo: Path, pasta: Path, url: str, config_de_verdade, *,
             # A montagem com a biblioteca de cenas, e o tour.
             capturas_da_noticia(nav, url, pasta)
             capturas_da_voz(nav, url, pasta)
+            capturas_do_avatar(nav, url, pasta)
             capturas_dos_presets(nav, url, pasta)
 
             # A thumbnail com IA: as três ideias e a prévia com as abas.
@@ -921,6 +955,7 @@ def so_noticia() -> None:
         try:
             capturas_da_noticia(nav, url, Path(tmp))
             capturas_da_voz(nav, url, Path(tmp))
+            capturas_do_avatar(nav, url, Path(tmp))
             capturas_dos_presets(nav, url, Path(tmp))
             capturas_dos_efeitos(nav, url, Path(tmp))
         finally:

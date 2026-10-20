@@ -1,0 +1,5 @@
+var e=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150">
+  <g data-camada="cabeca" data-pronto="sim"><path class="pele" d="M82 60h1v1h-1z"/><path class="pele-sombra" d="M70 67h1v1h-1zM79 67h1v1h-1zM74 69h1v1h-1zM73 70h4v1h-4z"/></g>
+  <g data-camada="boca" data-pronto="sim"><path class="boca" d="M69 61h3v1h-3zM73 61h4v1h-4zM78 61h2v1h-2zM69 62h12v1h-12zM69 63h3v1h-3zM75 63h1v1h-1zM77 63h4v1h-4z"/><path class="contorno" d="M71 58h2v1h-2zM74 58h1v1h-1zM76 58h2v1h-2zM69 59h12v1h-12zM68 60h3v1h-3zM79 60h3v1h-3zM67 61h2v1h-2zM80 61h3v1h-3zM67 62h2v1h-2zM81 62h2v1h-2zM67 63h2v1h-2zM81 63h2v1h-2zM67 64h3v1h-3zM80 64h3v1h-3zM68 65h2v1h-2zM81 65h1v1h-1zM69 66h2v1h-2zM73 66h1v1h-1zM77 66h4v1h-4zM71 67h8v1h-8z"/><path class="dente" d="M71 60h8v1h-8zM72 61h1v1h-1zM77 61h1v1h-1zM80 65h1v1h-1zM71 66h2v1h-2zM74 66h1v1h-1zM76 66h1v1h-1z"/><path class="lingua" d="M72 63h3v1h-3zM76 63h1v1h-1zM70 64h10v1h-10zM70 65h10v1h-10zM75 66h1v1h-1z"/></g>
+</svg>
+`;export{e as default};

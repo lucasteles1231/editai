@@ -150,6 +150,9 @@ def argumentos() -> argparse.ArgumentParser:
                    help="o vídeo de você falando, que vai por cima do fundo")
     m.add_argument("--personagem", type=Path, metavar="ANIMACAO",
                    help="um GIF, PNG animado ou WebP de personagem, em loop por cima")
+    m.add_argument("--avatar", metavar="NOME",
+                   help="o seu avatar (criado na página, em \"Antes de começar\"), por cima: "
+                        "a pose muda a cada frase e a boca abre nas sílabas")
     m.add_argument("--audio", type=Path, nargs="+", metavar="ARQUIVO",
                    help="o áudio separado (a narração gravada à parte); vários, um por "
                         "parágrafo, são juntados na ordem")
@@ -438,8 +441,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         a.audio, a.fala = [narracao], "audio"
 
-    if a.video is None and a.fundo is None and not (a.pessoa or a.personagem or a.audio
-                                                    or a.fala or a.preset or a.cenas):
+    if a.video is None and a.fundo is None and not (a.pessoa or a.personagem or a.avatar
+                                                    or a.audio or a.fala or a.preset or a.cenas):
         from editor.servidor import abrir
 
         return abrir(porta=a.porta, navegador=not a.sem_navegador)
@@ -500,9 +503,9 @@ def _montagem(a: argparse.Namespace):
     from editor.montagem import Montagem
 
     if a.fundo is None and a.cenas is None:
-        if a.pessoa or a.personagem or a.audio or a.fala:
-            return None, ("--pessoa, --personagem, --audio e --fala vão junto com --fundo "
-                          "ou --cenas")
+        if a.pessoa or a.personagem or a.avatar or a.audio or a.fala:
+            return None, ("--pessoa, --personagem, --avatar, --audio e --fala vão junto com "
+                          "--fundo ou --cenas")
         if a.video is None:
             return None, ("faltou o vídeo: editai video.mp4 --preset gameplay (na página, os "
                           "presets ficam no passo 2)")
@@ -511,9 +514,19 @@ def _montagem(a: argparse.Namespace):
         return None, ""
     pessoa = a.pessoa
     if a.video is not None:
-        if pessoa is not None or a.personagem is not None:
+        if pessoa is not None or a.personagem is not None or a.avatar:
             return None, "na montagem, passe a pessoa só por --pessoa (ou o personagem)"
         pessoa = a.video
+    avatar = None
+    if a.avatar:
+        from editor import avatar as avatar_mod
+
+        try:
+            avatar = avatar_mod.achar(a.avatar)
+        except avatar_mod.AvatarInvalido:
+            nomes = ", ".join(x["nome"] for x in avatar_mod.avatares()) or "nenhum"
+            return None, (f"não achei o avatar {a.avatar} (os salvos: {nomes}; crie um na "
+                          "página, em \"Antes de começar\")")
     audios = list(a.audio or [])
     for nome, caminho in (("fundo", a.fundo), ("pessoa", pessoa), ("personagem", a.personagem),
                           ("matriz", a.matriz), *(("áudio", x) for x in audios)):
@@ -524,7 +537,8 @@ def _montagem(a: argparse.Namespace):
     recorte = a.recorte
     if pessoa is not None and recorte is None:
         recorte = "transparente" if video_mod.tem_alfa(pessoa) else "modnet"
-    return Montagem(a.fundo, pessoa=pessoa, personagem=a.personagem, audios=tuple(audios),
+    return Montagem(a.fundo, pessoa=pessoa, personagem=a.personagem, avatar=avatar,
+                    audios=tuple(audios),
                     cenas=a.cenas, matriz=a.matriz,
                     recorte=recorte or "modnet", formato=a.quadro,
                     tirar_fundo_do_personagem=not a.manter_fundo_do_personagem,

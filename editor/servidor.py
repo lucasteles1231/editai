@@ -55,6 +55,7 @@ from editor import (
     voz,
     voz_clonada,
 )
+from editor import avatar as avatar_mod
 from editor import saida as saida_mod
 from editor import video as video_mod
 from editor.opcoes import OpcoesDeEdicao
@@ -644,6 +645,80 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
         return {"id": aid, "nome": destino.name, "tamanho_bytes": destino.stat().st_size,
                 "duracao": round(duracao, 2)}
 
+    # ── o avatar: montado na página, guardado aqui ───────────────────────
+    # A página desenha os 36 quadros (as partes ficam no próprio build) e manda prontos; o
+    # Gemini só escolhe as partes pela foto, e a foto não fica guardada.
+
+    def _avatar(erro: avatar_mod.AvatarInvalido) -> HTTPException:
+        return HTTPException(422, str(erro))
+
+    @app.get("/api/avatares")
+    def lista_de_avatares():
+        return {"avatares": avatar_mod.avatares()}
+
+    @app.post("/api/avatares/partes")
+    def partes_pela_foto(foto: Annotated[UploadFile, File()]):
+        dados = foto.file.read(avatar_mod.FOTO_TETO_BYTES + 1)
+        try:
+            return avatar_mod.escolher_partes(dados)
+        except avatar_mod.AvatarInvalido as erro:
+            raise _avatar(erro) from erro
+        except ia.ErroDaIA as erro:
+            raise HTTPException(502, str(erro)) from erro
+
+    @app.post("/api/avatares")
+    async def salvar_avatar(request: Request):
+        """O avatar aprovado: o nome, as escolhas (JSON) e os 36 quadros, cada um com o
+        nome dele no pacote ("neutro_fechada.png")."""
+        form = await request.form(max_files=64)
+        try:
+            escolhas = json.loads(str(form.get("escolhas") or "{}"))
+        except ValueError as erro:
+            raise HTTPException(422, "As escolhas do avatar vieram quebradas.") from erro
+        quadros = {}
+        for arquivo in form.getlist("quadros"):
+            if isinstance(arquivo, str):
+                continue
+            quadros[Path(arquivo.filename or "").name] = await arquivo.read(
+                avatar_mod.QUADRO_TETO_BYTES + 1)
+        try:
+            info = avatar_mod.salvar(str(form.get("nome") or ""), escolhas, quadros)
+        except avatar_mod.AvatarInvalido as erro:
+            raise _avatar(erro) from erro
+        return {"avatar": info, "avatares": avatar_mod.avatares()}
+
+    @app.get("/api/avatares/{slug}")
+    def ver_avatar(slug: str):
+        try:
+            return avatar_mod.ler(slug)
+        except avatar_mod.AvatarInvalido as erro:
+            raise HTTPException(404, str(erro)) from erro
+
+    @app.delete("/api/avatares/{slug}")
+    def apagar_avatar(slug: str):
+        try:
+            avatar_mod.apagar(slug)
+        except avatar_mod.AvatarInvalido as erro:
+            raise HTTPException(404, str(erro)) from erro
+        return {"avatares": avatar_mod.avatares()}
+
+    @app.get("/api/avatares/{slug}/quadros/{nome}")
+    def quadro_do_avatar(slug: str, nome: str):
+        try:
+            caminho = avatar_mod.quadro(slug, nome)
+        except avatar_mod.AvatarInvalido as erro:
+            raise HTTPException(404, str(erro)) from erro
+        return FileResponse(caminho, media_type="image/png", headers={"Cache-Control": "no-cache"})
+
+    @app.get("/api/avatares/{slug}/pacote.zip")
+    def pacote_do_avatar(slug: str):
+        try:
+            dados = avatar_mod.pacote(slug)
+        except avatar_mod.AvatarInvalido as erro:
+            raise HTTPException(404, str(erro)) from erro
+        return Response(dados, media_type="application/zip", headers={
+            "Content-Disposition": f'attachment; filename="avatar-{slug}.zip"'})
+
     # ── "Minha voz": o motor, a leitura gravada, as vozes salvas e a narração ──
     # A gravação e a voz ficam no computador; a narração vira um áudio separado como
     # outro qualquer (com o roteiro ao lado, para a legenda sair com a grafia dele).
@@ -1094,11 +1169,16 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
                 raise HTTPException(422, "Envie a matriz da biblioteca (o cenas.json).")
         else:
             fundo = _video(str(pedido.get("fundo_id", "")))
-        pessoa = personagem = None
+        pessoa = personagem = avatar_ = None
         if pedido.get("pessoa_id"):
             pessoa = _video(str(pedido["pessoa_id"]))
         if pedido.get("personagem_id"):
             personagem = _personagem(str(pedido["personagem_id"]))
+        if pedido.get("avatar"):
+            try:
+                avatar_ = avatar_mod.ler(str(pedido["avatar"]))["apelido"]
+            except avatar_mod.AvatarInvalido as erro:
+                raise HTTPException(422, str(erro)) from erro
         ids_de_audio = pedido.get("audio_ids") or (
             [pedido["audio_id"]] if pedido.get("audio_id") else [])
         partes = [_audio(str(a))["caminho"] for a in list(ids_de_audio)[:PARTES_MAXIMAS]]
@@ -1119,7 +1199,7 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
                                      "recortar com o MODNet.")
         m = montagem.Montagem(
             fundo["caminho"] if fundo else None, pessoa=pessoa["caminho"] if pessoa else None,
-            personagem=personagem["caminho"] if personagem else None,
+            personagem=personagem["caminho"] if personagem else None, avatar=avatar_,
             audios=tuple(partes), recorte=recorte_,
             cenas=biblioteca["pasta"] if biblioteca else None,
             matriz=biblioteca["matriz"] if biblioteca else None,

@@ -40,18 +40,22 @@ export function propsDaThumb(config: ThumbConfig, video: VideoInfo, tamanho: str
                              icones: Record<string, string[]>, recorte: RecorteInfo | null,
                              camadas: Camadas | null = null): ThumbProps {
   const {largura, altura} = TAMANHOS[tamanho];
-  // Na montagem com personagem, ele é a pessoa recortada: um desenho com transparência.
+  // Na montagem com personagem, ele é a pessoa recortada: um desenho com transparência. O
+  // avatar também, no quadro da pose escolhida (quadrado, 900 × 900).
   const personagem = camadas?.personagem ?? null;
-  const usarRecorte = personagem ? Boolean(personagem.recorte?.ok) : Boolean(config.recorte && recorte?.ok);
+  const avatar = camadas?.avatar ?? null;
+  const usarRecorte = avatar ? true : personagem ? Boolean(personagem.recorte?.ok)
+    : Boolean(config.recorte && recorte?.ok);
   const vistoPelaIa = daIa(config);
-  const aspecto = personagem ? personagem.info.largura / personagem.info.altura : video.largura / video.altura;
+  const aspecto = avatar ? 1 : personagem ? personagem.info.largura / personagem.info.altura
+    : video.largura / video.altura;
   const quadro = api.quadroUrl(video.id, config.t, 1920);
   // O fundo: o próprio quadro, outro quadro do vídeo, a imagem escolhida ou a cor.
   let fundo = config.fundo;
   let fundoImagem = '';
   let fundoAspecto = aspecto;
   let doProprio = false;
-  if (fundo === 'video' && (personagem || camadas?.fundo)) {
+  if (fundo === 'video' && (personagem || avatar || camadas?.fundo)) {
     // Na montagem, o "Vídeo" é sempre o vídeo de fundo: no mesmo momento da pessoa, ou
     // no escolhido.
     const fonte = camadas?.fundo ?? video;
@@ -69,19 +73,25 @@ export function propsDaThumb(config: ThumbConfig, video: VideoInfo, tamanho: str
   }
   return {
     largura, altura, quadro, aspecto,
-    recorte: !usarRecorte ? '' : personagem ? api.personagemQuadroUrl(personagem.info.id, personagem.tirarFundo)
-      : api.recorteUrl(video.id, config.t, Math.min(video.largura, 1440)),
-    pessoa: !usarRecorte ? null : (personagem ? personagem.recorte?.pessoa : recorte?.pessoa) ?? null,
+    recorte: !usarRecorte ? '' : avatar
+      ? api.quadroDoAvatarUrl(avatar.salvo.apelido, `${avatar.pose}_fechada.png`, avatar.salvo.criado)
+      : personagem ? api.personagemQuadroUrl(personagem.info.id, personagem.tirarFundo)
+        : api.recorteUrl(video.id, config.t, Math.min(video.largura, 1440)),
+    pessoa: !usarRecorte ? null : (avatar ? avatar.salvo.caixas[avatar.pose]
+      : personagem ? personagem.recorte?.pessoa : recorte?.pessoa) ?? null,
     // Com a pessoa recortada, o rosto vem da silhueta medida no próprio quadro. A caixa do
     // Gemini fica para o quadro inteiro: num teste real, ela veio com a pessoa toda dentro
     // em vez do rosto, e a pessoa encolheu até virar um bonequinho no canto.
-    rosto: personagem ? personagem.recorte?.rosto ?? null
+    rosto: avatar ? avatar.salvo.rosto : personagem ? personagem.recorte?.rosto ?? null
       : usarRecorte ? recorte?.rosto ?? null : (vistoPelaIa ? config.rosto : null) ?? recorte?.rosto ?? null,
     fundo, fundoImagem, fundoAspecto, fundoDoProprioQuadro: doProprio,
     foco: fundo === 'video' && !doProprio ? config.foco : null,
     desfoque: config.desfoque, escurecer: config.escurecer, vinheta: config.vinheta, tom: config.tom,
     lado: config.lado, pessoaDx: config.pessoaDx, pessoaDy: config.pessoaDy, pessoaEscala: config.pessoaEscala,
-    espelhar: config.espelhar, contorno: config.contorno, luz: config.luz, realce: config.realce,
+    // o avatar aponta para a direita do quadro: com o texto à esquerda (ele à direita), ele
+    // vira para o texto; o "Espelhar" inverte
+    espelhar: avatar ? (config.lado === 'esquerda') !== config.espelhar : config.espelhar,
+    contorno: avatar ? false : config.contorno, pixelada: Boolean(avatar), luz: config.luz, realce: config.realce,
     mao: config.mao !== 'nenhuma' ? api.maoUrl(config.maoEstilo, config.maoTom) : '',
     maoAlvo: config.mao === 'alvo' && vistoPelaIa && config.alvo ? 'alvo' : 'titulo',
     maoX: config.maoX, maoY: config.maoY, maoEscala: config.maoEscala,
@@ -155,7 +165,7 @@ export const ThumbPasso: React.FC<Props> = (p) => {
     document.getElementById('plataformas')?.scrollIntoView({behavior: calmo ? 'auto' : 'smooth', block: 'center'});
   };
 
-  const situacaoDoRecorte = camadas?.personagem ? ''
+  const situacaoDoRecorte = camadas?.personagem || camadas?.avatar ? ''
     : !config.recorte || !video ? ''
       : recorte === undefined || recorte === null ? `Recortando… (na primeira vez o editor baixa o modelo, ${p.tamanhoDoRecorte})`
         : recorte.ok ? '' : 'Não achei uma pessoa neste quadro: a thumbnail usa o quadro inteiro.';
@@ -316,7 +326,8 @@ export const ThumbPasso: React.FC<Props> = (p) => {
               ) : null}
               {aba === 'pessoa' ? (
                 <AbaPessoa config={config} mudar={mudar} video={video} situacaoDoRecorte={situacaoDoRecorte}
-                  temAlvo={temAlvo} personagem={Boolean(camadas?.personagem)} />
+                  temAlvo={temAlvo} personagem={Boolean(camadas?.personagem || camadas?.avatar)}
+                  avatar={Boolean(camadas?.avatar)} />
               ) : null}
               {aba === 'mao' ? <AbaMao config={config} mudar={mudar} temAlvo={temAlvo} /> : null}
               {aba === 'detalhes' ? (

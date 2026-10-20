@@ -366,9 +366,12 @@ class MontadorDeJanela:
                     t_saida: float) -> None:
         if self.camada is None:
             return
-        from editor.montagem import CamadaDePersonagem
+        from editor.montagem import CamadaDeAvatar, CamadaDePersonagem
 
-        if isinstance(self.camada, CamadaDePersonagem):
+        if isinstance(self.camada, CamadaDeAvatar):
+            # a boca é a das sílabas; do lado direito, espelhado (aponta para o meio)
+            rgba = self.camada.quadro_em(t_saida, self.camada.a_direita(estado.cx, tela.width))
+        elif isinstance(self.camada, CamadaDePersonagem):
             # A boca só mexe com fala: nas pausas, fica o primeiro quadro (o de boca
             # fechada, no personagem do vídeo de referência).
             rgba = (self.camada.personagem.quadro_em(t_saida) if self.falando(t_saida)
@@ -383,7 +386,8 @@ class MontadorDeJanela:
         balanco = math.sin(t_saida * 6) * BALANCO * k if self.falando(t_saida) else 0.0
         dy = balanco - pulo * PULO * k
         img = Image.fromarray(rgba, "RGBA")
-        img = img.resize((max(1, round(lc * s)), max(1, round(ac * s))), Image.BILINEAR)
+        img = img.resize((max(1, round(lc * s)), max(1, round(ac * s))),
+                         getattr(self.camada, "filtro", Image.BILINEAR))
         sombra = _sombra_do_personagem(img, k)
         # o centro da silhueta em cx, e a base dela no piso
         cx = estado.cx - ((p.x0 + p.x1) / 2 - 0.5) * img.width
