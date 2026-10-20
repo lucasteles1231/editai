@@ -11,7 +11,7 @@ projeto anterior (o `um projeto anterior`, de 12 a 16/10/2026).
 
 As partes, o padrão e o catálogo são uma cópia do repositório público
 [editai-personagens](https://github.com/lucasteles1231/editai-personagens), do commit
-`a1a94e9` (20/10/2026), em domínio público (CC0). Lá estão também o manequim e as ferramentas
+`02252c8` (20/10/2026), em domínio público (CC0). Lá estão também o manequim e as ferramentas
 que geram e vetorizam a biblioteca. Para trazer uma versão nova, copie `partes/`, `padrao.json`
 e `catalogo.json` de lá e rode `uv run pytest tests/test_avatar.py`: o primeiro teste confere o
 hash de cada parte contra o catálogo.
