@@ -1,0 +1,4 @@
+var e=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150">
+  <g data-camada="oculos" data-pronto="sim"><path class="branco" d="M58 41h2v1h-2zM79 41h2v1h-2zM58 42h1v1h-1zM79 42h1v1h-1z"/><path class="oculos-luz" d="M56 40h16v1h-16zM77 40h17v1h-17zM53 41h4v1h-4zM71 41h1v1h-1zM77 41h1v1h-1zM93 41h3v1h-3zM56 42h1v1h-1zM71 42h7v1h-7zM93 42h1v1h-1zM56 43h1v1h-1zM71 43h1v1h-1zM77 43h1v1h-1zM93 43h1v1h-1zM56 44h1v1h-1zM71 44h1v1h-1zM77 44h1v1h-1zM93 44h1v1h-1zM56 45h1v1h-1zM71 45h1v1h-1zM77 45h1v1h-1zM93 45h1v1h-1zM56 46h16v1h-16zM77 46h17v1h-17z"/><g data-peca="lente" data-mistura="sim"><path class="lente" fill-opacity="0.18" d="M57 41h1v1h-1zM60 41h11v1h-11zM78 41h1v1h-1zM81 41h12v1h-12zM57 42h1v1h-1zM59 42h12v1h-12zM78 42h1v1h-1zM80 42h13v1h-13zM57 43h14v1h-14zM78 43h15v1h-15zM57 44h14v1h-14zM78 44h15v1h-15zM57 45h14v1h-14zM78 45h15v1h-15z"/></g></g>
+</svg>
+`;export{e as default};

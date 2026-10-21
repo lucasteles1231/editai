@@ -1108,13 +1108,48 @@ def test_o_avatar(navegador, endereco, tmp_path):
     pacote = painel.get_by_role("article", name="avatar Lucas").get_by_role(
         "link", name="Baixar o pacote")
     expect(pacote).to_have_attribute("href", re.compile(r"/api/avatares/lucas/pacote\.zip\?t="))
-    pagina.keyboard.press("Escape")
-    expect(cartao).to_contain_text("Lucas")
 
-    # na montagem: "Por cima → Meu avatar" já vem com ele
+    # o gorro corta o cabelo, e a cor do olho pinta a íris: o mesmo avatar de gorro, com o black
+    # power e careca, e os olhos verdes
+    def criar(nome: str) -> None:
+        painel.get_by_label("Nome do avatar").fill(nome)
+        painel.get_by_role("button", name="Aprovar e criar os quadros").click()
+        expect(painel.get_by_role("status")).to_contain_text(f"Pronto: o avatar {nome}",
+                                                             timeout=60_000)
+
+    painel.get_by_role("group", name="Acessório", exact=True).get_by_role(
+        "button", name="gorro").click()
+    painel.get_by_role("button", name="Olhos verde", exact=True).click()
+    criar("Gorro")
+    painel.get_by_role("group", name="Cabelo", exact=True).get_by_role(
+        "button", name="careca").click()
+    criar("Careca")
+
+    def quadro(slug: str) -> np.ndarray:
+        with Image.open(avatar.quadro(slug, "neutro_fechada.png")) as q:
+            return np.asarray(q.convert("RGBA")).astype(int)
+
+    def perto(q: np.ndarray, cor: str, dist: int = 40) -> np.ndarray:
+        rgb = np.array([int(cor[i:i + 2], 16) for i in (1, 3, 5)])
+        return (np.abs(q[..., :3] - rgb).sum(-1) < dist) & (q[..., 3] > 0)
+
+    com_cabelo, careca = quadro("gorro"), quadro("careca")
+    olhos = slice(36 * 6, 48 * 6)                            # as linhas dos olhos, na grade de 150
+    assert perto(com_cabelo[olhos], "#4c8a52").sum() >= 4 * 36   # a íris verde (uns 4 px da grade)
+    assert not perto(quadro("lucas")[olhos], "#4c8a52").any()
+    gorro = np.nonzero(perto(careca, "#2b4c7e", 60).any(axis=1))[0]
+    aba = int(gorro.max())                                   # a linha mais baixa do gorro
+    acima = slice(0, aba - 4 * 6)                  # a borda de adesivo do cabelo sobe 3 px
+    assert (com_cabelo[acima] == careca[acima]).all(), "o cabelo passou por cima do gorro"
+    assert (com_cabelo[aba:] != careca[aba:]).any(), "o cabelo de baixo do gorro sumiu"
+    pagina.keyboard.press("Escape")
+    expect(cartao).to_contain_text("3 avatares")
+
+    # na montagem: "Por cima → Meu avatar" já vem com o primeiro
     pagina.get_by_role("button", name="Um fundo e, por cima").click()
     pagina.get_by_role("button", name="Meu avatar").click()
-    expect(pagina.get_by_role("group", name="qual avatar").get_by_role(
-        "button", name="Lucas")).to_have_attribute("aria-pressed", "true")
+    escolha = pagina.get_by_role("group", name="qual avatar")
+    expect(escolha.get_by_role("button", name="Careca")).to_have_attribute("aria-pressed", "true")
+    expect(escolha.get_by_role("button", name="Lucas")).to_have_attribute("aria-pressed", "false")
     assert not _barrados(pagina), _barrados(pagina)
     assert not erros, erros

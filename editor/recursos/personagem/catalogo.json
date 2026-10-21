@@ -192,7 +192,6 @@
      "pt": "redondos",
      "en": "thin round metal-frame glasses",
      "cores": [
-      "pele",
       "oculos"
      ]
     },
@@ -201,7 +200,6 @@
      "pt": "retangulares sem aro",
      "en": "thin rectangular rimless glasses",
      "cores": [
-      "pele",
       "oculos"
      ]
     },
@@ -210,7 +208,6 @@
      "pt": "quadrados grossos",
      "en": "thick square plastic-frame glasses",
      "cores": [
-      "pele",
       "oculos"
      ]
     },
@@ -219,7 +216,6 @@
      "pt": "de sol",
      "en": "dark sunglasses",
      "cores": [
-      "pele",
       "oculos"
      ]
     }
@@ -292,7 +288,8 @@
      "en": "button-up shirt with a collar",
      "cores": [
       "pele",
-      "roupa"
+      "roupa",
+      "roupa2"
      ]
     },
     {
@@ -301,7 +298,8 @@
      "en": "open jacket over a crew-neck T-shirt",
      "cores": [
       "pele",
-      "roupa"
+      "roupa",
+      "roupa2"
      ]
     }
    ]
@@ -420,32 +418,32 @@
  },
  "arquivos": {
   "acessorio/bone.svg": {
-   "bytes": 3187,
-   "sha256": "38629de0731f94b4485ff07de532c542774d452de70443ea925f11a311892fc9"
+   "bytes": 2694,
+   "sha256": "f78c74a462924bfead8537a5774146fabcefda1e98119dfe50e1a8453c4b013f"
   },
   "acessorio/brincos.svg": {
    "bytes": 528,
    "sha256": "4973f7ba51fd43a2a861bb29db2e215341c27fee4c9aef851f1db7e3ec46956a"
   },
   "acessorio/fone.svg": {
-   "bytes": 7770,
-   "sha256": "97e4dbe7d850a63fad0d71041c342e571e9d45fc911f138a4a2e26dd51708203"
+   "bytes": 7691,
+   "sha256": "8673d746b97ca24f628cbcfa7f30d573b0990ddc828fdf943fce760696ea6da3"
   },
   "acessorio/gorro.svg": {
-   "bytes": 5550,
-   "sha256": "14b6e2638f58765a0beedf131b3a65e045f0a08eef94142a3ef22086788403bc"
+   "bytes": 4572,
+   "sha256": "dc633a483c241d8775a08dabbf99a3906f9d5b68a099baeecb5d274e8fd787c1"
   },
   "barba/bigode.svg": {
-   "bytes": 1071,
-   "sha256": "5b14fc75d3eb5ac3c4a8f5780ebcb922ec5684a30d90ca037ded9ac3792c2bde"
+   "bytes": 1043,
+   "sha256": "df56be5c736df11ead59c1bd9b1cfc3a428425819f7752ae1fe19c7e8a2ef7d9"
   },
   "barba/cavanhaque.svg": {
    "bytes": 938,
-   "sha256": "19e447a30d06f3943bd3f3dd61c8c53d12d3ac3adec9f05faf1967bbfddb54aa"
+   "sha256": "252e3f8decebf406245c4f69b178ac5f304b9302f6f09e5e0931125eb43acfe4"
   },
   "barba/cheia.svg": {
    "bytes": 3767,
-   "sha256": "ded889e6a46d30d12e8551fbd97da38149f780b6f0727f477218a31d60b380ed"
+   "sha256": "34f65c12b403ee7a4a7250e19af2c59b867bc3071e51e298c93830a79b87ecc0"
   },
   "barba/curta.svg": {
    "bytes": 3844,
@@ -456,24 +454,28 @@
    "sha256": "07ece03d2854895a6f8bb7393023a936cb34d5e2b138b20dedc294d26084f029"
   },
   "boca/ia.aberta.svg": {
-   "bytes": 954,
-   "sha256": "3305f93180f77b2efe2735801c123b103267af2514ec19ed2848252f6f27388f"
+   "bytes": 530,
+   "sha256": "1c177c12a74a8fce7dd7d4c918dcad0f592d214b3ee72365eecd222c696a23cf"
   },
   "boca/ia.meia.svg": {
-   "bytes": 719,
-   "sha256": "7e070f05e397a16c36f9b706b535b3c4419ce1121c72dfc453d950d921a0fc45"
+   "bytes": 363,
+   "sha256": "f05d7bb5b2d81899aca60df706743b66a019a9f953244688c245f3cde0b7bccd"
   },
   "boca/ia.neutra.svg": {
-   "bytes": 561,
-   "sha256": "721ee44f9baecccfd05721f4258c4a06374c89475534c99804be08175217c2c8"
+   "bytes": 208,
+   "sha256": "43733066edd9f7c53be3e3df72d679ee9503a3b96c6321339b4f963a400d19f3"
   },
   "boca/ia.o.svg": {
-   "bytes": 697,
-   "sha256": "d9f9d22721d95aba9fe466285c9c0f560ecd312dd422848ac29d0a92bb8a66ee"
+   "bytes": 371,
+   "sha256": "a32296e64b3bf3b03056ac78a08414ed90d5549aea60eb54a02a13ffdcb6f0e3"
   },
   "boca/ia.rindo.svg": {
-   "bytes": 1394,
-   "sha256": "b183bc56fd705822975739449df441da8af0c2c3bdc8c736c465b5a778062eab"
+   "bytes": 558,
+   "sha256": "d79e9ff5f37950a8b6c7be639c5b3ed3a9ab328af62db9e6aa2715a9486ba325"
+  },
+  "boca/ia.sorriso.svg": {
+   "bytes": 264,
+   "sha256": "852560f4038f83345acf432eeacdd5d0036111fee1616e502f6c5e0c1e74a580"
   },
   "bracos/ia.apontando_cima.svg": {
    "bytes": 12938,
@@ -520,120 +522,120 @@
    "sha256": "01e66016192891e591672279781b0db384c4a6bf7612d4e614ae9669bfbf5dea"
   },
   "cabeca/manequim.svg": {
-   "bytes": 20874,
-   "sha256": "2cc138ec5cac8452761558a1b9da3e8f44b97b4831f73a4ceb7356c43023b5c5"
+   "bytes": 19632,
+   "sha256": "fd57db6c2f878f5e2b4c3c91fc3658f017c961ee075340461e65249f04a6f36c"
   },
   "cabelo/afro.svg": {
-   "bytes": 15892,
-   "sha256": "2c1f8aac46cdc5008478846337aef2544c7064a482eae70531365129f9f256d5"
+   "bytes": 15787,
+   "sha256": "ac66ea9fb86863633a918cdb029746d378eef6a78a10c5fe95536b6b8ac2fef8"
   },
   "cabelo/baguncado.svg": {
-   "bytes": 10000,
-   "sha256": "ba67c916abc6c23b2873407fa72abefae08e01cf8a3e72e36810d728a3915297"
+   "bytes": 9411,
+   "sha256": "ca640612ff7f1737a9821fee48bd1ed0bf1d8bf164699e260c27b182afd00eb0"
   },
   "cabelo/cachos-curtos.svg": {
-   "bytes": 9534,
-   "sha256": "de87b86de018b906e475af2fceea5db06ae5de7c22d3f29f229b3b956202290e"
+   "bytes": 8679,
+   "sha256": "730cdc39e27fc1b7dc864a0f4b3cc3759b6db380f7bcfdae4f0bc14c5a14773c"
   },
   "cabelo/calvo.svg": {
-   "bytes": 2779,
-   "sha256": "7aeb6e0eb0f62b8c8539af5d2efeb61183debee1fb1786ed285a2bf23d09489d"
+   "bytes": 2341,
+   "sha256": "b0c070e5a1a76d82ba4255a8c9fc5b91a6463a613d30b017a9ef18cbfa804719"
   },
   "cabelo/chanel.svg": {
-   "bytes": 11852,
-   "sha256": "1eeab2925f1478777dd8f65882d2957df188ac1287a88233e3d4073290a46190"
+   "bytes": 11000,
+   "sha256": "d2c9093c25361d0bcdf7cdcf14e9668e1cf20cc5ee1a8990995f1a613e1781a9"
   },
   "cabelo/coque.svg": {
-   "bytes": 5789,
-   "sha256": "13aa52cc1bd210bce4273f8f753e8e99a0b03b1f70e2277653af84e677b2a049"
+   "bytes": 5105,
+   "sha256": "d51949846d1d635597d5350b3df5a0dad0ebea1f51d189282f16be1e8db62b96"
   },
   "cabelo/curto.svg": {
-   "bytes": 4430,
-   "sha256": "130d782360b75e20195456d9e42517fd6b73875cfd693d120470a5de663bae80"
+   "bytes": 3868,
+   "sha256": "42bcff186b653c3967f05d0c15a0bfd0dff812c9c57417bfbbb1e67ddf125cb7"
   },
   "cabelo/franja.svg": {
-   "bytes": 7214,
-   "sha256": "6f5245230dd3aab34fc692c76707f17ab03ab374ba2ba2d0803528941416a593"
+   "bytes": 6261,
+   "sha256": "dd2fdef4632f0507733ab3a3bfe4931e16770077b49458cb03ebd47f4157260b"
   },
   "cabelo/lateral.svg": {
-   "bytes": 4895,
-   "sha256": "aecf5d44535fffa2b1aa695daae1ac126ea20dab73babd5de56d85a0d2265054"
+   "bytes": 3995,
+   "sha256": "5b797fc14d72c9882211155f4d189500641b81512cb3d7b9de9c1a7a61accc91"
   },
   "cabelo/longo.svg": {
-   "bytes": 25941,
-   "sha256": "a914764b9246cfaba8f3db6ad640ab04f849b2407fc1cf7ee5fe4868d7308841"
+   "bytes": 24911,
+   "sha256": "32266b1d4647cff48f98bb5031cd80d5526d6ffd037488f891582b79cf1ae1fd"
   },
   "cabelo/ondulado.svg": {
-   "bytes": 26654,
-   "sha256": "df7236b8487d6b0c7c07d55c217f71550136d427259ed4c18389ac646463b66f"
+   "bytes": 25989,
+   "sha256": "8ed0cd46bdbba8722c359ada5925e854684903ad9bac247c0aa3ad45724f140b"
   },
   "cabelo/rabo.svg": {
-   "bytes": 9070,
-   "sha256": "dce2d3069e13762f1a4b448a1770e26edac7c8fbc7aeaf76d9ba5932927073f9"
+   "bytes": 8496,
+   "sha256": "2def3643083af2d0bc6502438c4957970d220703756850f22e5a0d0a0c6e89e9"
   },
   "cabelo/raspado.svg": {
-   "bytes": 2309,
-   "sha256": "bcf2e8f21369a9432eed811a0d40d3e61e109473581b8492945aac550724593a"
+   "bytes": 2099,
+   "sha256": "542b7ff6a14018313a6de9246a49742214f6920b836401527669e1a2129793d6"
   },
   "cabelo/topete.svg": {
-   "bytes": 6069,
-   "sha256": "f34542059d488b341e571b5c4ecf81734297f435814ca3fea5f8e3073e380206"
+   "bytes": 5185,
+   "sha256": "86c460080cb09f8178b5fe248aa0d533be0e0cf66d5a7ecb3d15e096b1d14215"
   },
   "cabelo/trancas.svg": {
-   "bytes": 22568,
-   "sha256": "c2a6b806bc063c1eab5c7874fd3fd0e211c390c938ef4cd5c2b6c02984db6001"
+   "bytes": 21854,
+   "sha256": "19db281c027357eda48c545dc74a7a1ec9e2ff0bad00f09e2a72ad98f6076cfd"
   },
   "oculos/quadrados.svg": {
-   "bytes": 1351,
-   "sha256": "f4f50c548af73d02c6dbafba7abcd1f667292405a3b926661f4fd16e37a5339d"
+   "bytes": 1104,
+   "sha256": "fb55d7e6cdf527d983eeb8ccb4d15b59dba36e1499b723f0565ad29d697433ca"
   },
   "oculos/redondos.svg": {
-   "bytes": 1368,
-   "sha256": "cb7412029de2196d63ebe612444f6c6ccc9cccd4d2b783b260c7fd54733db638"
+   "bytes": 1041,
+   "sha256": "42cfffebe7aa28b5b0636218455b4814e360906e48dbd97b23426bf0f87bdccc"
   },
   "oculos/retangulares.svg": {
-   "bytes": 2016,
-   "sha256": "d7d950c600765bd308e2bd08055fbf65e7e26da9caa5d662e9bac8dff800d90e"
+   "bytes": 869,
+   "sha256": "1fa736638e86c603a1d133ef6730dc329532e049c7e6be21e887e461f50c6d82"
   },
   "oculos/sol.svg": {
-   "bytes": 1230,
-   "sha256": "082db63191bcdf5f5df83836a2f6d5480949511cb13fe72817f75066e351d90d"
+   "bytes": 986,
+   "sha256": "e443c9f29b7b59fb01683bfbb4ae887bc728fbd7f1b7dfc5c050bbdba6811c7f"
   },
   "olhos/ia.apertado.svg": {
-   "bytes": 964,
-   "sha256": "9bd0da396f34d27b4c3c32ce00e48c229a2b078725183d3ff7f2f8c34dfe4144"
+   "bytes": 720,
+   "sha256": "640841837df56939a5e3d7d53762bd4e28866be13286cbfdb182a5cd4f4084b6"
   },
   "olhos/ia.arregalado.svg": {
-   "bytes": 1026,
-   "sha256": "595cba2db0e9d10eff4ee289aa39f93d27fa300108cccfae59691c5104b66b99"
+   "bytes": 840,
+   "sha256": "09436b94f77d125c30df792d01dbfeb92d342ff866e0a8ea70dae9b0fb6c43b9"
   },
   "olhos/ia.cima.svg": {
-   "bytes": 466,
-   "sha256": "98be466a06125a6d2bb78eb7cc6a28ffee918f3ac8fbc71dcfb4c58753c63b60"
+   "bytes": 385,
+   "sha256": "cea354af440d1dce8eaab78c2ebe182f8439da1560b67da92221db4eb95ac38e"
   },
   "olhos/ia.lado.svg": {
-   "bytes": 606,
-   "sha256": "af9b85f371c520752ad724ac2e1f0213159ab523dadb38db36ae2d00055574d8"
+   "bytes": 490,
+   "sha256": "d9eac83bfacfbe654f92b83a2be79b6e0a3ef8c29e7884953c28111cd88efa8f"
   },
   "olhos/ia.meio.svg": {
-   "bytes": 685,
-   "sha256": "84a1cb2cae0c52c16767b1bf99d2d2e626c6a0d7eb3c733f93f26a2aeebc8082"
+   "bytes": 597,
+   "sha256": "e2b9eb975def94b37213ea1f2946ddf3b54d4dd4034126b03b186eadb3406c0b"
   },
   "roupa/camisa.svg": {
-   "bytes": 11558,
-   "sha256": "dd209d7fdf08e8c68ac06b7020c2f878902d0bb65437abad6642ea5e304eadd8"
+   "bytes": 14346,
+   "sha256": "57dce74ec17b9ab36f6c40f308684e0a54db7c0f8dffded3be519c962543d268"
   },
   "roupa/jaqueta.svg": {
-   "bytes": 15744,
-   "sha256": "892b3a11b656f1a688a9d2be28ca53680b777ccf8c946047aaaa597d1b1cf418"
+   "bytes": 18817,
+   "sha256": "2739fb1cfcfe15c8d9211e86130b2de7c26ab36a78716896089ac0b280a2bec6"
   },
   "roupa/moletom.svg": {
-   "bytes": 13247,
-   "sha256": "e3769cb9f729ec5242d100d4d2943d2b1b1744e9b06755e8f8e088b152d9bdfb"
+   "bytes": 16219,
+   "sha256": "8acf3aa01d4d30acb6b6e82e3f08ccb3dadd1abd1ec8ef623a86b6ff6c282459"
   },
   "sobrancelhas/ia.erguida.svg": {
-   "bytes": 1337,
-   "sha256": "a7d4315f8ce5ccc2ec0dfa85a0e541dc3412904ad5ef30831bef1c0142a72250"
+   "bytes": 1044,
+   "sha256": "79f04fb5f50d5e1e509c375d3f0765dbe8705b1fba17ecb19985cd903d3bc994"
   }
  }
 }

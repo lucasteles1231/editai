@@ -46,6 +46,36 @@ def _png(q: np.ndarray) -> bytes:
     return buf.getvalue()
 
 
+def _grade(arquivo: str, por_grupo: bool = False) -> dict:
+    """Os pixels de uma parte: {(y, x): classe} (ou um desses por grupo)."""
+    import re
+    from importlib.resources import files
+
+    partes = files("editor").joinpath("recursos", "personagem", "partes")
+    texto = partes.joinpath(*arquivo.split("/")).read_text()
+    grupos: dict = {}
+    for camada, corpo in re.findall(r'<g data-camada="([^"]+)"[^>]*>(.*?)</g>', texto, re.S):
+        g = grupos.setdefault(camada, {})
+        for cls, d in re.findall(r'class="([^"]+)" d="([^"]+)"', corpo):
+            for x, y, n in re.findall(r"M(\d+) (\d+)h(\d+)", d):
+                for k in range(int(n)):
+                    g[(int(y), int(x) + k)] = cls
+    if por_grupo:
+        return grupos
+    return {k: v for g in grupos.values() for k, v in g.items()}
+
+
+def _extracao() -> dict:
+    from importlib.resources import files
+
+    partes = files("editor").joinpath("recursos", "personagem", "partes")
+    return json.loads(partes.joinpath("extracao.json").read_text())
+
+
+def padrao_camadas() -> list[str]:
+    return avatar.padrao()["camadas"]
+
+
 def _quadros() -> dict[str, bytes]:
     return {f"{p}_{b}.png": _png(_quadro(p, b)) for p in avatar.poses() for b in avatar.bocas()}
 
@@ -109,6 +139,86 @@ class TestOCatalogo:
                 assert f"boca/ia.{p['boca']}.svg" in arquivos, pose
         for boca in ("meia", "aberta"):
             assert f"boca/ia.{boca}.svg" in arquivos
+
+    def test_as_bocas_desenhadas_sao_simetricas(self):
+        """As bocas são desenhadas em código (as da IA, reduzidas à grade, viravam riscos): cada
+        uma é simétrica, centrada no rosto, e o sorriso das poses comuns também é uma parte."""
+        centros = set()
+        for estado in ("sorriso", "neutra", "o", "rindo", "meia", "aberta"):
+            g = _grade(f"boca/ia.{estado}.svg")
+            xs = sorted({x for (_y, x) in g})
+            centros.add((xs[0] + xs[-1]) / 2)
+            for y in {y for (y, _x) in g}:
+                linha = {x: c for (yy, x), c in g.items() if yy == y}
+                for x, c in linha.items():
+                    assert linha.get(xs[0] + xs[-1] - x) == c, (estado, y, x)
+        assert len(centros) == 1, centros
+
+    def test_o_chapeu_corta_o_cabelo(self):
+        from importlib.resources import files
+
+        partes = files("editor").joinpath("recursos", "personagem", "partes", "acessorio")
+        for chapeu in ("bone", "gorro"):
+            texto = partes.joinpath(f"{chapeu}.svg").read_text()
+            assert 'data-camada="acessorio" data-pronto="sim" data-cobre="cabelo"' in texto
+        assert "data-cobre" not in partes.joinpath("fone.svg").read_text()
+
+    def test_a_cor_do_olho_pinta_a_iris(self):
+        """A íris é marrom-escura no Nano Banana e caía no contorno: a cor escolhida não mudava
+        nada. Agora ela é "olho", no manequim e em cada estado dos olhos."""
+        # a peça de um estado só guarda o que mudou: a íris que andou (o resto vem do manequim)
+        for arq, minimo in (("cabeca/manequim.svg", 10), ("olhos/ia.lado.svg", 2),
+                            ("olhos/ia.cima.svg", 2), ("olhos/ia.arregalado.svg", 2)):
+            g = _grade(arq)
+            assert sum(c.startswith("olho") for c in g.values()) >= minimo, arq
+
+    def test_a_cabeca_em_cabeca_pescoco_e_corpo(self):
+        """A cabeça não passa do queixo: as linhas da gola do suéter iam por cima de toda roupa
+        escolhida. O pescoço fica numa camada abaixo do corpo, e a gola nova o cobre."""
+        info = _extracao()
+        grupos = _grade("cabeca/manequim.svg", por_grupo=True)
+        assert set(grupos) == {"cabeca", "pescoco", "corpo"}
+        queixo = info["marcos"]["queixo"]
+        assert max(y for (y, _x) in grupos["cabeca"]) <= queixo
+        assert min(y for (y, _x) in grupos["pescoco"]) > queixo
+        cores = {c.split("-")[0] for c in grupos["pescoco"].values()}
+        assert cores <= {"pele", "contorno"}
+        assert padrao_camadas().index("pescoco") < padrao_camadas().index("corpo")
+
+    def test_sobrancelha_so_na_sobrancelha(self):
+        """O brilho da careca e o desenho da orelha eram "sobrancelha" e mudavam com a cor do
+        cabelo."""
+        a, b = _extracao()["marcos"]["sobrancelha"]
+        g = _grade("cabeca/manequim.svg")
+        linhas = {y for (y, _x), c in g.items() if c.startswith("sobrancelha")}
+        assert linhas <= set(range(a - 3, b + 3))
+
+    def test_a_cabeca_em_capsula(self):
+        """O alto da cabeça com a largura do rosto, como no exemplo do dono (no manequim gerado, ele
+        era bem mais largo: uma lâmpada), e o queixo de antes, que o dono aprovou (alargar o
+        maxilar deixou o queixo quadrado)."""
+        info = _extracao()["capsula"]
+        g = _grade("cabeca/manequim.svg", por_grupo=True)["cabeca"]
+
+        def largura(y):
+            xs = [x for (yy, x), c in g.items() if yy == y and c == "contorno"]
+            return max(xs) - min(xs)
+
+        # até a linha antes da orelha (na de cima dela, o contorno da orelha encosta na cabeça)
+        topo = max(largura(y) for y in range(10, info["orelha"][0] - 1))
+        antes = info["cranio_antes"][1] - info["cranio_antes"][0]
+        # o alvo é a linha do rosto; onde o contorno tinha 2 px, o de fora fica uma coluna além
+        assert topo <= info["cranio"][1] - info["cranio"][0] + 2 < antes
+        assert largura(info["orelha"][1] + 2) >= 0.8 * topo     # o maxilar logo abaixo da orelha
+        # o queixo: a pele contínua que passa pelo meio (ao lado do V fica a pele do pescoço)
+        y = info["queixo"] - 1
+        pele = {x for (yy, x), c in g.items() if yy == y and c.startswith("pele")}
+        e = d = round(sum(info["cranio"]) / 2)
+        while e - 1 in pele:
+            e -= 1
+        while d + 1 in pele:
+            d += 1
+        assert d - e < 0.4 * topo                               # em V, como antes
 
     def test_os_enums_do_pedido_sao_pequenos(self):
         # o enum grande dá 400 genérico nos modelos 3.x (medido em 03/10/2026)

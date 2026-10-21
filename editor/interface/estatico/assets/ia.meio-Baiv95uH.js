@@ -1,4 +1,0 @@
-var e=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150">
-  <g data-camada="olhos" data-pronto="sim"><path class="branco" d="M58 42h1v1h-1zM58 43h1v1h-1zM83 43h1v1h-1zM90 43h1v1h-1z"/><path class="contorno" d="M52 41h1v1h-1zM59 41h3v1h-3zM63 41h3v1h-3zM82 41h8v1h-8zM60 42h10v1h-10zM82 42h7v1h-7z"/><path class="pele" d="M61 39h1v1h-1zM66 39h1v1h-1zM89 39h1v1h-1zM60 40h7v1h-7zM82 40h7v1h-7zM53 41h1v1h-1zM81 41h1v1h-1zM70 42h1v1h-1zM91 43h1v1h-1z"/><path class="pele-sombra" d="M67 38h1v1h-1zM60 39h1v1h-1zM62 39h4v1h-4zM67 39h1v1h-1zM82 39h7v1h-7zM58 40h2v1h-2zM67 40h1v1h-1zM81 40h1v1h-1zM89 40h2v1h-2z"/><path class="sobrancelha" d="M52 46h1v1h-1zM52 47h1v1h-1z"/></g>
-</svg>
-`;export{e as default};

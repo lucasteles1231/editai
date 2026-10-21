@@ -1,4 +1,3 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150">
-  <g data-camada="cabeca" data-pronto="sim"><path class="pele" d="M70 60h1v1h-1zM75 60h1v1h-1zM81 60h2v1h-2zM67 61h1v1h-1zM82 61h1v1h-1zM71 62h1v1h-1zM71 64h7v1h-7z"/><path class="pele-sombra" d="M69 60h1v1h-1zM73 60h2v1h-2zM79 60h1v1h-1zM67 62h1v1h-1zM82 62h1v1h-1zM75 66h1v1h-1z"/></g>
-  <g data-camada="boca" data-pronto="sim"><path class="contorno" d="M68 61h14v1h-14zM68 62h3v1h-3zM74 62h2v1h-2zM78 62h3v1h-3zM72 65h6v1h-6z"/><path class="lingua" d="M72 62h2v1h-2zM76 62h2v1h-2z"/></g>
+  <g data-camada="boca" data-pronto="sim"><path class="contorno" d="M70 61h11v1h-11z"/><path class="pele-sombra" d="M72 62h7v1h-7z"/></g>
 </svg>

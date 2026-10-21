@@ -913,8 +913,9 @@ um cabelo, uma barba, uns óculos, uma roupa e as cores de cada coisa.
 [editai-personagens](https://github.com/lucasteles1231/editai-personagens), em domínio
 público (CC0). O Editai leva uma cópia dele, de uns 360 KB, e a página pede só as partes que
 desenha. Cada parte nasceu de uma edição de um manequim no Nano Banana 2, foi vetorizada e
-teve os tons separados por espaço de cor: por isso dá para pintar qualquer pele, cabelo ou
-roupa. O padrão das poses, das bocas e da fala está em
+teve os tons separados por espaço de cor: por isso dá para pintar qualquer pele, cabelo, olho
+ou roupa. As bocas e os óculos são desenhados em código, e um boné ou gorro esconde o cabelo
+que passaria por cima dele. O padrão das poses, das bocas e da fala está em
 [`editor/recursos/personagem/padrao.json`](editor/recursos/personagem/padrao.json).
 
 No terminal: `editai --fundo tela.mp4 --audio narracao.m4a --avatar "Seu Nome"`.

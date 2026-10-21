@@ -11,17 +11,28 @@ projeto anterior (o `um projeto anterior`, de 12 a 16/10/2026).
 
 As partes, o padrão e o catálogo são uma cópia do repositório público
 [editai-personagens](https://github.com/lucasteles1231/editai-personagens), do commit
-`02252c8` (20/10/2026), em domínio público (CC0). Lá estão também o manequim e as ferramentas
+`aa5bcc6` (21/10/2026), em domínio público (CC0). Lá estão também o manequim e as ferramentas
 que geram e vetorizam a biblioteca. Para trazer uma versão nova, copie `partes/`, `padrao.json`
 e `catalogo.json` de lá e rode `uv run pytest tests/test_avatar.py`: o primeiro teste confere o
 hash de cada parte contra o catálogo.
 
+**O que não veio de um projeto anterior:**
+
+- **A cabeça em cápsula:** o alto da cabeça com a largura do rosto, como no exemplo que o dono
+  mandou em 20/10/2026. O manequim gerado tinha o alto bem mais largo que o resto, como uma
+  lâmpada. Alargar o maxilar deixou o queixo quadrado, então o alto é que encolheu (de 52 para
+  44 px na grade), e o queixo é o de sempre.
+- **Os óculos:** desenhados em código, em volta dos olhos medidos na cabeça.
+- **O chapéu cortando o cabelo:** o boné e o gorro levam `data-cobre="cabelo"`, e o desenhista
+  só mostra o cabelo abaixo deles.
+
 **De onde vem cada regra:**
 
 - **As 12 poses e quando usar cada uma:** o `documento.py` de um projeto anterior.
-- **As 3 bocas:** o `meia_boca.py`. A meia não é gerada: ela é desenhada a partir da aberta,
-  com a mesma largura e metade da altura. Nas poses em que a boca fechada já é aberta (o "o"
-  do surpreso e a risada), a meia e a aberta continuam a da pose.
+- **As 3 bocas:** o `meia_boca.py`. Nas poses em que a boca fechada já é aberta (o "o" do
+  surpreso e a risada), a meia e a aberta continuam a da pose. Todas as bocas (o sorriso, a
+  neutra, o "o", a risada, a meia e a aberta) são desenhadas em código, em mapas de pixel
+  simétricos: as da IA, reduzidas à grade de 150, viravam riscos.
 - **A boca pelas sílabas:** o `boca_por_quadro` (`palco/montagem.py`).
   - Os picos saem do envelope de 25 ms, a cada 10 ms, com pelo menos 130 ms entre eles.
   - A boca abre um quadro antes de cada pico, sempre pela meia, e fica aberta de 2 a 6 quadros.

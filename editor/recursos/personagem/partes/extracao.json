@@ -18,6 +18,7 @@
    44
   ],
   "boca": 61,
+  "queixo": 75,
   "roupa_desde": 82,
   "rosto_x": [
    47,
@@ -69,26 +70,6 @@
    "categoria": "barba",
    "id": "rala",
    "pixels": 99
-  },
-  {
-   "categoria": "boca",
-   "id": "aberta",
-   "pixels": 137
-  },
-  {
-   "categoria": "boca",
-   "id": "neutra",
-   "pixels": 53
-  },
-  {
-   "categoria": "boca",
-   "id": "o",
-   "pixels": 68
-  },
-  {
-   "categoria": "boca",
-   "id": "rindo",
-   "pixels": 238
   },
   {
    "categoria": "bracos",
@@ -221,69 +202,64 @@
    "pixels": 3011
   },
   {
-   "categoria": "oculos",
-   "id": "quadrados",
-   "pixels": 297
-  },
-  {
-   "categoria": "oculos",
-   "id": "redondos",
-   "pixels": 101
-  },
-  {
-   "categoria": "oculos",
-   "id": "retangulares",
-   "pixels": 270
-  },
-  {
-   "categoria": "oculos",
-   "id": "sol",
-   "pixels": 409
-  },
-  {
    "categoria": "olhos",
    "id": "apertado",
-   "pixels": 125
+   "pixels": 107
   },
   {
    "categoria": "olhos",
    "id": "arregalado",
-   "pixels": 126
+   "pixels": 104
   },
   {
    "categoria": "olhos",
    "id": "cima",
-   "pixels": 32
+   "pixels": 28
   },
   {
    "categoria": "olhos",
    "id": "lado",
-   "pixels": 42
+   "pixels": 36
   },
   {
    "categoria": "olhos",
    "id": "meio",
-   "pixels": 79
+   "pixels": 66
   },
   {
    "categoria": "roupa",
    "id": "camisa",
-   "pixels": 5302
+   "pixels": 5619
   },
   {
    "categoria": "roupa",
    "id": "jaqueta",
-   "pixels": 5255
+   "pixels": 5606
   },
   {
    "categoria": "roupa",
    "id": "moletom",
-   "pixels": 5371
+   "pixels": 5712
   },
   {
    "categoria": "sobrancelhas",
    "id": "erguida",
    "pixels": 178
   }
- ]
+ ],
+ "capsula": {
+  "cranio_antes": [
+   48,
+   100
+  ],
+  "cranio": [
+   52,
+   96
+  ],
+  "orelha": [
+   42,
+   55
+  ],
+  "queixo": 75
+ }
 }

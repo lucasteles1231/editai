@@ -141,7 +141,12 @@ export function opcoes(categoria: string): string[] {
 
 /** Uma peça desenhada sozinha: a camada dela (para a ordem), se ela ganha contorno e se ela
  *  tinge o que está embaixo (a lente, a sombra da barba) em vez de cobrir. */
-type Grupo = {camada: string; svg: string; contorno: boolean; mistura: boolean; apaga?: boolean};
+type Grupo = {camada: string; svg: string; contorno: boolean; mistura: boolean; apaga?: boolean;
+  /** O chapéu (``data-cobre="cabelo"``): o cabelo só aparece abaixo dele. */
+  cobre?: boolean};
+
+/** As camadas do cabelo, que o chapéu corta. */
+const CABELO = new Set(['cabelo-tras', 'cabelo-frente', 'sombra-do-cabelo']);
 
 function grupos(texto: string | null): Grupo[] {
   if (!texto) return [];
@@ -162,7 +167,8 @@ function grupos(texto: string | null): Grupo[] {
     const base = g.cloneNode(true) as Element;
     base.querySelectorAll(':scope > g[data-peca]').forEach((x) => x.remove());
     if (base.querySelector('path, rect, circle, ellipse, polygon')) {
-      saida.push({camada, svg: ser.serializeToString(base), contorno: contorna, mistura: false});
+      saida.push({camada, svg: ser.serializeToString(base), contorno: contorna, mistura: false,
+        cobre: g.getAttribute('data-cobre') === 'cabelo'});
     }
     for (const peca of pecas) {
       const mistura = peca.getAttribute('data-mistura') === 'sim';
@@ -261,6 +267,37 @@ function maisPerto(r: number, g: number, b: number, cores: Rgb[]): Rgb {
   return melhor;
 }
 
+/** A linha do chapéu: em cada coluna, o pixel mais baixo dele; fora da largura dele, a da borda
+ *  mais perto. O cabelo só aparece abaixo dela (o que sai por baixo do boné ou do gorro), como
+ *  pediu o dono: o black power e o coque não podem passar por cima do chapéu. ``null`` sem chapéu. */
+function linhaDoChapeu(camadas: Grupo[], imagens: ImageData[]): Int16Array | null {
+  const linha = new Int16Array(GRADE).fill(-1);
+  camadas.forEach((g, i) => {
+    if (!g.cobre) return;
+    const d = imagens[i].data;
+    for (let x = 0; x < GRADE; x++) {
+      for (let y = GRADE - 1; y >= 0; y--) {
+        if (d[(y * GRADE + x) * 4 + 3] >= 128) {
+          linha[x] = Math.max(linha[x], y);
+          break;
+        }
+      }
+    }
+  });
+  let primeira = -1;
+  let ultima = -1;
+  for (let x = 0; x < GRADE; x++) {
+    if (linha[x] < 0) continue;
+    if (primeira < 0) primeira = x;
+    ultima = x;
+  }
+  if (primeira < 0) return null;
+  for (let x = 0; x < primeira; x++) linha[x] = linha[primeira];
+  for (let x = ultima + 1; x < GRADE; x++) linha[x] = linha[ultima];
+  for (let x = primeira; x <= ultima; x++) if (linha[x] < 0) linha[x] = linha[x - 1];
+  return linha;
+}
+
 /** Um quadro na grade (150 × 150), com o contorno e a borda de adesivo. */
 export async function desenharNaGrade(e: Escolhas, pose: Pose, boca: Boca): Promise<ImageData> {
   const p = paleta(e);
@@ -268,6 +305,7 @@ export async function desenharNaGrade(e: Escolhas, pose: Pose, boca: Boca): Prom
   const camadas = await camadasDoQuadro(e, pose, boca);
   const imagens = await Promise.all(camadas.map((g) => rasterizar(g.svg, estilo)));
   const n = GRADE * GRADE;
+  const corte = linhaDoChapeu(camadas, imagens);
   const cor = new Uint8ClampedArray(n * 4);
   const dono = new Int16Array(n).fill(-1);     // a camada com contorno que está por cima
   const cheio = new Uint8Array(n);
@@ -293,8 +331,10 @@ export async function desenharNaGrade(e: Escolhas, pose: Pose, boca: Boca): Prom
       }
       return;
     }
+    const cortado = corte !== null && CABELO.has(camadas[i].camada);
     for (let k = 0; k < n; k++) {
       if (d[k * 4 + 3] < 128 || Math.floor(k / GRADE) >= CORTE) continue;
+      if (cortado && Math.floor(k / GRADE) <= corte[k % GRADE]) continue;
       const [r, g, b] = cores.length ? maisPerto(d[k * 4], d[k * 4 + 1], d[k * 4 + 2], cores)
         : [d[k * 4], d[k * 4 + 1], d[k * 4 + 2]];
       cor[k * 4] = r;
