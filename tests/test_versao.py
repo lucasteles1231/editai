@@ -125,7 +125,8 @@ class TestAtualizar:
 class TestOAtalho:
     @pytest.fixture
     def casa(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HOME", str(tmp_path))
+        # (no Windows, o Path.home() não lê o HOME, e sim o perfil do usuário)
+        monkeypatch.setattr(Path, "home", classmethod(lambda _cls: tmp_path))
         editai = tmp_path / "bin" / "editai"
         editai.parent.mkdir()
         editai.write_text("#!/bin/sh\n")
@@ -140,14 +141,15 @@ class TestOAtalho:
         assert info["CFBundleExecutable"] == "abrir"
         assert info["CFBundleShortVersionString"] == __version__
         abrir = app / "Contents" / "MacOS" / "abrir"
-        assert abrir.read_text() == f'#!/bin/sh\nexec open -a Terminal "{editai}"\n'
-        assert abrir.stat().st_mode & 0o111
+        assert abrir.read_text(encoding="utf-8") == f'#!/bin/sh\nexec open -a Terminal "{editai}"\n'
+        if sys.platform != "win32":                             # o Windows não tem o bit
+            assert abrir.stat().st_mode & 0o111
         assert (app / "Contents" / "Resources" / "editai.icns").read_bytes()[:4] == b"icns"
 
     def test_linux(self, casa):
         home, editai = casa
         (desktop,) = atalho.criar("linux")
-        texto = desktop.read_text()
+        texto = desktop.read_text(encoding="utf-8")
         assert desktop == home / ".local" / "share" / "applications" / "editai.desktop"
         assert f'Exec="{editai}"' in texto and "Terminal=true" in texto
 
@@ -179,18 +181,18 @@ class TestOsAnexos:
         nomes = sorted(p.name for p in (tmp_path / "anexos").iterdir())
         assert nomes == ["Instalar-Editai-Windows.cmd", "Instalar-Editai-macOS.zip",
                          "SHA256SUMS.txt", "instalar.ps1", "instalar.sh"]
-        sh = (tmp_path / "anexos" / "instalar.sh").read_text()
+        sh = (tmp_path / "anexos" / "instalar.sh").read_text(encoding="utf-8")
         assert 'VERSAO="${EDITAI_VERSAO:-0.2.0}"' in sh and "__VERSAO__" not in sh
         ps1 = (tmp_path / "anexos" / "instalar.ps1").read_bytes()
         assert b"'0.2.0'" in ps1 and b"\r\n" in ps1 and ps1.isascii()
         with zipfile.ZipFile(tmp_path / "anexos" / "Instalar-Editai-macOS.zip") as z:
             (info,) = z.infolist()
             assert info.filename == "Instalar Editai.command" and (info.external_attr >> 16) & 0o111
-        cmd = (tmp_path / "anexos" / "Instalar-Editai-Windows.cmd").read_text()
+        cmd = (tmp_path / "anexos" / "Instalar-Editai-Windows.cmd").read_text(encoding="utf-8")
         assert "releases/download/v0.2.0/instalar.ps1" in cmd
-        somas = (tmp_path / "anexos" / "SHA256SUMS.txt").read_text().splitlines()
+        somas = (tmp_path / "anexos" / "SHA256SUMS.txt").read_text(encoding="utf-8").splitlines()
         assert len(somas) == 4 and all(re.fullmatch(r"[0-9a-f]{64}  \S.*", s) for s in somas)
-        assert "### Novidades" in (tmp_path / "notas.md").read_text()
+        assert "### Novidades" in (tmp_path / "notas.md").read_text(encoding="utf-8")
 
     def test_a_tag_precisa_bater(self):
         montar.conferir(f"v{__version__}")                     # o CHANGELOG tem a seção dela
@@ -198,24 +200,27 @@ class TestOsAnexos:
             montar.conferir("v99.0.0")
 
     def test_a_versao_e_uma_so(self):
-        projeto = tomllib.loads((RAIZ / "pyproject.toml").read_text())["project"]["version"]
+        pyproject = tomllib.loads((RAIZ / "pyproject.toml").read_text(encoding="utf-8"))
+        projeto = pyproject["project"]["version"]
         assert projeto == __version__
-        assert "__VERSAO__" in (RAIZ / "instalador" / "instalar.sh").read_text()
-        assert "__VERSAO__" in (RAIZ / "instalador" / "instalar.ps1").read_text()
+        assert "__VERSAO__" in (RAIZ / "instalador" / "instalar.sh").read_text(encoding="utf-8")
+        assert "__VERSAO__" in (RAIZ / "instalador" / "instalar.ps1").read_text(encoding="utf-8")
 
     def test_nova_versao(self, tmp_path, monkeypatch):
         for nome in ("pyproject.toml", "CHANGELOG.md"):
-            (tmp_path / nome).write_text((RAIZ / nome).read_text())
+            texto = (RAIZ / nome).read_text(encoding="utf-8")
+            (tmp_path / nome).write_text(texto, encoding="utf-8")
         (tmp_path / "editor").mkdir()
-        init = (RAIZ / "editor" / "__init__.py").read_text()
-        (tmp_path / "editor" / "__init__.py").write_text(init)
+        init = (RAIZ / "editor" / "__init__.py").read_text(encoding="utf-8")
+        (tmp_path / "editor" / "__init__.py").write_text(init, encoding="utf-8")
         monkeypatch.setattr(nova_versao, "RAIZ", tmp_path)
         with pytest.raises(SystemExit, match="escreva antes"):
             nova_versao.main(["7.7.7"])
         assert nova_versao.main(["0.2.0"]) == 0
-        assert 'version = "0.2.0"' in (tmp_path / "pyproject.toml").read_text()
-        assert '__version__ = "0.2.0"' in (tmp_path / "editor" / "__init__.py").read_text()
-        changelog = (tmp_path / "CHANGELOG.md").read_text()
+        assert 'version = "0.2.0"' in (tmp_path / "pyproject.toml").read_text(encoding="utf-8")
+        init = (tmp_path / "editor" / "__init__.py").read_text(encoding="utf-8")
+        assert '__version__ = "0.2.0"' in init
+        changelog = (tmp_path / "CHANGELOG.md").read_text(encoding="utf-8")
         assert re.search(r"^## \[0\.2\.0\] — \d\d/\d\d/\d{4}$", changelog, re.M)
 
 
