@@ -1,0 +1,4 @@
+var e=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150">
+  <g data-camada="olhos" data-pronto="sim"><path class="branco" d="M61 37h2v1h-2zM90 37h2v1h-2zM61 38h2v1h-2zM90 38h2v1h-2z"/><path class="contorno" d="M60 36h3v1h-3zM89 36h3v1h-3zM59 37h1v1h-1zM63 37h1v1h-1zM88 37h1v1h-1zM92 37h1v1h-1zM58 38h1v1h-1zM64 38h1v1h-1zM87 38h1v1h-1zM93 38h1v1h-1zM58 39h1v1h-1zM64 39h1v1h-1zM87 39h1v1h-1zM93 39h1v1h-1zM58 40h1v1h-1zM64 40h1v1h-1zM87 40h1v1h-1zM93 40h1v1h-1zM58 41h1v1h-1zM64 41h1v1h-1zM87 41h1v1h-1zM93 41h1v1h-1zM59 42h1v1h-1zM63 42h1v1h-1zM88 42h1v1h-1zM92 42h1v1h-1zM60 43h3v1h-3zM89 43h3v1h-3z"/><path class="olho" d="M60 37h1v1h-1zM89 37h1v1h-1zM59 38h2v1h-2zM63 38h1v1h-1zM88 38h2v1h-2zM92 38h1v1h-1zM59 39h5v1h-5zM88 39h5v1h-5zM59 40h5v1h-5zM88 40h5v1h-5zM59 41h5v1h-5zM88 41h5v1h-5zM60 42h3v1h-3zM89 42h3v1h-3z"/></g>
+</svg>
+`;export{e as default};

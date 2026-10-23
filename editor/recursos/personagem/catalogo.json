@@ -416,22 +416,160 @@
    "acessorio": "#2b4c7e"
   }
  },
+ "bichos": [
+  {
+   "id": "cachorro",
+   "pt": "cachorro",
+   "pelagem": "#e69d4e",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "gato",
+   "pt": "gato",
+   "pelagem": "#8a736c",
+   "olho": "#c8902a"
+  },
+  {
+   "id": "raposa",
+   "pt": "raposa",
+   "pelagem": "#f77e25",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "panda",
+   "pt": "panda",
+   "pelagem": "#ffffff",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "coelho",
+   "pt": "coelho",
+   "pelagem": "#ddc3b8",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "ovelha",
+   "pt": "ovelha",
+   "pelagem": "#f6dbbe",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "pato",
+   "pt": "pato",
+   "pelagem": "#ffffff",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "girafa",
+   "pt": "girafa",
+   "pelagem": "#eca927",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "elefante",
+   "pt": "elefante",
+   "pelagem": "#a08b8d",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "urso",
+   "pt": "urso",
+   "pelagem": "#8f5031",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "leao",
+   "pt": "leão",
+   "pelagem": "#cd6420",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "lobo",
+   "pt": "lobo",
+   "pelagem": "#808a8e",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "pinguim",
+   "pt": "pinguim",
+   "pelagem": "#ffffff",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "porco",
+   "pt": "porco",
+   "pelagem": "#faa597",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "vaca",
+   "pt": "vaca",
+   "pelagem": "#424242",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "galinha",
+   "pt": "galinha",
+   "pelagem": "#ffffff",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "sapo",
+   "pt": "sapo",
+   "pelagem": "#719c42",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "cavalo",
+   "pt": "cavalo",
+   "pelagem": "#bb6032",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "lontra",
+   "pt": "lontra",
+   "pelagem": "#9d664c",
+   "olho": "#2a1d14"
+  },
+  {
+   "id": "guaxinim",
+   "pt": "guaxinim",
+   "pelagem": "#8a8a89",
+   "olho": "#2a1d14"
+  }
+ ],
+ "pelagem": {
+  "rotulo": "Pelagem",
+  "sugestoes": {
+   "#e69d4e": "caramelo",
+   "#f77e25": "laranja",
+   "#a0663a": "marrom",
+   "#3a2a20": "preta",
+   "#8a736c": "cinza",
+   "#c9c4bf": "cinza claro",
+   "#ddc3b8": "bege",
+   "#ffffff": "branca",
+   "#eca927": "amarela",
+   "#faa597": "rosa",
+   "#719c42": "verde"
+  }
+ },
  "arquivos": {
   "acessorio/bone.svg": {
-   "bytes": 2694,
-   "sha256": "f78c74a462924bfead8537a5774146fabcefda1e98119dfe50e1a8453c4b013f"
+   "bytes": 2451,
+   "sha256": "0a71af4faddf8b441e5ce506f0aa1fc6b2572d946fa80c6a41876c79bccbdd1b"
   },
   "acessorio/brincos.svg": {
    "bytes": 528,
    "sha256": "4973f7ba51fd43a2a861bb29db2e215341c27fee4c9aef851f1db7e3ec46956a"
   },
   "acessorio/fone.svg": {
-   "bytes": 7691,
-   "sha256": "8673d746b97ca24f628cbcfa7f30d573b0990ddc828fdf943fce760696ea6da3"
+   "bytes": 7241,
+   "sha256": "4c50db604868c4a86fea9cf676e2756f67fc8fc169b8daf9203f5dc827a22c4c"
   },
   "acessorio/gorro.svg": {
-   "bytes": 4572,
-   "sha256": "dc633a483c241d8775a08dabbf99a3906f9d5b68a099baeecb5d274e8fd787c1"
+   "bytes": 4113,
+   "sha256": "e07c05acb3b8ddce63d13913cf4aa64be2961b1364b1f6a423d3fdb90dd2c7dc"
   },
   "barba/bigode.svg": {
    "bytes": 1043,
@@ -452,6 +590,198 @@
   "barba/rala.svg": {
    "bytes": 1304,
    "sha256": "07ece03d2854895a6f8bb7393023a936cb34d5e2b138b20dedc294d26084f029"
+  },
+  "boca/cachorro.aberta.svg": {
+   "bytes": 394,
+   "sha256": "d9dbfa5d16b39b4859477fe3ddb210f9adbd042e4bd755a6c62bc85d783995fc"
+  },
+  "boca/cachorro.meia.svg": {
+   "bytes": 255,
+   "sha256": "b0cfc81b102932f93eb25fd52c4ec22beedb72cd6d1ce2f42f3d72d75cf2e474"
+  },
+  "boca/cachorro.neutra.svg": {
+   "bytes": 174,
+   "sha256": "2dbc069da06589c98f8be096a4240170e0b2db61c629e8bf47e430d55eb57f87"
+  },
+  "boca/cachorro.o.svg": {
+   "bytes": 297,
+   "sha256": "537eb37c29669bfb72db46e1025227f705eb5e4f92abc0838e67d9521542e505"
+  },
+  "boca/cachorro.rindo.svg": {
+   "bytes": 394,
+   "sha256": "f17dd12a65f3c58d2b2b0f1bfc8dd0910eafd5fa3a4f5bb25b09cdbdab4d511a"
+  },
+  "boca/cachorro.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "0a4363572f4b63d8bf7f14a888d426dce7c9107758ad47cbcfb3f832dcdeab59"
+  },
+  "boca/cavalo.aberta.svg": {
+   "bytes": 394,
+   "sha256": "6fbd354486fbd443c6afff4a27d1015bbad17218a0e4fdcfdeccce18f2e1d137"
+  },
+  "boca/cavalo.meia.svg": {
+   "bytes": 255,
+   "sha256": "970a5f601ea344a0c3a15dd725148947006b83c0a18d84eed5a4cd37b333a3fb"
+  },
+  "boca/cavalo.neutra.svg": {
+   "bytes": 174,
+   "sha256": "2aef6abc79311dae0a137f2b09bb6726096c76b47e93be80e08feac08d02ebd6"
+  },
+  "boca/cavalo.o.svg": {
+   "bytes": 297,
+   "sha256": "608389250bbc8d76a45a4616c716e64fc82e74e235c1f9eb215f8b586a079175"
+  },
+  "boca/cavalo.rindo.svg": {
+   "bytes": 394,
+   "sha256": "c8d8b8d698e3c9185bd59105bd4dd819a1f4f44c08d0527ca7fe483b6d1103f3"
+  },
+  "boca/cavalo.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "a88cf0cfefba9c3c4c1e32a3ec952fb97547ef29507dff1ee9647686bfd185af"
+  },
+  "boca/coelho.aberta.svg": {
+   "bytes": 394,
+   "sha256": "07a898f08aeb0e4f1d2cfd41b6994dfe67469cd8a7d25f90e7cdf743b410073e"
+  },
+  "boca/coelho.meia.svg": {
+   "bytes": 255,
+   "sha256": "7c402c91928fa0df52a3067669608898f13f2789baf3f5a5e0aa5ae467e8974d"
+  },
+  "boca/coelho.neutra.svg": {
+   "bytes": 174,
+   "sha256": "0700178e00e99a8b18513d8df33facf0ebe0b66eca2c17daeee5fe4f3cfcb4d9"
+  },
+  "boca/coelho.o.svg": {
+   "bytes": 297,
+   "sha256": "a32b6658feddd1cdfcd37578138547ec11219447a8c845eea8bb43cdcbc989f0"
+  },
+  "boca/coelho.rindo.svg": {
+   "bytes": 394,
+   "sha256": "850bb24abd04360557059f118c29c87338a1327b6022940620408d287d359abb"
+  },
+  "boca/coelho.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "be723cbbfc794ab2d4a038af53fff91bed6c552a328daf38e35202991c965d1b"
+  },
+  "boca/elefante.aberta.svg": {
+   "bytes": 380,
+   "sha256": "6c4ce2d3a78242833b6634f518b030976bcda3b9d5a162ca5a47b2c160fd2050"
+  },
+  "boca/elefante.meia.svg": {
+   "bytes": 241,
+   "sha256": "04c66d60b9325fd22b06fca540a873016f7934b7dbb88819892be7080d7f76c1"
+  },
+  "boca/elefante.neutra.svg": {
+   "bytes": 160,
+   "sha256": "af9309303f1722568bcfe1679ab9627ca22f486aed50fe54ad957f70befca3c2"
+  },
+  "boca/elefante.o.svg": {
+   "bytes": 283,
+   "sha256": "802e00c26b931f006bf773f08f072b64a1cb2ad404ac7e34aa24df0e6b72c54a"
+  },
+  "boca/elefante.rindo.svg": {
+   "bytes": 380,
+   "sha256": "ec20bc68e473e2b60ac247b2ee90232808efb82fcd74d27b77ea257b9f317b4c"
+  },
+  "boca/elefante.sorriso.svg": {
+   "bytes": 216,
+   "sha256": "9277a2c1303412785f00a952a81f1ea4c9561f0f4054aa9400b11e908ab38efa"
+  },
+  "boca/galinha.aberta.svg": {
+   "bytes": 382,
+   "sha256": "acd6eff8870fc9f244675f49542575b8bc9793e1eed6bf14c21e5d1615a34589"
+  },
+  "boca/galinha.meia.svg": {
+   "bytes": 243,
+   "sha256": "c7e8a41dfc887cac0821f0025fb029a4893d964f6e6d79b4497030f3f1a1a65f"
+  },
+  "boca/galinha.neutra.svg": {
+   "bytes": 117,
+   "sha256": "75a44064a6986a4aa5ca22e5be90520dff4ca8a1ffc22a179bf01a6903d59479"
+  },
+  "boca/galinha.o.svg": {
+   "bytes": 283,
+   "sha256": "0c9ccbd4d0f9c14b027914870e713731dcdd82269cadbb8a26173d40e6690a94"
+  },
+  "boca/galinha.rindo.svg": {
+   "bytes": 384,
+   "sha256": "f733226a8eb243218242a4b5a5351d573b7518b91dd5d3870d6acc2616eaa8a3"
+  },
+  "boca/galinha.sorriso.svg": {
+   "bytes": 117,
+   "sha256": "75a44064a6986a4aa5ca22e5be90520dff4ca8a1ffc22a179bf01a6903d59479"
+  },
+  "boca/gato.aberta.svg": {
+   "bytes": 394,
+   "sha256": "5283d50e9005b663e813c5c49381583a8ec4693de070f7886c3ee3d57c9af2d3"
+  },
+  "boca/gato.meia.svg": {
+   "bytes": 255,
+   "sha256": "c0bdbfb0f6fb4f24ca6bba311884f997279b2b7ee0cc6b4276bfccea92f3b1ab"
+  },
+  "boca/gato.neutra.svg": {
+   "bytes": 174,
+   "sha256": "68a1f0dda2a6e0d14a5023e2ea272c5bc321dbd4a01706f53934e0d84111539d"
+  },
+  "boca/gato.o.svg": {
+   "bytes": 297,
+   "sha256": "045ac925b554749decf663c670a89d7db69879a295994e8177e890a8590a5298"
+  },
+  "boca/gato.rindo.svg": {
+   "bytes": 394,
+   "sha256": "f06bc483a4fc72dd38a96abc51652a8c1a318b80438ca7315645811d2c8c6e00"
+  },
+  "boca/gato.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "81f6aa481ccb2a5f86ca7da6d03bb7df48ba06efed9d117093c15a64c763361a"
+  },
+  "boca/girafa.aberta.svg": {
+   "bytes": 394,
+   "sha256": "ff1233598aa86592a4c2b563a5cc840cf35ba4748c41331bc9e86e79818495bf"
+  },
+  "boca/girafa.meia.svg": {
+   "bytes": 255,
+   "sha256": "9804da9e2f8eee5b23543ed411b0147a2a2e7c1c8600764189d5e0dbd1301bd0"
+  },
+  "boca/girafa.neutra.svg": {
+   "bytes": 174,
+   "sha256": "17456854741e8eec09c6783fb9ade80066b374954c4119836f265426b6a9e50b"
+  },
+  "boca/girafa.o.svg": {
+   "bytes": 297,
+   "sha256": "c760c596438739506db5b763350dfe9ed7acb2ab1c810ac411f09423adad56ed"
+  },
+  "boca/girafa.rindo.svg": {
+   "bytes": 394,
+   "sha256": "79e75765d11b0b7811e63482c2280c3c49b053fbb4f79b3f0bac094ff1c5e8f1"
+  },
+  "boca/girafa.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "6fdbc11e7f712396d860dff381f940f67c2aeb833be2a4f5c75d3631de702132"
+  },
+  "boca/guaxinim.aberta.svg": {
+   "bytes": 394,
+   "sha256": "a0104ce703338296a98461a296343c18497782dad71b461d3f8911936704189f"
+  },
+  "boca/guaxinim.meia.svg": {
+   "bytes": 255,
+   "sha256": "cd2c9e49c95d9b68afa7b1bf26e3a999d317d6135ab1c6714dbda03c65514db5"
+  },
+  "boca/guaxinim.neutra.svg": {
+   "bytes": 174,
+   "sha256": "39edb4ec92207faf1bb15dc142e4bd6dda0e4aac8677ae73138209a51a379cda"
+  },
+  "boca/guaxinim.o.svg": {
+   "bytes": 297,
+   "sha256": "c18e616e4c7e5f752fd07518ad18031dc595a9eb775a9bee043e5dc3eecce31d"
+  },
+  "boca/guaxinim.rindo.svg": {
+   "bytes": 394,
+   "sha256": "b3e0c8ab33efe1d9376ed125ab1ca4bd577bf1857736471b29041ebeed1db57a"
+  },
+  "boca/guaxinim.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "da806f70839b8fb1685b4e01948e801d8bc67d3c54ab05ed9a2ac1b482efadd1"
   },
   "boca/ia.aberta.svg": {
    "bytes": 530,
@@ -476,6 +806,294 @@
   "boca/ia.sorriso.svg": {
    "bytes": 264,
    "sha256": "852560f4038f83345acf432eeacdd5d0036111fee1616e502f6c5e0c1e74a580"
+  },
+  "boca/leao.aberta.svg": {
+   "bytes": 394,
+   "sha256": "c58e0b65b839b0783e0c6319ff0744f360f811bfe6ad83fb49228572264c3f88"
+  },
+  "boca/leao.meia.svg": {
+   "bytes": 255,
+   "sha256": "5249db1fd99eb236ad3ab53788d4751c9422f22266c34b38392d9a84078a750b"
+  },
+  "boca/leao.neutra.svg": {
+   "bytes": 174,
+   "sha256": "01a14081c23016185a24802d7ab2669645a665ddb45d9c65aed2db7a9ccef461"
+  },
+  "boca/leao.o.svg": {
+   "bytes": 297,
+   "sha256": "df6aa74c589101d41f606b8b9491d8634d88b28763e24d1b87f86687e794c2a3"
+  },
+  "boca/leao.rindo.svg": {
+   "bytes": 394,
+   "sha256": "c134bba6dca547e385d5564df1df3b90a88f3496fbe4d85db2f02a33cba08778"
+  },
+  "boca/leao.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "e62d1f0ac0529b8180abd85452c87d9f1d4350f15e9fee2ca6c94b504e42a731"
+  },
+  "boca/lobo.aberta.svg": {
+   "bytes": 394,
+   "sha256": "07a898f08aeb0e4f1d2cfd41b6994dfe67469cd8a7d25f90e7cdf743b410073e"
+  },
+  "boca/lobo.meia.svg": {
+   "bytes": 255,
+   "sha256": "7c402c91928fa0df52a3067669608898f13f2789baf3f5a5e0aa5ae467e8974d"
+  },
+  "boca/lobo.neutra.svg": {
+   "bytes": 174,
+   "sha256": "0700178e00e99a8b18513d8df33facf0ebe0b66eca2c17daeee5fe4f3cfcb4d9"
+  },
+  "boca/lobo.o.svg": {
+   "bytes": 297,
+   "sha256": "a32b6658feddd1cdfcd37578138547ec11219447a8c845eea8bb43cdcbc989f0"
+  },
+  "boca/lobo.rindo.svg": {
+   "bytes": 394,
+   "sha256": "850bb24abd04360557059f118c29c87338a1327b6022940620408d287d359abb"
+  },
+  "boca/lobo.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "be723cbbfc794ab2d4a038af53fff91bed6c552a328daf38e35202991c965d1b"
+  },
+  "boca/lontra.aberta.svg": {
+   "bytes": 394,
+   "sha256": "96990196f18493e9e44f180a8f71158c8943b62250c3137694b2d74c01c43946"
+  },
+  "boca/lontra.meia.svg": {
+   "bytes": 255,
+   "sha256": "99341877d0550b8be67a539999e878b4008ab543b8783fbd36e27c0c953b943f"
+  },
+  "boca/lontra.neutra.svg": {
+   "bytes": 174,
+   "sha256": "b14ce904736593c823d34b123c0b46fef004b86b2d7ce4cc3495d5fd61a0b435"
+  },
+  "boca/lontra.o.svg": {
+   "bytes": 297,
+   "sha256": "03afe6efa67d750ae1242166074779426a9e3ea813a12f61fa8afdc4fc97e60a"
+  },
+  "boca/lontra.rindo.svg": {
+   "bytes": 394,
+   "sha256": "2d95185f584f322cc3ed52423afd93d775a658f6383ff05e2049593c409c8658"
+  },
+  "boca/lontra.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "c2343950f2d97bf0121b00d56463d45c19fc0e036b158fff7591c26b3c12aa82"
+  },
+  "boca/ovelha.aberta.svg": {
+   "bytes": 394,
+   "sha256": "0cf8e77e358007121276d9193c6410d1b4d205f85faaf6c564dc2fde3fa10bae"
+  },
+  "boca/ovelha.meia.svg": {
+   "bytes": 255,
+   "sha256": "30ca8a3d0b30c204ce5eaf79bd13ee1153eb0f716769175beb8c25e209562a93"
+  },
+  "boca/ovelha.neutra.svg": {
+   "bytes": 174,
+   "sha256": "d6edf294d91b5efb2e96f99cf1e625e7643e478a2689ee7dd8ef44728114ef66"
+  },
+  "boca/ovelha.o.svg": {
+   "bytes": 297,
+   "sha256": "b7c39b1756f8552582ea57302e8fda36c5f5d32da3c64f8d61542770cfb8493c"
+  },
+  "boca/ovelha.rindo.svg": {
+   "bytes": 394,
+   "sha256": "f6b474bf144a40081175fc09a02a08b1fde52ce42b20c3d144ffcf8b234dafd5"
+  },
+  "boca/ovelha.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "6921254ff8f662d4f5f284f165c1e00678e9121ecae8e3d51f217be1dc6c1618"
+  },
+  "boca/panda.aberta.svg": {
+   "bytes": 394,
+   "sha256": "a1ae8942be82fabfc1a9aa818e4245780d9df2dea46f80161af4a3944f63a7a9"
+  },
+  "boca/panda.meia.svg": {
+   "bytes": 255,
+   "sha256": "74edda09fa457a43a2548a530948ef8e9c9b45fa5d1dc23010574aca95a71c39"
+  },
+  "boca/panda.neutra.svg": {
+   "bytes": 174,
+   "sha256": "a374cb07ca9c572379f71bfbf6574252c463e872e3c75254f2fec2b12924bd3e"
+  },
+  "boca/panda.o.svg": {
+   "bytes": 297,
+   "sha256": "9b48eeea9967f73792cda138a98554b1c993aa95d4e87556b87f8201b0898d00"
+  },
+  "boca/panda.rindo.svg": {
+   "bytes": 394,
+   "sha256": "dcd976a2c9ea6fe53cea553cc863e027aa2c83af48a2bc4da01e76fce6086d77"
+  },
+  "boca/panda.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "c5a79c202062f006c8b096fe3f3bd49f87573b2c0efb5847e25c7d63d44bd287"
+  },
+  "boca/pato.aberta.svg": {
+   "bytes": 390,
+   "sha256": "27135021b7175f2a8711be236f74e75ee2599cd8b54b8440930eeb19881ff298"
+  },
+  "boca/pato.meia.svg": {
+   "bytes": 247,
+   "sha256": "8f6a08db1b814cd42fe15cae60d4145ca5730f2a20943ec4c231479913a0d9c9"
+  },
+  "boca/pato.neutra.svg": {
+   "bytes": 117,
+   "sha256": "75a44064a6986a4aa5ca22e5be90520dff4ca8a1ffc22a179bf01a6903d59479"
+  },
+  "boca/pato.o.svg": {
+   "bytes": 283,
+   "sha256": "2ad4f4109adfd56662e47bcf4b79ef601f93c839c4a8b498c78b831456a25fc1"
+  },
+  "boca/pato.rindo.svg": {
+   "bytes": 390,
+   "sha256": "d178643f316330aad2a2381a6d3123497cc4cf56fe9ebb37beec8bd361cb2066"
+  },
+  "boca/pato.sorriso.svg": {
+   "bytes": 117,
+   "sha256": "75a44064a6986a4aa5ca22e5be90520dff4ca8a1ffc22a179bf01a6903d59479"
+  },
+  "boca/pinguim.aberta.svg": {
+   "bytes": 380,
+   "sha256": "1473cee786342879e4ec88059ceb5b644945ff241e81095d15d1570693fc3309"
+  },
+  "boca/pinguim.meia.svg": {
+   "bytes": 241,
+   "sha256": "ace8312b70146e07ae449436a0aaefafae54fd591748e0ce77df2e6acff05a7b"
+  },
+  "boca/pinguim.neutra.svg": {
+   "bytes": 117,
+   "sha256": "75a44064a6986a4aa5ca22e5be90520dff4ca8a1ffc22a179bf01a6903d59479"
+  },
+  "boca/pinguim.o.svg": {
+   "bytes": 283,
+   "sha256": "aef2830785e2a42b0900379f2ed214294aa03049bc04f34c48849a5f0c85e22d"
+  },
+  "boca/pinguim.rindo.svg": {
+   "bytes": 380,
+   "sha256": "23f063c63c1d7f16bb600b0c7ea97e74c93ef62b33cb9ca328078507b31bc386"
+  },
+  "boca/pinguim.sorriso.svg": {
+   "bytes": 117,
+   "sha256": "75a44064a6986a4aa5ca22e5be90520dff4ca8a1ffc22a179bf01a6903d59479"
+  },
+  "boca/porco.aberta.svg": {
+   "bytes": 380,
+   "sha256": "912703c92609b7144d229f5d8d407e107b43a3e81c881f0c980e2d25435cefca"
+  },
+  "boca/porco.meia.svg": {
+   "bytes": 241,
+   "sha256": "4c9c89abe7ff62ac47c28e8cecf2529a4063939d6cbbc6da8fb40486e8098094"
+  },
+  "boca/porco.neutra.svg": {
+   "bytes": 160,
+   "sha256": "ebdc3d1695ddb9cd883ee2cd266f8965c7ae212570c7fe6918f301600b2853a3"
+  },
+  "boca/porco.o.svg": {
+   "bytes": 283,
+   "sha256": "4d4be1fdbb57123359489ef774ccacbc88952c671f0b8f03b19ddb8219e0c5ca"
+  },
+  "boca/porco.rindo.svg": {
+   "bytes": 380,
+   "sha256": "912703c92609b7144d229f5d8d407e107b43a3e81c881f0c980e2d25435cefca"
+  },
+  "boca/porco.sorriso.svg": {
+   "bytes": 188,
+   "sha256": "c22a0eff59dcda3d3669c0f9424fc3e7ba2b90c6936bbc720137eaf967a1c265"
+  },
+  "boca/raposa.aberta.svg": {
+   "bytes": 394,
+   "sha256": "f6b41f38032fed3b0d531c42b51043e62fb542c137ad9d92400a8f390a95c12f"
+  },
+  "boca/raposa.meia.svg": {
+   "bytes": 255,
+   "sha256": "458160116d7dd72ed0579cef06e6daa55e1ba8c0336e276e315cbbf9cc88a4a0"
+  },
+  "boca/raposa.neutra.svg": {
+   "bytes": 174,
+   "sha256": "54cc2e3b98de9e81cd70824c74823c8e9f71b3c4c431b01935ba7e580e75f280"
+  },
+  "boca/raposa.o.svg": {
+   "bytes": 297,
+   "sha256": "330637c43505da7aea36af073e21e718a67a883f554f2c906b9291684ee3ff80"
+  },
+  "boca/raposa.rindo.svg": {
+   "bytes": 394,
+   "sha256": "e4b59e121895a8447521863f398c00ba20fb97b9282cc4fac961cd09656d5fb6"
+  },
+  "boca/raposa.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "8965bfd6657ee5d58b44785429f50ce0b0c5837ca169ca17c0cc39401226660e"
+  },
+  "boca/sapo.aberta.svg": {
+   "bytes": 380,
+   "sha256": "44da9efc2b1527e678114db1533c13d5c7240b56fb0b23684376249919639c13"
+  },
+  "boca/sapo.meia.svg": {
+   "bytes": 241,
+   "sha256": "13d66ac930d752167190d53da3b6c697b750d001ccc4ec7cbe3cb4864ff59ac0"
+  },
+  "boca/sapo.neutra.svg": {
+   "bytes": 160,
+   "sha256": "594d31fea26934dfdcd98cbbcdc04c1943512a1895bf93b08ea48412a707c889"
+  },
+  "boca/sapo.o.svg": {
+   "bytes": 283,
+   "sha256": "526465cdee516d8685a0dbcaa11ac6038d6f50b417ead7d56375ab8a55eb5ab2"
+  },
+  "boca/sapo.rindo.svg": {
+   "bytes": 380,
+   "sha256": "44da9efc2b1527e678114db1533c13d5c7240b56fb0b23684376249919639c13"
+  },
+  "boca/sapo.sorriso.svg": {
+   "bytes": 188,
+   "sha256": "1f8ef6604a5f1f1e6e1fb3695ff758a51ba7fd878bb8b3e0010dfeaf05d26cf3"
+  },
+  "boca/urso.aberta.svg": {
+   "bytes": 394,
+   "sha256": "088f478b452dab0d795ce5ed10c102bab7d2cc0d828626029ba85a86f553766f"
+  },
+  "boca/urso.meia.svg": {
+   "bytes": 255,
+   "sha256": "3bb2892dd36e6e012bd786337d6fcf72291f1e1932b611ee69483b3e141e25ac"
+  },
+  "boca/urso.neutra.svg": {
+   "bytes": 174,
+   "sha256": "d3b1926b9e1473f66947a3e380128082b856c8ee8f56b98ae805d1c30771ba12"
+  },
+  "boca/urso.o.svg": {
+   "bytes": 297,
+   "sha256": "cbe286196250f93564f7acb1fff434b3bdf5c2e6178e813032422053468a13bb"
+  },
+  "boca/urso.rindo.svg": {
+   "bytes": 394,
+   "sha256": "631c2ad5a9380f6d5e301edad9a484f20ef420876292cdc8e1c3e244e2785ae0"
+  },
+  "boca/urso.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "0b6d0aba36de9edf910f69ea7d8b29ac6861c44306f929218aa441b5ae3a6b74"
+  },
+  "boca/vaca.aberta.svg": {
+   "bytes": 394,
+   "sha256": "821221ad22bb1bf22987f861e2a68e3c708d5849fddd1671a8d0bd131ea9b08a"
+  },
+  "boca/vaca.meia.svg": {
+   "bytes": 255,
+   "sha256": "8ddda4ea5f69fe84a441826bc0ebd547ef5bf18a75c9860aeb977b145dc157d9"
+  },
+  "boca/vaca.neutra.svg": {
+   "bytes": 174,
+   "sha256": "74ccc3c701dd272e3842c6b3a16b4c963caf02f83fdfd1f25205ee328ac33c89"
+  },
+  "boca/vaca.o.svg": {
+   "bytes": 297,
+   "sha256": "9f3ca44b5781882ff707bb23c6b08eb0202b396932a296ff97d6ed87a443053d"
+  },
+  "boca/vaca.rindo.svg": {
+   "bytes": 394,
+   "sha256": "b400fba225fe9c1dafbce0e1b5da60661601228f0cfd0ec62fc156545b9d928e"
+  },
+  "boca/vaca.sorriso.svg": {
+   "bytes": 230,
+   "sha256": "7f6a3e2d0b1540c70558328cfdcbb20f0c4f93da3eb10af4cad0e028817e34a5"
   },
   "bracos/ia.apontando_cima.svg": {
    "bytes": 12938,
@@ -521,69 +1139,149 @@
    "bytes": 18673,
    "sha256": "01e66016192891e591672279781b0db384c4a6bf7612d4e614ae9669bfbf5dea"
   },
+  "cabeca/cachorro.svg": {
+   "bytes": 24962,
+   "sha256": "278fb4df6c25659c265f850756ea509e669198d2f98b4c9b194d88831c7a79e3"
+  },
+  "cabeca/cavalo.svg": {
+   "bytes": 22453,
+   "sha256": "47c66d1ebd58142d7a49c4a0f3397c6a38f113d1289629ff2fcff99b5ec23f16"
+  },
+  "cabeca/coelho.svg": {
+   "bytes": 24454,
+   "sha256": "2fff5cb565349a53faa9c6fee6cb0024f423282454b71826dfd06c5b9e7661e9"
+  },
+  "cabeca/elefante.svg": {
+   "bytes": 29880,
+   "sha256": "51c7567df688c68db3a78eb2601bcce4eb0a028f25b3aae69e8cf0f2181519fd"
+  },
+  "cabeca/galinha.svg": {
+   "bytes": 19554,
+   "sha256": "2ab50fa08c43325db51ca38c350ae083cb604e0597e2fa7fc8786100c2077627"
+  },
+  "cabeca/gato.svg": {
+   "bytes": 26403,
+   "sha256": "419a8a8faba04c6dd97b2f42f1cbb88d00313257b20730e69255e569b1a74702"
+  },
+  "cabeca/girafa.svg": {
+   "bytes": 24793,
+   "sha256": "fbed9432e11c1e8b7ab2d6094e3f6c1079298107a212dbedc1910b3cda1a8951"
+  },
+  "cabeca/guaxinim.svg": {
+   "bytes": 24666,
+   "sha256": "74fe16ab6d353a0e5bbc9ec1b8a9ad1f33e33380c2af408d884ae1eba58076c5"
+  },
+  "cabeca/leao.svg": {
+   "bytes": 31276,
+   "sha256": "581853fdb027fa11c69ffd91f4f163f3fd13be14899926201f57bd8a69d8dc4e"
+  },
+  "cabeca/lobo.svg": {
+   "bytes": 23210,
+   "sha256": "611bfb20c7468f2dc76924865fb6ae1661fe0c7b6d314814b45ce9116deec166"
+  },
+  "cabeca/lontra.svg": {
+   "bytes": 20668,
+   "sha256": "ec2a9e493469a557ec0b68d78291b11def69ec06c009efa737261adf10f7e76a"
+  },
   "cabeca/manequim.svg": {
-   "bytes": 19632,
-   "sha256": "fd57db6c2f878f5e2b4c3c91fc3658f017c961ee075340461e65249f04a6f36c"
+   "bytes": 19509,
+   "sha256": "419b5cad094577d38e04d3ae174cffe5bca0b3f2810a674f7850f2309ed424ab"
+  },
+  "cabeca/ovelha.svg": {
+   "bytes": 25251,
+   "sha256": "b8fe570d6a4f9ae32f2493b9c4716287fcd21d6105eda60de95270b8811df9c8"
+  },
+  "cabeca/panda.svg": {
+   "bytes": 17746,
+   "sha256": "454e01380c166b1308e934643f1af6050771ad47c848638c25f44b14f7520a26"
+  },
+  "cabeca/pato.svg": {
+   "bytes": 21813,
+   "sha256": "93804819c218a39760242e31a8f2b604734911f3288557ef86a558107340d668"
+  },
+  "cabeca/pinguim.svg": {
+   "bytes": 15826,
+   "sha256": "ef857eab7b68e631399a3cd114b3d68173f096d3e6fbefd0e44c90512cee110d"
+  },
+  "cabeca/porco.svg": {
+   "bytes": 23120,
+   "sha256": "29a9ad1da705155df2fb487ca5e5b7d67ae32e90307d605b9502867ec746f67d"
+  },
+  "cabeca/raposa.svg": {
+   "bytes": 21061,
+   "sha256": "b809f27055d98e1bd8064d48b2dbc9fb512751806fc3e0b8a9e320d29b7d8296"
+  },
+  "cabeca/sapo.svg": {
+   "bytes": 17199,
+   "sha256": "2688d8262e5081f4ff0fb8ffe48f6eab3ccd696a8a7078ed9cb2cd97f65a8971"
+  },
+  "cabeca/urso.svg": {
+   "bytes": 21955,
+   "sha256": "66e6be6a604fa840c0a06b1552534f96ea5bde157e41df9e117c0d2987035422"
+  },
+  "cabeca/vaca.svg": {
+   "bytes": 18821,
+   "sha256": "127257f0129c4c25deb7828598dbd4405e2e38461851fdd70240a31be170036a"
   },
   "cabelo/afro.svg": {
-   "bytes": 15787,
-   "sha256": "ac66ea9fb86863633a918cdb029746d378eef6a78a10c5fe95536b6b8ac2fef8"
+   "bytes": 14947,
+   "sha256": "4d0694eae6c18f10cbcf1c71bae50f1c247dfaf703d46d20ade35d1139c7b954"
   },
   "cabelo/baguncado.svg": {
-   "bytes": 9411,
-   "sha256": "ca640612ff7f1737a9821fee48bd1ed0bf1d8bf164699e260c27b182afd00eb0"
+   "bytes": 7936,
+   "sha256": "f32249770abee9909f1f5c7f3c9130ed0ef4b9a50faa6d5237d0786c76b77907"
   },
   "cabelo/cachos-curtos.svg": {
-   "bytes": 8679,
-   "sha256": "730cdc39e27fc1b7dc864a0f4b3cc3759b6db380f7bcfdae4f0bc14c5a14773c"
+   "bytes": 7547,
+   "sha256": "583cce11038fd38d0491ef1185f66d1bfbdf4ab80897797fd699e8410fd57da5"
   },
   "cabelo/calvo.svg": {
-   "bytes": 2341,
-   "sha256": "b0c070e5a1a76d82ba4255a8c9fc5b91a6463a613d30b017a9ef18cbfa804719"
+   "bytes": 2117,
+   "sha256": "087bb047dba810996f8cadc9aaa1a29b7e0bbf5ea1ddf7061b6b99a2e1ef0cf8"
   },
   "cabelo/chanel.svg": {
-   "bytes": 11000,
-   "sha256": "d2c9093c25361d0bcdf7cdcf14e9668e1cf20cc5ee1a8990995f1a613e1781a9"
+   "bytes": 10572,
+   "sha256": "a0152fbd886029192a0761edbaea2af9b399a9da6f67323d25cbcb482348ef41"
   },
   "cabelo/coque.svg": {
-   "bytes": 5105,
-   "sha256": "d51949846d1d635597d5350b3df5a0dad0ebea1f51d189282f16be1e8db62b96"
+   "bytes": 5081,
+   "sha256": "37b865b362c718d003c75cc6f6d12a2c4c2434edbca1c51f8c3d16ec543e1197"
   },
   "cabelo/curto.svg": {
-   "bytes": 3868,
-   "sha256": "42bcff186b653c3967f05d0c15a0bfd0dff812c9c57417bfbbb1e67ddf125cb7"
+   "bytes": 4015,
+   "sha256": "787a8d8ed16f4393c4ed31d8100642518dec2c8cf84f1a83104f5db9ab461b7d"
   },
   "cabelo/franja.svg": {
-   "bytes": 6261,
-   "sha256": "dd2fdef4632f0507733ab3a3bfe4931e16770077b49458cb03ebd47f4157260b"
+   "bytes": 5186,
+   "sha256": "48dcf8fbdeb7abba5064241c1760592d851926055d28a3976311fad4e4951335"
   },
   "cabelo/lateral.svg": {
-   "bytes": 3995,
-   "sha256": "5b797fc14d72c9882211155f4d189500641b81512cb3d7b9de9c1a7a61accc91"
+   "bytes": 3844,
+   "sha256": "d6658f3de63c64ef39435cc793cf33fd3042b93d15dbcc59ac4864128d68cec9"
   },
   "cabelo/longo.svg": {
-   "bytes": 24911,
-   "sha256": "32266b1d4647cff48f98bb5031cd80d5526d6ffd037488f891582b79cf1ae1fd"
+   "bytes": 24216,
+   "sha256": "121427519984cd42aa827ea2324ea5acef9c87ebf74f9b9d7ebb13c276f0edfc"
   },
   "cabelo/ondulado.svg": {
-   "bytes": 25989,
-   "sha256": "8ed0cd46bdbba8722c359ada5925e854684903ad9bac247c0aa3ad45724f140b"
+   "bytes": 25258,
+   "sha256": "6d757633eada931215e5338333196cd7fae8b1fd9ccaa73380e27c4f83b8c22b"
   },
   "cabelo/rabo.svg": {
-   "bytes": 8496,
-   "sha256": "2def3643083af2d0bc6502438c4957970d220703756850f22e5a0d0a0c6e89e9"
+   "bytes": 8569,
+   "sha256": "a09aa876c35925d9019074d6426b8323cc3eac64ef640e69085fa0c9cc0f945b"
   },
   "cabelo/raspado.svg": {
-   "bytes": 2099,
-   "sha256": "542b7ff6a14018313a6de9246a49742214f6920b836401527669e1a2129793d6"
+   "bytes": 2088,
+   "sha256": "15df00d496594eb045d12fe9cf573477af19f710ec442c80ac83a4359fcf22ac"
   },
   "cabelo/topete.svg": {
-   "bytes": 5185,
-   "sha256": "86c460080cb09f8178b5fe248aa0d533be0e0cf66d5a7ecb3d15e096b1d14215"
+   "bytes": 5123,
+   "sha256": "1df30d6ad91d99fb43111a10c8a112eba9d519b2da530f1148ae3a8759a579d9"
   },
   "cabelo/trancas.svg": {
-   "bytes": 21854,
-   "sha256": "19db281c027357eda48c545dc74a7a1ec9e2ff0bad00f09e2a72ad98f6076cfd"
+   "bytes": 21887,
+   "sha256": "4a52310230df758cb41e42311ff5588bac18e3fef32f278f437132e79fc84b18"
   },
   "oculos/quadrados.svg": {
    "bytes": 1104,
@@ -600,6 +1298,198 @@
   "oculos/sol.svg": {
    "bytes": 986,
    "sha256": "e443c9f29b7b59fb01683bfbb4ae887bc728fbd7f1b7dfc5c050bbdba6811c7f"
+  },
+  "olhos/cachorro.aberto.svg": {
+   "bytes": 801,
+   "sha256": "0f86d91482d507ce3d8ace11759e30a5f7d12d42f8f1adba694efdc2784fae8d"
+  },
+  "olhos/cachorro.apertado.svg": {
+   "bytes": 287,
+   "sha256": "2673090ad97976ba1adb8cbf02141398995fadd1032b4ec98346da524ee5b67e"
+  },
+  "olhos/cachorro.arregalado.svg": {
+   "bytes": 1011,
+   "sha256": "fdc2980c349699dc5fc6089e22c1234d03222b382fb8415cb4fb929c4ad3ecb1"
+  },
+  "olhos/cachorro.cima.svg": {
+   "bytes": 801,
+   "sha256": "531964b29eb92a0d61ffe1c4421f8bffdb0827a88e24045d89e7d632be01f4e3"
+  },
+  "olhos/cachorro.lado.svg": {
+   "bytes": 801,
+   "sha256": "ab4b259a91a6eb673266e994623d5150939a9a282b747a482c406a6ab576f8d8"
+  },
+  "olhos/cachorro.meio.svg": {
+   "bytes": 480,
+   "sha256": "691df1cca339c66d293b2fba73d8cef1b6480c37430e8fd4a9e558da81e16e10"
+  },
+  "olhos/cavalo.aberto.svg": {
+   "bytes": 843,
+   "sha256": "2c3c6094ab38f1f753aba6c4285627c59fc8e90b31af76bbae06415086e6cf35"
+  },
+  "olhos/cavalo.apertado.svg": {
+   "bytes": 287,
+   "sha256": "d5dd3ba644db0b1e34f692de277d86cf22613ecef4c163bb343b43ca1d03d81b"
+  },
+  "olhos/cavalo.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "94d9ef0409b53027249dabb6e97a0fa517750fa300da059dfbb4ae22775018d2"
+  },
+  "olhos/cavalo.cima.svg": {
+   "bytes": 843,
+   "sha256": "4baa6eae6c00dc37dc2a1e6e4c559101747356e552698e5b3f69ac817ca0023a"
+  },
+  "olhos/cavalo.lado.svg": {
+   "bytes": 843,
+   "sha256": "fdefbb13c6facdb2a63db3b4f679866e9299249488b3ef695a8ce247e4ddaf2d"
+  },
+  "olhos/cavalo.meio.svg": {
+   "bytes": 480,
+   "sha256": "0fabecb362b1f90403179fb526b47cbef6c97db9cbb05a6be7dc9d83c820399a"
+  },
+  "olhos/coelho.aberto.svg": {
+   "bytes": 815,
+   "sha256": "f1fccd21ffb8fe8557fdb60d5fffe5e8ee231cab1a34cd873b25e50792b874fb"
+  },
+  "olhos/coelho.apertado.svg": {
+   "bytes": 287,
+   "sha256": "824a9b2ad14b787165f72bb48ea124e80bdc662dc2cbceed05649d9700df23df"
+  },
+  "olhos/coelho.arregalado.svg": {
+   "bytes": 1011,
+   "sha256": "368c31764fe546cc303141267e9321134bc68137d88559ff0ba87f77c48e98aa"
+  },
+  "olhos/coelho.cima.svg": {
+   "bytes": 815,
+   "sha256": "79946a52dbe937244ab1502d67c00361d45bcc3c7200cf97c661cdd6f77d4433"
+  },
+  "olhos/coelho.lado.svg": {
+   "bytes": 815,
+   "sha256": "ac854e7d73a0f824560fb8e475f300e6bf60c9894636450e8438672b8159c602"
+  },
+  "olhos/coelho.meio.svg": {
+   "bytes": 480,
+   "sha256": "aecc30c03c4da162bef71b33981a14517ecbcbc955d9a49ca0d595a6a887eadc"
+  },
+  "olhos/elefante.aberto.svg": {
+   "bytes": 843,
+   "sha256": "e6c908baa06fa2ee75f7bd4fd26c3ca41575b5cf8a1853cc3cd168737a636533"
+  },
+  "olhos/elefante.apertado.svg": {
+   "bytes": 287,
+   "sha256": "36395c0f2e973e564f2b58c0b421520e19364e8b4d16a983a293721e00842eb2"
+  },
+  "olhos/elefante.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "cd717784ab5fa76ed0a419ca2696f3ada2d34895325c68bb318956ca63039667"
+  },
+  "olhos/elefante.cima.svg": {
+   "bytes": 843,
+   "sha256": "ecb2040b173a5f4b29d887e7a76d8b9aaa466255a97c8d5bf86d3beab655a734"
+  },
+  "olhos/elefante.lado.svg": {
+   "bytes": 843,
+   "sha256": "3e71849c1ab32e7e8b80e68269a67664750d607e1a0fcc1f5f68e4cceeafad92"
+  },
+  "olhos/elefante.meio.svg": {
+   "bytes": 480,
+   "sha256": "953a06efafbbffd2dfa98c381f7cadb16d4184eed64d7a1bbf02e93af779d9dd"
+  },
+  "olhos/galinha.aberto.svg": {
+   "bytes": 843,
+   "sha256": "ddbe2498327624b207f7010a2d450789323ec0bf819f6807032f89248dd9cd3d"
+  },
+  "olhos/galinha.apertado.svg": {
+   "bytes": 287,
+   "sha256": "6ac78b997b412ad6369cf171f319263807805fb2f1340f478f699456c75a3775"
+  },
+  "olhos/galinha.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "765e57578bb19a6d43134e1a852dc837db14980c0eac6ab820ee623af25182df"
+  },
+  "olhos/galinha.cima.svg": {
+   "bytes": 843,
+   "sha256": "de53a8e8c5db09eedc8043a45e5e747178dd429b69555cb0dab35ac18d8825a9"
+  },
+  "olhos/galinha.lado.svg": {
+   "bytes": 843,
+   "sha256": "0253c78b0f9bee485fa71f6d3162e7bc2bf2b04143ef02cfc75f7cf608e7067d"
+  },
+  "olhos/galinha.meio.svg": {
+   "bytes": 480,
+   "sha256": "fd34e838b0346678960c5d138b534ff027c43cdc7eaf4fb8bfaadd871228fac2"
+  },
+  "olhos/gato.aberto.svg": {
+   "bytes": 843,
+   "sha256": "45404feb0eeaa937e1318bf71490ce8d4f2d5a90324ca541916a80b15f9fff1e"
+  },
+  "olhos/gato.apertado.svg": {
+   "bytes": 287,
+   "sha256": "fff00994f9f3bf6b9bf2b48b776b451d1d88c25f7484a6dfb37737bbc3bb1809"
+  },
+  "olhos/gato.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "d031cff27f3b2afc09a7f416a562e9526433356276a880117e2d58d60d195c84"
+  },
+  "olhos/gato.cima.svg": {
+   "bytes": 843,
+   "sha256": "637af8ad4104b6327f94fbc6c9d09e73c86ffc7d36dfa935bbd02acb31311d74"
+  },
+  "olhos/gato.lado.svg": {
+   "bytes": 843,
+   "sha256": "e09c6e8995b37e85ba5c684c4cd78402e594436f34c05c9df7ad033319ebb2c8"
+  },
+  "olhos/gato.meio.svg": {
+   "bytes": 480,
+   "sha256": "4110eda17e2d81282931b951c8df47dcc789dd4bdc7ffb00bda3200d9207a857"
+  },
+  "olhos/girafa.aberto.svg": {
+   "bytes": 843,
+   "sha256": "97d6956843724f9a2c3ef40e4b060ed50598a8b98eeaca17b416a19ae7f7fdd1"
+  },
+  "olhos/girafa.apertado.svg": {
+   "bytes": 287,
+   "sha256": "c1c21b5f778d7c84d12926222c7823496b0d98f3683b3120c8c5835f01163ddb"
+  },
+  "olhos/girafa.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "77478e7d28906cde0381ed6f38d06db2d916129a1708fc702378884e72398808"
+  },
+  "olhos/girafa.cima.svg": {
+   "bytes": 843,
+   "sha256": "aa091ca03548586caaf7b0aa8254daffcf6b221a754246db62ca5194a628f895"
+  },
+  "olhos/girafa.lado.svg": {
+   "bytes": 843,
+   "sha256": "42b498198a748cb506fb850ec7fa3e2aabe8e88e60f1059fe0761891ea250ce2"
+  },
+  "olhos/girafa.meio.svg": {
+   "bytes": 480,
+   "sha256": "40f71a0eeffaf6dc506288ef16907d2ffea808f0addff85e9e22675d1dca505e"
+  },
+  "olhos/guaxinim.aberto.svg": {
+   "bytes": 843,
+   "sha256": "8ff21587ca08918fbd395540f9f3e4e88e450119aaadb6d0d245b1fbb0daaffb"
+  },
+  "olhos/guaxinim.apertado.svg": {
+   "bytes": 287,
+   "sha256": "aff08df071868c6b6ae51da46a6c94e8e1538fccb3301f4de3ac1340442da93b"
+  },
+  "olhos/guaxinim.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "b963255e7d9b69cd865ac3a27131af2ace58e2c3d1a7f5b4bf5a46480feb37ef"
+  },
+  "olhos/guaxinim.cima.svg": {
+   "bytes": 843,
+   "sha256": "d88566a14e868e70eeb5a69743891af38def7616ae9049505eb075533ec7d61a"
+  },
+  "olhos/guaxinim.lado.svg": {
+   "bytes": 843,
+   "sha256": "652b395b38021ed500285f34170802eaf763a58028bc1d9041f1684463e9da3e"
+  },
+  "olhos/guaxinim.meio.svg": {
+   "bytes": 480,
+   "sha256": "b5f3f461ea446ad6a1e732b6f953edbc309dbd08806a81bf0982e2107d2511b5"
   },
   "olhos/ia.apertado.svg": {
    "bytes": 720,
@@ -620,6 +1510,294 @@
   "olhos/ia.meio.svg": {
    "bytes": 597,
    "sha256": "e2b9eb975def94b37213ea1f2946ddf3b54d4dd4034126b03b186eadb3406c0b"
+  },
+  "olhos/leao.aberto.svg": {
+   "bytes": 801,
+   "sha256": "9446b704669c508b9e75ca4d8d983e930404d499e27a517b0202c54ea4779182"
+  },
+  "olhos/leao.apertado.svg": {
+   "bytes": 287,
+   "sha256": "a2c2b9d859dcaa270d7c27dccc04baea608753e07c52c6dcd367da5d1fc7452d"
+  },
+  "olhos/leao.arregalado.svg": {
+   "bytes": 1011,
+   "sha256": "4115d9a8c76766d3cfa02ee98098a8f3894dc67f510c9c672c500f716b3c91d7"
+  },
+  "olhos/leao.cima.svg": {
+   "bytes": 801,
+   "sha256": "efa328a9f9ad9f7e411487da5d4c3124a1e11d9285d27baf27320e802050ce5c"
+  },
+  "olhos/leao.lado.svg": {
+   "bytes": 801,
+   "sha256": "fb2e761fb76c027dad158907029f5dcb46793be69fefb3a65e664c1e265528de"
+  },
+  "olhos/leao.meio.svg": {
+   "bytes": 480,
+   "sha256": "9be5384991816381f5e8f68e2970f6eb4c3b0057c18daf335da7119aa611863c"
+  },
+  "olhos/lobo.aberto.svg": {
+   "bytes": 843,
+   "sha256": "26e5b9e95680acd1a75e0dc46cd1220f4b0bfd9cb54832e537c8fc8ce91cdf8d"
+  },
+  "olhos/lobo.apertado.svg": {
+   "bytes": 287,
+   "sha256": "7b6a585b258939ecbe6fb2bbb562b5c1d1e4b6c74fcf4a75feb591014d0da810"
+  },
+  "olhos/lobo.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "59e34b27c8b88895edd9a61e8c249ed8b80d7a86f27c077bfc253669bacbd91f"
+  },
+  "olhos/lobo.cima.svg": {
+   "bytes": 843,
+   "sha256": "2178b9e01be9a467237cafb42bc0f7afa6f9ef6e92d4938f4a9f2b570dbab514"
+  },
+  "olhos/lobo.lado.svg": {
+   "bytes": 843,
+   "sha256": "6e5f842e6aa276b7e6aa59f510389b552958df2018758a39c319b76ae992d2f7"
+  },
+  "olhos/lobo.meio.svg": {
+   "bytes": 480,
+   "sha256": "57f7e60fce6e3e1f2a6e8f0e1f75aee59fd1ea7accbfcb53696bb914ea5f1d7d"
+  },
+  "olhos/lontra.aberto.svg": {
+   "bytes": 843,
+   "sha256": "b997eff9f222bb9e0fdb58b2d75b9815d45aa0dcfb973eee0182234539e57d28"
+  },
+  "olhos/lontra.apertado.svg": {
+   "bytes": 287,
+   "sha256": "ec3e9ef68ce2de1b9c83027938cc4f8f1ad09199a0a02a75afe625084a6f316b"
+  },
+  "olhos/lontra.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "dc897b545b59db606b4a06abe05151db5a2d5964252c75e2312ee97a13190080"
+  },
+  "olhos/lontra.cima.svg": {
+   "bytes": 843,
+   "sha256": "d8c3db91a0d2200bd9eba85986b73e377d34e959e80b30c79d7b803d8400097f"
+  },
+  "olhos/lontra.lado.svg": {
+   "bytes": 843,
+   "sha256": "0d9ee98cb62f2147b2723c69acce4e143ae60a64dbbe53751d90ec22aa17a788"
+  },
+  "olhos/lontra.meio.svg": {
+   "bytes": 480,
+   "sha256": "7f39b5374338596d3d3ba9a6130b17ee9a68b317982cbb348970a3b5fd1df4b1"
+  },
+  "olhos/ovelha.aberto.svg": {
+   "bytes": 843,
+   "sha256": "6bd26de1f197b13e21fed7e66cde42418d25b8633f18be84ef0e2fbe3d0cbfd5"
+  },
+  "olhos/ovelha.apertado.svg": {
+   "bytes": 287,
+   "sha256": "343e3758938b6c5c3b80a6004b9299f90ecaa9ca17b5a08aa27960b228e498f1"
+  },
+  "olhos/ovelha.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "a957a8a0848e51b14cb6a55fd518ac23e5c90671a189e10db724fd6b4558faf9"
+  },
+  "olhos/ovelha.cima.svg": {
+   "bytes": 843,
+   "sha256": "f5e79d7bc14215c6662f050d8e7b22ae09e2d48008629c0a5a54bfea2f7150bc"
+  },
+  "olhos/ovelha.lado.svg": {
+   "bytes": 843,
+   "sha256": "efde20826d162f71a23e84bb6d29e61de7c0f427f6b614eeb2251305b27d5173"
+  },
+  "olhos/ovelha.meio.svg": {
+   "bytes": 480,
+   "sha256": "c7a12ad3627ed85fdef52fa9bfc3c5e69493a54ddf30444349a5bda07cc849e1"
+  },
+  "olhos/panda.aberto.svg": {
+   "bytes": 843,
+   "sha256": "31153a563bfa6311c531aa292ea86d029d36c0bad24ea811ceb0b3343224a68f"
+  },
+  "olhos/panda.apertado.svg": {
+   "bytes": 287,
+   "sha256": "d8fa04635f2554891a85b78f46ced7a9f70ecee44412bf0f498db94ccf3ca535"
+  },
+  "olhos/panda.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "20fb04e894923ab1fc4c9c7e3c583367b5377106b81ad06c43b2391dfd77fcbf"
+  },
+  "olhos/panda.cima.svg": {
+   "bytes": 843,
+   "sha256": "aa1c55fe33cf52fb5ac65fac061341ab6beb59175ef45e5445a4b0a181c940b2"
+  },
+  "olhos/panda.lado.svg": {
+   "bytes": 843,
+   "sha256": "ac550b837f4301864fd7d9a279e60d66da2a019894545311b0c25615b9975575"
+  },
+  "olhos/panda.meio.svg": {
+   "bytes": 480,
+   "sha256": "5c01a5a903b89194089d218df8349ec52b40b566b79e786d2f0b377bff7961ed"
+  },
+  "olhos/pato.aberto.svg": {
+   "bytes": 843,
+   "sha256": "8febe3679cad6117dad1ebdc8349c958802fd6c19f5c8315cadfb9481d3a0ff9"
+  },
+  "olhos/pato.apertado.svg": {
+   "bytes": 287,
+   "sha256": "17d100cae2b211556e436c6df12831c1eaf91f2e1b3a9d3dec49a94f3d81e256"
+  },
+  "olhos/pato.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "52bc10c1c0188c3509252266eeaf65066445c0b05f4a3958bbf55b3a0ece2a2c"
+  },
+  "olhos/pato.cima.svg": {
+   "bytes": 843,
+   "sha256": "fded551740d330bb355ba26588f9c95b049507e44954cb36cd16697baffd7d63"
+  },
+  "olhos/pato.lado.svg": {
+   "bytes": 843,
+   "sha256": "ebed80dddaec2b18fa697224ab1e708e42b430ca9057d4f70f05a3f83530e47a"
+  },
+  "olhos/pato.meio.svg": {
+   "bytes": 480,
+   "sha256": "5ae7304d130d78f4beac3d91df61f17ab21855170d198ae037e02d7286ee5669"
+  },
+  "olhos/pinguim.aberto.svg": {
+   "bytes": 801,
+   "sha256": "13910bd74c6cccade3ff7325e9d2c7c8736f5f4700f3a3577ff3d0f59daa4057"
+  },
+  "olhos/pinguim.apertado.svg": {
+   "bytes": 287,
+   "sha256": "d4a2f2baa0408932fee4c6c11206d0422b714e1fde432f4cf0ea50b70a8ef2ce"
+  },
+  "olhos/pinguim.arregalado.svg": {
+   "bytes": 1011,
+   "sha256": "11b5d7c4ff37ff72aa9541814ac1527ae791715eed9b642aa1f039b896d18927"
+  },
+  "olhos/pinguim.cima.svg": {
+   "bytes": 801,
+   "sha256": "cbbca5f55ef5a5949164cfe7172456eb888588cc5ab351b6a95edda12cff0057"
+  },
+  "olhos/pinguim.lado.svg": {
+   "bytes": 801,
+   "sha256": "6bcf8e3fbc7f8d2213be5a85b618508988fd27c186d97d0f582ca04ba150976f"
+  },
+  "olhos/pinguim.meio.svg": {
+   "bytes": 480,
+   "sha256": "6202b4c540668e502eef5457adcbc9409f213876e435f9c3d1b68ba26ef9a7f9"
+  },
+  "olhos/porco.aberto.svg": {
+   "bytes": 843,
+   "sha256": "a53e950cef73f04c0b6770f30e008098c0750e6c44ef9ce340965327aa96ecac"
+  },
+  "olhos/porco.apertado.svg": {
+   "bytes": 287,
+   "sha256": "ed00f706411919aa927587675a545b9735be3bfba9847565721fed1bd8279090"
+  },
+  "olhos/porco.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "25f5596f96da0e0668dce583b792232712013460302dcfa59b4f8d85cb75ad8e"
+  },
+  "olhos/porco.cima.svg": {
+   "bytes": 843,
+   "sha256": "7bfccba92f48dbab7d29e605e3c5d62c800fb27245e87297fbebd39314353ade"
+  },
+  "olhos/porco.lado.svg": {
+   "bytes": 843,
+   "sha256": "c21603f28a7292ee3bcbfbc22b01439d9b3ce55f498eb722612e1d856c19b9c4"
+  },
+  "olhos/porco.meio.svg": {
+   "bytes": 480,
+   "sha256": "7f0a4050af8b83aa8639597e21740b24bf1065c5a8883e0fdb128f86cb5ddb11"
+  },
+  "olhos/raposa.aberto.svg": {
+   "bytes": 759,
+   "sha256": "36533972f9ac082efb3d81d3995ab2acd05fa53ed9ca89f6d0f3f62a9b352d5c"
+  },
+  "olhos/raposa.apertado.svg": {
+   "bytes": 287,
+   "sha256": "720c601e3463053caf652c53fdcb79fa64921f7f1ceb82afd80f0ae10068d71b"
+  },
+  "olhos/raposa.arregalado.svg": {
+   "bytes": 983,
+   "sha256": "30b7e3ca8f781bf2cf0f50a973b75664f6eb41f2650747a9bae122fb90576611"
+  },
+  "olhos/raposa.cima.svg": {
+   "bytes": 759,
+   "sha256": "e13527a4e82803ed4a6443901bbf93975119b909b68b16b9fb167ad310142dc1"
+  },
+  "olhos/raposa.lado.svg": {
+   "bytes": 759,
+   "sha256": "e01d5376aa74e64c99a86c85799816301d03de301abf85c1f1daf97d87ab4700"
+  },
+  "olhos/raposa.meio.svg": {
+   "bytes": 480,
+   "sha256": "d28520f45eb83a7636390e4878a975cc9fe5645f2f123e5eecca611c89342856"
+  },
+  "olhos/sapo.aberto.svg": {
+   "bytes": 843,
+   "sha256": "b365a9cf9bd1b967e2830a88ada6d8f02c53eb4194b9a07513b40b8845ab96d3"
+  },
+  "olhos/sapo.apertado.svg": {
+   "bytes": 287,
+   "sha256": "485f822741daa6202c5bec3ff3241e7caad73fe62bd8e9129b4f591d85c246c8"
+  },
+  "olhos/sapo.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "2b1e9033c491a94ecd2b110a30c83452ab3a1887b613ad955638ce9e8ec8f9d7"
+  },
+  "olhos/sapo.cima.svg": {
+   "bytes": 843,
+   "sha256": "05acfab2984d96ee4a6d3b3898c8365f9684c55cc1fdd6029959a225f29830cc"
+  },
+  "olhos/sapo.lado.svg": {
+   "bytes": 843,
+   "sha256": "45fa23da61de0fb3765620521d1630714288c27954b258a1567d33ea1e530193"
+  },
+  "olhos/sapo.meio.svg": {
+   "bytes": 480,
+   "sha256": "d8aaa1f81350c32b887a60f17c0fec4595785cd918eca58a6d6f486382db49a4"
+  },
+  "olhos/urso.aberto.svg": {
+   "bytes": 843,
+   "sha256": "585285f97029e32963f864fed7f389b88ca200d601f81452acf0cd857d40095b"
+  },
+  "olhos/urso.apertado.svg": {
+   "bytes": 287,
+   "sha256": "b1ff68d56ea8ec1360f8c3886dd461d248f646c60d8872562bcf45c31dcfa25f"
+  },
+  "olhos/urso.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "302a2ca062532bc95f1fe432caefbb7569945f59559048b32bede8b2da1f29dd"
+  },
+  "olhos/urso.cima.svg": {
+   "bytes": 843,
+   "sha256": "7bc5a6da5ad88f93bc7097930c6d5371050fdcdfd138a78097dff175cf860a91"
+  },
+  "olhos/urso.lado.svg": {
+   "bytes": 843,
+   "sha256": "646ef44240d3bee61876c1871f9cfe52c0741324cf4998f98ef89cdd051953b3"
+  },
+  "olhos/urso.meio.svg": {
+   "bytes": 480,
+   "sha256": "1cb67c78e995ef77b9a79f7f531833c90881736e379972a7ea91e558fcf498a5"
+  },
+  "olhos/vaca.aberto.svg": {
+   "bytes": 843,
+   "sha256": "71bb1b5e534b05897eb7619fe1754869579a7de880b8ca800209e7432372b138"
+  },
+  "olhos/vaca.apertado.svg": {
+   "bytes": 287,
+   "sha256": "c4f17e86e17161a44b991f4422b0e42e14901611c6dc6bb35263ea2f3e4ee2d9"
+  },
+  "olhos/vaca.arregalado.svg": {
+   "bytes": 1039,
+   "sha256": "94d9ef0409b53027249dabb6e97a0fa517750fa300da059dfbb4ae22775018d2"
+  },
+  "olhos/vaca.cima.svg": {
+   "bytes": 843,
+   "sha256": "a9f93ba6ddf2079164bbaad9d90c0a1b4e9bac2ffe4cd1ad25caec3019e2e5b9"
+  },
+  "olhos/vaca.lado.svg": {
+   "bytes": 843,
+   "sha256": "656122721b6dd9b3e33cd75a63a546d5fcde3624bc6eda517a9c263104ba5778"
+  },
+  "olhos/vaca.meio.svg": {
+   "bytes": 480,
+   "sha256": "acac7e9b8a1df0bb2aa81b4b671d6dcee662c9577c11dea34ac6edeaf012d916"
   },
   "roupa/camisa.svg": {
    "bytes": 14346,

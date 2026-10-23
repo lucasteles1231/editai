@@ -11,7 +11,10 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {api} from '../api';
 import {abrirConfiguracao} from '../configurar';
 import type {AvatarSalvo, EstadoIa} from '../tipos';
-import {CATEGORIAS, CORES, ESCOLHIDAS, type EspacoDeCor, escolhasPadrao, espacosUsados, nomeDaOpcao} from './catalogo';
+import {
+  BICHOS, CATEGORIAS, type EspacoDeCor, comBicho, comPessoa, ehBicho, escolhasPadrao, escolhidasPara, espacosUsados,
+  infoDaCor, nomeDaOpcao,
+} from './catalogo';
 import {BOCAS, type Boca, type Escolhas, POSES, type Pose, desenharQuadro, desenharRecorte, nomeDoQuadro} from './desenhar';
 
 type Props = {
@@ -269,7 +272,27 @@ export const Criador: React.FC<Props> = ({ia, avatares, aoMudarAvatares}) => {
             {visto ? <div className="aviso">O Gemini viu: {visto}. Ajuste o que quiser abaixo.</div> : null}
           </section>
 
-          {ESCOLHIDAS.map((categoria) => {
+          <section className="campo" aria-label="a cabeça">
+            <span>Cabeça: {BICHOS.find((b) => b.id === e.cabeca)?.pt ?? 'pessoa'}</span>
+            <div className="opcoes-do-avatar" role="group" aria-label="Cabeça">
+              <button type="button" className="opcao-do-avatar" aria-pressed={!ehBicho(e)} aria-label="pessoa"
+                onClick={() => setE(comPessoa(e))}>
+                <Desenho e={comPessoa(e)} recorte={RECORTE_DA_CABECA} lado={64} />
+                <small>pessoa</small>
+              </button>
+              {BICHOS.map((b) => (
+                <button key={b.id} type="button" className="opcao-do-avatar" aria-pressed={e.cabeca === b.id}
+                  aria-label={b.pt} onClick={() => setE(comBicho(e, b.id))}>
+                  <Desenho e={comBicho(e, b.id)} recorte={RECORTE_DA_CABECA} lado={64} />
+                  <small>{b.pt}</small>
+                </button>
+              ))}
+            </div>
+            {ehBicho(e) ? <small>Num bicho, a pelagem pinta também o pescoço e as mãos, e o cabelo, a barba, os
+              óculos e os acessórios ficam de fora.</small> : null}
+          </section>
+
+          {escolhidasPara(e).map((categoria) => {
             const c = CATEGORIAS[categoria];
             const ids = ['nenhum', ...c.opcoes.map((o) => o.id)];
             const recorte = categoria === 'roupa' ? RECORTE_DO_TRONCO : RECORTE_DA_CABECA;
@@ -293,7 +316,7 @@ export const Criador: React.FC<Props> = ({ia, avatares, aoMudarAvatares}) => {
           <section className="campo" aria-label="as cores">
             <span>As cores</span>
             {espacos.map((espaco) => {
-              const info = CORES[espaco];
+              const info = infoDaCor(e, espaco);
               const atual = e.cores[espaco];
               return (
                 <div key={espaco} className="cor-do-avatar" role="group" aria-label={`cor: ${info.rotulo}`}>

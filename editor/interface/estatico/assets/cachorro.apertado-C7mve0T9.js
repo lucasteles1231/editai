@@ -1,0 +1,4 @@
+var e=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150">
+  <g data-camada="olhos" data-pronto="sim"><path class="contorno" d="M61 39h1v1h-1zM87 39h1v1h-1zM60 40h1v1h-1zM62 40h1v1h-1zM86 40h1v1h-1zM88 40h1v1h-1zM58 41h2v1h-2zM63 41h2v1h-2zM84 41h2v1h-2zM89 41h2v1h-2z"/></g>
+</svg>
+`;export{e as default};

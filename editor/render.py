@@ -384,7 +384,7 @@ def _escrever_roteiro(f: _Fala, edicao: OpcoesDeEdicao, avisar: Progresso,
     r = roteiro.escrever(f.no_editado, f.linha.duracao, biblioteca=biblioteca,
                          cartoes=edicao.animacoes, idioma=edicao.idioma,
                          nomes_de_icones=icones.nomes(), proibidas=censura.lista(edicao.bipe),
-                         destaques=destaques)
+                         destaques=destaques, tema=edicao.tema)
     f.plano.cartoes = r.cartoes
     f.plano.roteiro = r.para_json()
     if destaques and r.destaques:

@@ -1,0 +1,65 @@
+name: site
+
+# O site do Editai no GitHub Pages: a documentação (docs/), as versões (CHANGELOG.md) e os
+# instaladores de uma linha (instalar.sh e instalar.ps1) da última versão publicada.
+on:
+  push:
+    branches: [main]
+    paths: ["docs/**", "CHANGELOG.md", "instalador/**", ".github/workflows/site.yml"]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  montar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - uses: astral-sh/setup-uv@v7
+      - name: a última versão publicada
+        id: ultima
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName 2>/dev/null || true)"
+          echo "versao=${tag#v}" >> "$GITHUB_OUTPUT"
+      - name: monta o site
+        working-directory: docs
+        env:
+          EDITAI_VERSAO: ${{ steps.ultima.outputs.versao }}
+        run: |
+          npm ci
+          npm run build
+      - name: os instaladores de uma linha
+        if: steps.ultima.outputs.versao != ''
+        run: >-
+          uv run --no-project python instalador/montar.py docs/.vitepress/dist --so-scripts
+          --versao "${{ steps.ultima.outputs.versao }}"
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/.vitepress/dist
+
+  publicar:
+    needs: montar
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.publicado.outputs.page_url }}
+    steps:
+      - id: publicado
+        uses: actions/deploy-pages@v4

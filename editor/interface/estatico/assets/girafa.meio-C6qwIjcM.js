@@ -1,0 +1,4 @@
+var e=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150">
+  <g data-camada="olhos" data-pronto="sim"><path class="contorno" d="M54 49h7v1h-7zM90 49h7v1h-7zM54 50h1v1h-1zM60 50h1v1h-1zM90 50h1v1h-1zM96 50h1v1h-1zM54 51h1v1h-1zM60 51h1v1h-1zM90 51h1v1h-1zM96 51h1v1h-1zM55 52h1v1h-1zM59 52h1v1h-1zM91 52h1v1h-1zM95 52h1v1h-1zM56 53h3v1h-3zM92 53h3v1h-3z"/><path class="olho" d="M55 50h5v1h-5zM91 50h5v1h-5zM55 51h5v1h-5zM91 51h5v1h-5zM56 52h3v1h-3zM92 52h3v1h-3z"/></g>
+</svg>
+`;export{e as default};

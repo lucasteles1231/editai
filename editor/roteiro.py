@@ -126,11 +126,17 @@ def quantos_cartoes(duracao: float) -> tuple[int, int]:
 def montar_pedido(palavras: Sequence[Palavra], blocos: Sequence[cenas_mod.BlocoDeFala],
                   biblioteca: cenas_mod.Biblioteca | None, *, cartoes: bool, idioma: str,
                   nomes_de_icones: Sequence[str], proibidas: Sequence[str],
-                  destaques: bool = False) -> str:
+                  destaques: bool = False, tema: str = "") -> str:
     fala = " ".join(f"[{i}] {w.texto}" for i, w in enumerate(palavras))
     partes = [f"""A FALA (cada palavra com o número dela, entre colchetes; idioma: {idioma}):
 {fala}
 """]
+    if tema.strip():
+        # o tema que a pessoa marcou no passo 1: contexto, não fato (os cartões continuam só
+        # com o que é dito)
+        partes.insert(0, f"""O TEMA DO VÍDEO, nas palavras de quem fez (é o contexto; os fatos
+vêm da fala): {tema.strip()}
+""")
     if biblioteca is not None:
         linhas_dos_blocos = "\n".join(
             f"- bloco {k}: {b.inicio:.1f}–{b.fim:.1f} s (palavras {b.primeira} a "
@@ -433,7 +439,7 @@ def _sem_repetir(escolhas: Sequence[Sequence[str]], reserva: Sequence[Sequence[s
 def escrever(palavras: Sequence[Palavra], duracao: float, *,
              biblioteca: cenas_mod.Biblioteca | None, cartoes: bool, idioma: str,
              nomes_de_icones: Sequence[str], proibidas: Sequence[str] = (),
-             destaques: bool = False, transporte=None) -> Roteiro:
+             destaques: bool = False, tema: str = "", transporte=None) -> Roteiro:
     """O roteiro do vídeo: as cenas (com a ``biblioteca``), os cartões (com
     ``cartoes``) e os destaques da legenda (com ``destaques``), pelo Gemini ou, sem ele,
     pelas palavras."""
@@ -471,7 +477,7 @@ def escrever(palavras: Sequence[Palavra], duracao: float, *,
 
     pedido = montar_pedido(palavras, blocos, biblioteca, cartoes=cartoes, idioma=idioma,
                            nomes_de_icones=sorted(nomes), proibidas=proibidas,
-                           destaques=destaques)
+                           destaques=destaques, tema=tema)
     formato = esquema(biblioteca is not None, sorted(nomes), destaques)
     gasto: list[str] = []
     try:

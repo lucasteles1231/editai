@@ -1,0 +1,4 @@
+var e=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150">
+  <g data-camada="olhos" data-pronto="sim"><path class="branco" d="M63 47h2v1h-2zM89 47h2v1h-2zM63 48h2v1h-2zM89 48h2v1h-2z"/><path class="contorno" d="M62 46h3v1h-3zM88 46h3v1h-3zM61 47h1v1h-1zM65 47h1v1h-1zM87 47h1v1h-1zM91 47h1v1h-1zM60 48h1v1h-1zM66 48h1v1h-1zM86 48h1v1h-1zM92 48h1v1h-1zM60 49h1v1h-1zM66 49h1v1h-1zM86 49h1v1h-1zM92 49h1v1h-1zM60 50h1v1h-1zM66 50h1v1h-1zM86 50h1v1h-1zM92 50h1v1h-1zM61 51h1v1h-1zM65 51h1v1h-1zM87 51h1v1h-1zM91 51h1v1h-1zM62 52h3v1h-3zM88 52h3v1h-3z"/><path class="olho" d="M62 47h1v1h-1zM88 47h1v1h-1zM61 48h2v1h-2zM65 48h1v1h-1zM87 48h2v1h-2zM91 48h1v1h-1zM61 49h5v1h-5zM87 49h5v1h-5zM61 50h5v1h-5zM87 50h5v1h-5zM62 51h3v1h-3zM88 51h3v1h-3z"/></g>
+</svg>
+`;export{e as default};

@@ -66,6 +66,11 @@ export const Painel: React.FC<Props> = (p) => {
     if (prontoId) mostrar(resultado.current, 'start');
   }, [prontoId]);
   const nThumbs = p.thumbs.length;
+  // o lugar do vídeo já vem reservado, pelas medidas dele: sem isso, ele crescia quando os
+  // metadados chegavam e empurrava o "Editar vídeo" uns 230 px para baixo (no Safari, o clique
+  // caía onde o botão estava)
+  const proporcao = p.video?.largura && p.video.altura
+    ? {aspectRatio: `${p.video.largura} / ${p.video.altura}`} : undefined;
   React.useEffect(() => {
     if (nThumbs) mostrar(resultado.current, 'nearest');
   }, [nThumbs]);
@@ -78,12 +83,12 @@ export const Painel: React.FC<Props> = (p) => {
           <video key={t.id} className="tela" src={api.arquivoUrl(t.id, 'video', true)} controls playsInline />
         ) : p.video && p.porCima ? (
           <div className={`tela-montada${p.porCima.emPe ? ' em-pe' : ''}`}>
-            <video key={p.video.id} className="tela" src={api.videoUrl(p.video.id)}
+            <video key={p.video.id} className="tela" src={api.videoUrl(p.video.id)} style={proporcao}
               controls playsInline preload="metadata" />
             <img className="por-cima" src={p.porCima.url} alt="" aria-hidden="true" />
           </div>
         ) : p.video ? (
-          <video key={p.video.id} className="tela" src={api.videoUrl(p.video.id)}
+          <video key={p.video.id} className="tela" src={api.videoUrl(p.video.id)} style={proporcao}
             controls playsInline preload="metadata" />
         ) : (
           <div className="vazio">O vídeo aparece aqui depois de enviado.</div>

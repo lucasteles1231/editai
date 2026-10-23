@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import threading
 import time
+from itertools import pairwise
 from pathlib import Path
 
 import numpy as np
@@ -26,7 +27,7 @@ expect = playwright.expect
 
 PORTA, TOKEN = 8911, "token-do-navegador"
 #: Os balões do tour (web/src/tour.ts).
-BALOES_DO_TOUR = 18
+BALOES_DO_TOUR = 16
 
 
 def _instalado(motor: str) -> bool:
@@ -52,6 +53,21 @@ def navegador(request):
 VIGIAR_A_CSP = ("window.__barrados = [];"
                 "document.addEventListener('securitypolicyviolation',"
                 " (e) => window.__barrados.push(e.violatedDirective + ' ' + e.blockedURI));")
+
+
+#: As pílulas do passo 1 (web/src/trilha.ts).
+MATERIAIS = ("Tema", "Roteiro", "Áudio", "Vídeo completo", "Vídeo da pessoa", "Personagem", "Cenas")
+
+
+def ter(pagina, *nomes: str) -> None:
+    """Deixa marcado no passo 1 exatamente o que a pessoa tem (a página começa com o vídeo
+    completo)."""
+    grupo = pagina.get_by_role("group", name="o que você tem")
+    for m in MATERIAIS:
+        botao = grupo.get_by_role("button", name=m, exact=True)
+        if (botao.get_attribute("aria-pressed") == "true") != (m in nomes):
+            botao.click()
+        expect(botao).to_have_attribute("aria-pressed", "true" if m in nomes else "false")
 
 
 def _barrados(pagina) -> list[str]:
@@ -83,29 +99,26 @@ def test_tour_edicao_e_thumbnail(navegador, endereco, tmp_path):
     pagina.add_init_script(VIGIAR_A_CSP)
     pagina.goto(endereco)
 
-    # O tour abre sozinho na primeira visita: os dois jeitos de usar e cada parte da
-    # página (dezoito balões). Cada passo é esperado antes do clique seguinte: o balão anima
-    # entre um e outro, e no CI (mais lento) o texto ainda dizia "6 de 7" logo depois do
-    # sexto clique. Os balões 4 a 6 abrem a montagem, e o 7 já voltou ao vídeo único.
+    # O tour abre sozinho na primeira visita: começar pelo que se tem e cada parte da
+    # página (dezesseis balões). Cada passo é esperado antes do clique seguinte: o balão
+    # anima entre um e outro, e no CI (mais lento) o texto ainda dizia "6 de 7" logo depois
+    # do sexto clique. O tour não mexe no que está marcado.
     progresso = pagina.locator(".driver-popover-progress-text")
     expect(progresso).to_have_text(f"1 de {BALOES_DO_TOUR}", timeout=10_000)
-    expect(pagina.locator(".driver-popover-title")).to_have_text("Dois jeitos de usar")
-    expect(pagina.locator(".driver-popover-description")).to_contain_text(
-        "Uma notícia com cenas")
-    um = pagina.get_by_role("group", name="como é o seu vídeo").get_by_role(
-        "button", name="Um vídeo com você falando")
+    expect(pagina.locator(".driver-popover-title")).to_have_text("Comece pelo que você tem")
+    expect(pagina.locator(".driver-popover-description")).to_contain_text("você marca o que tem")
+    video = pagina.get_by_role("group", name="o que você tem").get_by_role(
+        "button", name="Vídeo completo")
     for passo in range(2, BALOES_DO_TOUR + 1):
         pagina.locator(".driver-popover-next-btn").click()
         expect(progresso).to_have_text(f"{passo} de {BALOES_DO_TOUR}")
-        if passo == 4:
-            expect(pagina.locator(".driver-popover-title")).to_have_text("O fundo")
-            expect(pagina.get_by_role("button", name="Biblioteca de cenas")).to_be_visible()
-            expect(um).to_have_attribute("aria-pressed", "false")
-        elif passo == 7:
-            expect(um).to_have_attribute("aria-pressed", "true")
+        if passo == 3:
+            expect(pagina.locator(".driver-popover-title")).to_have_text("1. O que você tem?")
+        elif passo == 4:
+            expect(pagina.locator(".driver-popover-title")).to_have_text("A trilha")
     pagina.locator(".driver-popover-next-btn").click()      # "Começar a editar"
     pagina.locator(".driver-popover").wait_for(state="detached")
-    expect(um).to_have_attribute("aria-pressed", "true")
+    expect(video).to_have_attribute("aria-pressed", "true")
 
     # Envia, edita e espera a thumbnail desenhada no navegador. A IA e o recorte são os
     # falsos (conftest): três ideias fixas e uma silhueta de busto, sem rede nem modelo.
@@ -208,22 +221,22 @@ def test_montagem_com_personagem_e_narracao(navegador, endereco, tmp_path):
     pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
     pagina.goto(endereco)
 
-    pagina.get_by_role("button", name="Um fundo e, por cima").click()
+    ter(pagina, "Vídeo completo", "Personagem", "Áudio")
     fundo = fazer_video(tmp_path / "tela.mp4", largura=320, altura=180, segundos=3.0,
                         com_audio=False)
-    pagina.set_input_files('[data-envio="fundo"] input', str(fundo))
+    pagina.set_input_files('[data-envio="completo"] input', str(fundo))
     expect(pagina.get_by_label("dados do fundo")).to_contain_text("320×180")
-    pagina.get_by_role("button", name="Personagem animado").click()
     pagina.set_input_files('[data-envio="personagem"] input', str(gif(tmp_path / "b.gif", lado=80)))
     expect(pagina.get_by_label("dados do personagem")).to_contain_text("4 quadros")
     expect(pagina.locator(".tela-montada .por-cima")).to_be_attached()
-    # De onde vem o áudio: com o personagem, o fundo, um áudio separado ou a "Minha voz";
-    # e o fundo deste teste é mudo, então a pílula dele fica desligada.
+    # Em "Ajustar as camadas", de onde vem o áudio: com o personagem, o fundo, um áudio
+    # separado ou a "Minha voz"; o fundo deste teste é mudo, e a pílula dele fica desligada.
+    pagina.get_by_text("Ajustar as camadas").click()
     audio_vem_de = pagina.get_by_role("group", name="de onde vem o áudio")
     expect(audio_vem_de.get_by_role("button")).to_have_count(3)
     expect(audio_vem_de.get_by_role("button", name="O vídeo de fundo")).to_be_disabled()
-    expect(pagina.locator('[data-envio="audio"]')).to_have_count(0)
-    audio_vem_de.get_by_role("button", name="Áudio separado").click()
+    expect(audio_vem_de.get_by_role("button", name="Áudio separado")).to_have_attribute(
+        "aria-pressed", "true")
     pagina.set_input_files('[data-envio="audio"] input', str(audio_wav(tmp_path / "n.wav")))
     expect(pagina.get_by_label("os áudios separados")).to_contain_text("n.wav")
     # a montagem tem o "Mover o personagem"; o fundo é deitado, e o editor recomenda o
@@ -282,15 +295,17 @@ def test_biblioteca_de_cenas(navegador, endereco, tmp_path):
               {"id": "t1-004", "arquivo": "t1-004.mp4", "descricao": "cidade"}]
     (pasta / "cenas.json").write_text(json.dumps(matriz), encoding="utf-8")
 
-    pagina.get_by_role("button", name="Um fundo e, por cima").click()
-    pagina.get_by_role("button", name="Biblioteca de cenas").click()
+    ter(pagina, "Cenas", "Áudio")
     pagina.set_input_files('[data-envio="cenas"] input', str(pasta))
     ficha = pagina.get_by_label("dados da biblioteca de cenas")
     expect(ficha).to_contain_text("3 cenas", timeout=30_000)
     expect(ficha).to_contain_text("1 marcada “evitar” (fica de fora)")
-    pagina.get_by_role("button", name="Nada", exact=True).click()
+    # sem avatar salvo, ninguém vai por cima
+    expect(pagina.get_by_role("group", name="quem vai por cima").get_by_role(
+        "button", name="Ninguém")).to_have_attribute("aria-pressed", "true")
     # Sem som nos clipes, a fala vem dos áudios (ou das cenas, ou da "Minha voz"): dois, que
     # tocam na ordem do nome.
+    pagina.get_by_text("Ajustar as camadas").click()
     audio_vem_de = pagina.get_by_role("group", name="de onde vem o áudio")
     expect(audio_vem_de.get_by_role("button")).to_have_count(3)
     pagina.set_input_files('[data-envio="audio"] input',
@@ -368,15 +383,14 @@ def test_minha_voz(navegador, endereco, tmp_path):
     pagina.get_by_role("button", name="fechar: Minha voz").click()
     expect(cartao).to_contain_text("a voz de Ana")
 
-    # e narra o roteiro na montagem
-    pagina.get_by_role("button", name="Um fundo e, por cima").click()
+    # e narra o roteiro: um fundo mudo e o roteiro, e a trilha já põe a voz para narrar
+    ter(pagina, "Vídeo completo", "Roteiro")
     fundo = fazer_video(tmp_path / "tela.mp4", largura=320, altura=180, segundos=2.0,
                         com_audio=False)
-    pagina.set_input_files('[data-envio="fundo"] input', str(fundo))
+    pagina.set_input_files('[data-envio="completo"] input', str(fundo))
     expect(pagina.get_by_label("dados do fundo")).to_contain_text("320×180")
-    pagina.get_by_role("button", name="Nada", exact=True).click()
-    pagina.get_by_role("group", name="de onde vem o áudio").get_by_role(
-        "button", name="Minha voz (de um roteiro)").click()
+    expect(pagina.get_by_role("listitem", name="A fala")).to_contain_text(
+        "A sua voz narra o roteiro")
     editar = pagina.get_by_role("button", name="Editar vídeo")
     expect(editar).to_be_disabled()                 # sem a narração, ainda não
     voz = pagina.get_by_label("minha voz", exact=True)
@@ -540,14 +554,13 @@ def test_fotos_e_o_som_das_cenas(navegador, endereco, tmp_path):
         [{"arquivo": n, "descricao": n.split(".")[0]} for n in
          ("sala.jpg", "cozinha.jpg", "tour-1.mp4", "tour-2.mp4")]), encoding="utf-8")
 
-    pagina.get_by_role("button", name="Um fundo e, por cima").click()
-    pagina.get_by_role("button", name="Biblioteca de cenas").click()
+    # só as cenas: a fala vem do som delas, nas que forem marcadas
+    ter(pagina, "Cenas")
     pagina.set_input_files('[data-envio="cenas"] input', str(pasta))
     ficha = pagina.get_by_label("dados da biblioteca de cenas")
     expect(ficha).to_contain_text("4 cenas (2 fotos)", timeout=30_000)
-    pagina.get_by_role("button", name="Nada", exact=True).click()
-    pagina.get_by_role("group", name="de onde vem o áudio").get_by_role(
-        "button", name="Das cenas").click()
+    expect(pagina.get_by_role("listitem", name="A fala")).to_contain_text(
+        "O som dos vídeos da pasta")
     editar = pagina.get_by_role("button", name="Editar vídeo")
     expect(editar).to_be_disabled()                      # nenhuma marcada ainda
     grupo = pagina.get_by_role("group", name="as cenas de onde vem o som")
@@ -588,8 +601,7 @@ def test_gerar_e_revisar_a_matriz(navegador, endereco, tmp_path):
     pasta.mkdir()
     for nome in ("c01-praia.mp4", "c02-carro.mp4", "c03-festa.mp4"):
         fazer_video(pasta / nome, largura=320, altura=180, segundos=1.0, com_audio=False)
-    pagina.get_by_role("button", name="Um fundo e, por cima").click()
-    pagina.get_by_role("button", name="Biblioteca de cenas").click()
+    ter(pagina, "Cenas")
     pagina.set_input_files('[data-envio="cenas"] input', str(pasta))
     gerar = pagina.get_by_role("button", name="Gerar a matriz")
     expect(gerar).to_be_visible(timeout=30_000)
@@ -954,52 +966,132 @@ def test_estudio_grava_a_amostra_no_microfone(navegador, endereco):
         nav.close()
 
 
-def test_o_tour_volta_ao_modo_de_quem_usa(navegador, endereco):
-    """Os balões da montagem abrem o modo das camadas; ao sair deles (para trás ou fechando
-    o tour), a página volta ao modo em que estava, e quem já estava na montagem continua
-    nela."""
+def test_o_avatar_de_bicho(navegador, endereco):
+    """Uma cabeça de bicho no criador (o dono, 21/10/2026): o cachorro tira o cabelo e a barba
+    das escolhas (a roupa fica), a cor da pele vira a pelagem, e os 36 quadros saem com ela, nas
+    mãos também. Voltar para "pessoa" traz o cabelo de volta."""
+    import numpy as np
+
+    from editor import avatar
+
     pagina = navegador.new_page(viewport={"width": 1366, "height": 900})
     pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
     erros: list[str] = []
     pagina.on("pageerror", lambda e: erros.append(str(e)))
     pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
     pagina.goto(endereco)
-    modos = pagina.get_by_role("group", name="como é o seu vídeo")
-    um = modos.get_by_role("button", name="Um vídeo com você falando")
-    montagem = modos.get_by_role("button", name=re.compile("^Um fundo e, por cima"))
-    progresso = pagina.locator(".driver-popover-progress-text")
-    proximo = pagina.locator(".driver-popover-next-btn")
-    voltar = pagina.locator(".driver-popover-prev-btn")
+    pagina.get_by_label("antes de começar").get_by_role("article", name="Avatar").get_by_role(
+        "button", name="Configurar").click()
+    painel = pagina.get_by_role("dialog", name="O seu avatar")
+    cabeca = painel.get_by_role("group", name="Cabeça", exact=True)
+    cachorro = cabeca.get_by_role("button", name="cachorro")
+    cachorro.click()
+    expect(cachorro).to_have_attribute("aria-pressed", "true")
+    for categoria in ("Cabelo", "Barba", "Óculos", "Acessório"):
+        expect(painel.get_by_role("group", name=categoria, exact=True)).to_have_count(0)
+    expect(painel.get_by_role("group", name="Roupa", exact=True)).to_be_visible()
+    painel.get_by_role("button", name="Pelagem preta", exact=True).click()
+    painel.get_by_label("Nome do avatar").fill("Rex")
+    painel.get_by_role("button", name="Aprovar e criar os quadros").click()
+    expect(painel.get_by_role("status")).to_contain_text("Pronto: o avatar Rex", timeout=60_000)
 
-    def ate(balao: int) -> None:
-        while True:
-            texto = progresso.text_content() or ""
-            if texto.startswith(f"{balao} de"):
-                return
-            proximo.click()
-            pagina.wait_for_timeout(150)
+    salvo = avatar.ler("rex")["escolhas"]
+    assert (salvo["cabeca"], salvo["olhos"], salvo["boca"]) == ("cachorro",) * 3
+    assert salvo["cabelo"] == "nenhum" and salvo["cores"]["pele"] == "#3a2a20"
+    with Image.open(avatar.quadro("rex", "joinha_fechada.png")) as q:
+        rgb = np.asarray(q.convert("RGB")).astype(int)
+    pelo = (np.abs(rgb - np.array([0x3a, 0x2a, 0x20])).sum(-1) < 30)
+    assert pelo.sum() > 50 * 36, "a pelagem escolhida não pintou o bicho"
+    # a mão do "joinha" fica à direita da orelha (colunas 115 em diante da grade, linhas 50 a
+    # 95): ali, só ela pode ser da pelagem
+    assert pelo[50 * 6:95 * 6, 115 * 6:].sum() > 200, "a mão ficou da cor de gente"
 
-    pagina.get_by_role("button", name="Tour", exact=True).click()
-    ate(4)
-    expect(montagem).to_have_attribute("aria-pressed", "true")
-    voltar.click()
-    expect(progresso).to_have_text(f"3 de {BALOES_DO_TOUR}")
-    expect(um).to_have_attribute("aria-pressed", "true")
-    proximo.click()
-    expect(montagem).to_have_attribute("aria-pressed", "true")
-    pagina.keyboard.press("Escape")                          # fechar no meio da montagem
-    pagina.locator(".driver-popover").wait_for(state="detached")
-    expect(um).to_have_attribute("aria-pressed", "true")
+    cabeca.get_by_role("button", name="pessoa").click()
+    expect(painel.get_by_role("group", name="Cabelo", exact=True)).to_be_visible()
+    assert not erros, erros
 
-    montagem.click()
-    pagina.get_by_role("button", name="Tour", exact=True).click()
-    ate(7)
-    expect(montagem).to_have_attribute("aria-pressed", "true")
-    voltar.click()
-    expect(progresso).to_have_text(f"6 de {BALOES_DO_TOUR}")
-    pagina.keyboard.press("Escape")
-    pagina.locator(".driver-popover").wait_for(state="detached")
-    expect(montagem).to_have_attribute("aria-pressed", "true")
+
+def test_a_trilha_pelo_que_voce_tem(navegador, endereco, tmp_path):
+    """O passo 1 começa pelo que a pessoa tem (o dono, 20/10/2026): cada combinação monta a
+    trilha (a imagem, quem vai por cima, a fala) e mostra só os campos que ela pede; o que
+    ainda não existe (o roteiro pelo tema, as fotos achadas) aparece escrito e não deixa
+    editar. O roteiro vai para a grafia da legenda, e o tema, para o pedido."""
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 900})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
+    pagina.goto(endereco)
+    trilha = pagina.get_by_role("list", name="a trilha do vídeo")
+
+    def etapa(nome: str):
+        return trilha.get_by_role("listitem", name=nome)
+
+    bloqueio = pagina.locator("#passo-envio [role=status]")
+    ajustar = pagina.get_by_text("Ajustar as camadas")
+
+    # começa no vídeo completo: o vídeo único, como sempre, sem camadas para ajustar
+    expect(etapa("A imagem")).to_contain_text("é ele que sai editado")
+    expect(pagina.locator('[data-envio="completo"]')).to_have_count(1)
+    expect(ajustar).to_have_count(0)
+    expect(bloqueio).to_have_count(0)
+
+    # só o tema: a trilha diz o que ainda não existe, e não há o que enviar
+    ter(pagina, "Tema")
+    expect(bloqueio).to_contain_text("próxima versão")
+    expect(etapa("A imagem")).to_contain_text("Fotos achadas")
+    expect(pagina.get_by_label("o tema")).to_be_visible()
+    expect(pagina.locator("#passo-envio [data-envio]")).to_have_count(0)
+
+    # o roteiro com as cenas: o texto, a pasta, e a Minha voz narrando
+    ter(pagina, "Roteiro", "Cenas")
+    expect(bloqueio).to_have_count(0)
+    expect(etapa("O texto")).to_contain_text("é o que a voz lê")
+    expect(etapa("A imagem").locator('[data-envio="cenas"]')).to_have_count(1)
+    expect(etapa("A fala")).to_contain_text("A sua voz narra o roteiro")
+    expect(etapa("A fala").get_by_label("minha voz", exact=True)).to_be_visible()
+
+    # o vídeo completo com as cenas: as cenas de fundo, e o vídeo vai por cima, recortado; o
+    # som dele é a fala, e o roteiro corrige a grafia da legenda (o campo do passo 3)
+    ter(pagina, "Roteiro", "Vídeo completo", "Cenas")
+    expect(etapa("Por cima")).to_contain_text("com a pessoa recortada por cima das cenas")
+    expect(etapa("Por cima").locator('[data-envio="completo"]')).to_have_count(1)
+    expect(etapa("A fala")).to_contain_text("O som do vídeo completo")
+    expect(pagina.locator("label.interruptor", has_text="Narrar o roteiro")).to_have_count(1)
+    pagina.get_by_label("o roteiro", exact=True).fill("Eu fiz o Editai.")
+    expect(pagina.locator(".texto-falado textarea")).to_have_value("Eu fiz o Editai.")
+
+    # a pessoa e o personagem brigam por cima
+    ter(pagina, "Vídeo completo", "Vídeo da pessoa", "Personagem")
+    expect(bloqueio).to_contain_text("a pessoa ou o personagem, um só")
+
+    # o vídeo completo com o áudio: a montagem, o áudio é a fala, e "Ajustar" troca à mão
+    ter(pagina, "Vídeo completo", "Áudio")
+    expect(bloqueio).to_have_count(0)
+    expect(etapa("A fala")).to_contain_text("O áudio que você enviar")
+    expect(etapa("A fala").locator('[data-envio="audio"]')).to_have_count(1)
+    ajustar.click()
+    fala = pagina.get_by_role("group", name="de onde vem o áudio")
+    expect(fala.get_by_role("button", name="Áudio separado")).to_have_attribute(
+        "aria-pressed", "true")
+    fala.get_by_role("button", name="O vídeo de fundo").click()
+    expect(etapa("A fala").locator('[data-envio="audio"]')).to_have_count(0)
+
+    # o vídeo com o tema: o vídeo único, e o tema vai no pedido de edição (sem o roteiro, o
+    # texto falado que veio dele sai)
+    ter(pagina, "Vídeo completo", "Tema")
+    pagina.get_by_label("o tema").fill("  como editar um short  ")
+    video = fazer_video(tmp_path / "fala.mp4", segundos=1.5)
+    pagina.set_input_files('[data-envio="completo"] input', str(video))
+    expect(pagina.get_by_label("dados do vídeo")).to_contain_text("fala.mp4")
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/tarefas")
+                               and r.method == "POST") as pedido:
+        pagina.get_by_role("button", name="Editar vídeo").click()
+    dados = pedido.value.post_data_json
+    assert "video_id" in dados and dados["edicao"]["tema"] == "como editar um short"
+    assert dados["edicao"]["texto_falado"] == ""
+    pagina.locator(".miniaturas img").first.wait_for(timeout=120_000)
+    assert not _barrados(pagina), _barrados(pagina)
     assert not erros, erros
 
 
@@ -1142,14 +1234,62 @@ def test_o_avatar(navegador, endereco, tmp_path):
     acima = slice(0, aba - 4 * 6)                  # a borda de adesivo do cabelo sobe 3 px
     assert (com_cabelo[acima] == careca[acima]).all(), "o cabelo passou por cima do gorro"
     assert (com_cabelo[aba:] != careca[aba:]).any(), "o cabelo de baixo do gorro sumiu"
+    # fora da largura do gorro, o black power sai amassado, não cortado reto (o dono, 21/10): o
+    # alto dele desce em curva a partir da aba
+    colunas = np.nonzero(perto(careca, "#2b4c7e", 60).any(axis=0))[0]
+    cabelo = (com_cabelo != careca).any(-1)
+    altos = [int(np.argmax(cabelo[:, x])) for x in range(0, int(colunas.min()) - 4 * 6)
+             if cabelo[:, x].any()]
+    assert len(altos) > 10 * 6, "o black power não sai pelos lados do gorro"
+    reto = trecho = 1                    # o maior trecho de colunas com o alto na mesma linha
+    for a, b in pairwise(altos):
+        trecho = trecho + 1 if a == b else 1
+        reto = max(reto, trecho)
+    assert reto < 8 * 6, f"o cabelo fora do gorro foi cortado reto ({reto // 6} px)"
     pagina.keyboard.press("Escape")
     expect(cartao).to_contain_text("3 avatares")
 
-    # na montagem: "Por cima → Meu avatar" já vem com o primeiro
-    pagina.get_by_role("button", name="Um fundo e, por cima").click()
-    pagina.get_by_role("button", name="Meu avatar").click()
+    # na trilha: "Por cima → Meu avatar" já vem com o primeiro
+    pagina.get_by_role("group", name="quem vai por cima").get_by_role(
+        "button", name="Meu avatar").click()
     escolha = pagina.get_by_role("group", name="qual avatar")
     expect(escolha.get_by_role("button", name="Careca")).to_have_attribute("aria-pressed", "true")
     expect(escolha.get_by_role("button", name="Lucas")).to_have_attribute("aria-pressed", "false")
+    assert not _barrados(pagina), _barrados(pagina)
+    assert not erros, erros
+
+
+def test_o_aviso_de_versao_nova(navegador, endereco, monkeypatch):
+    """Saiu uma versão nova (o servidor pergunta ao GitHub; aqui, a resposta vem pronta): a
+    faixa amarela mostra o número, o que mudou e o comando, e "Não avisar mais" some com ela e
+    fica guardado."""
+    from editor import versao
+
+    silenciado: list[bool] = []
+    monkeypatch.setattr(versao, "aviso", lambda: None if silenciado else {
+        "atual": "0.2.0", "nova": "0.3.0", "data": "2026-11-01",
+        "endereco": "https://github.com/lucasteles1231/editai/releases/tag/v0.3.0",
+        "versoes": f"{versao.SITE}/versoes", "comando": "editai --atualizar",
+        "fechar_antes": False})
+    monkeypatch.setattr(versao, "silenciar", lambda: silenciado.append(True))
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 900})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    pagina.add_init_script(VIGIAR_A_CSP)
+    pagina.goto(endereco)
+
+    faixa = pagina.get_by_role("status").filter(has_text="Saiu o Editai 0.3.0")
+    expect(faixa).to_contain_text("você tem a 0.2.0")
+    expect(faixa.get_by_role("link", name="O que mudou")).to_have_attribute(
+        "href", "https://github.com/lucasteles1231/editai/releases/tag/v0.3.0")
+    expect(faixa.locator("code")).to_have_text("editai --atualizar")
+    faixa.get_by_role("button", name="Não avisar mais").click()
+    expect(faixa).to_have_count(0)
+    pagina.wait_for_timeout(300)
+    assert silenciado == [True]
+    pagina.reload()
+    expect(pagina.locator(".cabecalho")).to_be_visible()
+    expect(pagina.get_by_text("Saiu o Editai")).to_have_count(0)
     assert not _barrados(pagina), _barrados(pagina)
     assert not erros, erros

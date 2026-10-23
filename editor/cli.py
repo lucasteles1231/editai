@@ -209,6 +209,8 @@ def argumentos() -> argparse.ArgumentParser:
     v = p.add_argument_group("minha voz (opcional: a sua voz narrando um roteiro)")
     v.add_argument("--instalar-voz", action="store_true",
                    help="instala o motor da voz sintetizada (~3,5 GB, num ambiente à parte)")
+    v.add_argument("--desinstalar-voz", action="store_true",
+                   help="apaga o motor da voz sintetizada (as vozes gravadas ficam)")
     v.add_argument("--criar-voz", metavar="NOME",
                    help="sem --gravacao, mostra o texto a ler; com ela, confere a leitura e "
                         "salva a voz")
@@ -225,6 +227,25 @@ def argumentos() -> argparse.ArgumentParser:
                         "legenda continua com a grafia do roteiro)")
     p.add_argument("--versao", action="version", version=f"Editai {__version__}",
                    help="mostra a versão e sai")
+    i = p.add_argument_group("instalar e atualizar")
+    i.add_argument("--atualizar", action="store_true",
+                   help="instala a última versão publicada por cima desta")
+    i.add_argument("--criar-atalho", action="store_true",
+                   help='cria o atalho "Editai" (Aplicativos no macOS, menu Iniciar e Área de '
+                        "Trabalho no Windows, menu de aplicativos no Linux)")
+    d = p.add_argument_group("desinstalar")
+    d.add_argument("--desinstalar", action="store_true",
+                   help="tira o Editai deste computador: o motor da voz, as vozes, os avatares, "
+                        "os presets, as chaves, os temporários e o programa (mostra tudo antes e "
+                        "pergunta à parte pelos modelos e pelos vídeos editados)")
+    d.add_argument("--sim", action="store_true",
+                   help="com --desinstalar ou --desinstalar-voz: não pergunta nada (os modelos e "
+                        "os vídeos ficam, a não ser com --com-modelos e --com-videos)")
+    d.add_argument("--com-modelos", action="store_true",
+                   help="com --desinstalar: apaga também os modelos do Whisper e do MODNet, na "
+                        "pasta do Hugging Face")
+    d.add_argument("--com-videos", action="store_true",
+                   help="com --desinstalar: apaga também os vídeos editados, na pasta padrão")
     return p
 
 
@@ -414,6 +435,29 @@ def main(argv: list[str] | None = None) -> int:
     if a.gerar_matriz is not None:
         return _gerar_matriz(a.gerar_matriz, a.assunto)
 
+    if a.atualizar:
+        from editor import versao
+
+        return versao.atualizar()
+    if a.criar_atalho:
+        from editor import atalho
+
+        try:
+            feitos = atalho.criar()
+        except atalho.ErroDoAtalho as erro:
+            print(f"erro: {erro}", file=sys.stderr)
+            return 1
+        for f in feitos:
+            print(f"atalho criado: {f}")
+        return 0
+    if a.desinstalar:
+        from editor import desinstalar
+
+        return desinstalar.tudo(sim=a.sim, com_videos=a.com_videos, com_modelos=a.com_modelos)
+    if a.desinstalar_voz:
+        from editor import desinstalar
+
+        return desinstalar.so_o_motor(sim=a.sim)
     if a.instalar_voz:
         return _instalar_voz()
     if a.criar_voz is not None:

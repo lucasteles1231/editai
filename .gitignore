@@ -9,6 +9,11 @@ __pycache__/
 web/node_modules/
 web/dist/
 
+# Site: dependências e o que o VitePress monta (o GitHub Pages monta de novo no CI)
+docs/node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+
 # Vídeos e o que o editor produz — nunca no repositório
 *.mp4
 *.mov

@@ -102,6 +102,16 @@ class TestNaEdicao:
         assert OpcoesDeEdicao(texto_falado="a" * 20_000).problemas() == []
         assert "20.000 letras" in " ".join(OpcoesDeEdicao(texto_falado="a" * 20_001).problemas())
 
+    def test_o_tema_tem_limite_e_fica_fora_dos_presets(self):
+        """O tema do passo 1 é de um vídeo só, como o texto falado."""
+        assert OpcoesDeEdicao(tema="a" * 200).problemas() == []
+        assert "200 letras" in " ".join(OpcoesDeEdicao(tema="a" * 201).problemas())
+        base = presets.PRESETS["vlog"]
+        p = presets.salvar({"titulo": "Com tema", "frase": "", "edicao": {
+            **base.edicao, "tema": "o céu azul"}, "saida": dict(base.saida),
+            "thumb": {"modelo": "pergunta", "cor": "roxo"}})
+        assert "tema" not in p.edicao and p.opcoes().tema == ""
+
     def test_o_render_usa_o_texto(self, tmp_path):
         fala = ouvidas("eu fiz o editaí")
         e = OpcoesDeEdicao(texto_falado="Eu fiz o Editai.")

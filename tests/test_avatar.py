@@ -13,6 +13,7 @@ import io
 import json
 import wave
 import zipfile
+from itertools import pairwise
 from pathlib import Path
 
 import httpx
@@ -205,7 +206,7 @@ class TestOCatalogo:
             return max(xs) - min(xs)
 
         # até a linha antes da orelha (na de cima dela, o contorno da orelha encosta na cabeça)
-        topo = max(largura(y) for y in range(10, info["orelha"][0] - 1))
+        topo = max(largura(y) for y in range(_extracao()["marcos"]["topo"], info["orelha"][0] - 1))
         antes = info["cranio_antes"][1] - info["cranio_antes"][0]
         # o alvo é a linha do rosto; onde o contorno tinha 2 px, o de fora fica uma coluna além
         assert topo <= info["cranio"][1] - info["cranio"][0] + 2 < antes
@@ -219,6 +220,56 @@ class TestOCatalogo:
         while d + 1 in pele:
             d += 1
         assert d - e < 0.4 * topo                               # em V, como antes
+
+    def test_a_cupula_lisa_e_a_testa_curta(self):
+        """A cúpula do careca sem amassado e mais perto da sobrancelha (o dono, 21/10/2026): a
+        borda em degraus limpos de pixel art e simétrica, e a testa como no exemplo dele."""
+        info = _extracao()
+        g = _grade("cabeca/manequim.svg", por_grupo=True)["cabeca"]
+        topo, ate = info["marcos"]["topo"], info["capsula"]["orelha"][0] - 2
+        esq = [min(x for (yy, x) in g if yy == y) for y in range(topo, ate + 1)]
+        dir_ = [max(x for (yy, x) in g if yy == y) for y in range(topo, ate + 1)]
+        assert len({e + d for e, d in zip(esq, dir_, strict=True)}) == 1, "a cúpula não é simétrica"
+        passos = [b - a for a, b in pairwise(esq)]
+        assert all(p <= 0 for p in passos), "a borda volta para dentro descendo"
+        passos = [-p for p in passos]
+        # o degrau largo (mais de 1 pixel por linha) só no começo, seguido, e sem crescer
+        largos = [i for i, p in enumerate(passos) if p > 1]
+        assert largos == list(range(len(largos)))
+        assert all(passos[i] >= passos[i + 1] for i in largos)
+        # depois, os trechos retos entre um degrau e outro só crescem (o "1, 0, 1" era o amassado)
+        degraus = [i for i, p in enumerate(passos) if p >= 1]
+        trechos = [b - a for a, b in pairwise(degraus)]
+        assert trechos == sorted(trechos), f"trechos retos {trechos}"
+        largura = info["capsula"]["cranio"][1] - info["capsula"]["cranio"][0]
+        assert (info["marcos"]["sobrancelha"][0] - topo) / largura <= 0.52   # no exemplo, 0,49
+
+    def test_o_cabelo_sem_furo_mostrando_a_pele(self):
+        """Nenhum buraco pequeno e fechado no cabelo acima da sobrancelha: na cúpula nova ele
+        mostrava um risco de pele dentro do cabelo (o chanel, 21/10/2026)."""
+        from importlib.resources import files
+
+        testa = _extracao()["marcos"]["sobrancelha"][0]
+        pasta = files("editor").joinpath("recursos", "personagem", "partes", "cabelo")
+        for nome in sorted(p.name for p in pasta.iterdir() if p.name.endswith(".svg")):
+            cheio = set(_grade(f"cabelo/{nome}"))
+            visto: set = set()
+            for inicio in ((y, x) for y in range(testa) for x in range(150)):
+                if inicio in cheio or inicio in visto:
+                    continue
+                buraco, fila = [], [inicio]
+                visto.add(inicio)
+                while fila:
+                    y, x = fila.pop()
+                    buraco.append((y, x))
+                    for v in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+                        dentro = 0 <= v[0] < 150 and 0 <= v[1] < 150
+                        if dentro and v not in cheio and v not in visto:
+                            visto.add(v)
+                            fila.append(v)
+                fechado = all(0 < y < testa and 0 < x < 149 for y, x in buraco)
+                assert not (fechado and len(buraco) <= 40), \
+                    f"{nome}: furo de {len(buraco)} px em {buraco[0]}"
 
     def test_os_enums_do_pedido_sao_pequenos(self):
         # o enum grande dá 400 genérico nos modelos 3.x (medido em 03/10/2026)
@@ -237,6 +288,57 @@ class TestOCatalogo:
         assert e["cores"]["cabelo"] == padrao_["cores"]["cabelo"]
         assert e["cores"]["barba"] == ""                       # vazia: a do cabelo
         assert e["cabeca"] == "manequim" and e["bracos"] == "ia"   # as fixas
+
+
+class TestOsBichos:
+    """As cabeças de bicho (o dono, 21–22/10/2026): a cabeça no lugar da do manequim, os olhos e
+    as bocas desenhados em código para ela, e a pelagem no espaço da pele."""
+
+    def bichos(self) -> list[str]:
+        return [b["id"] for b in avatar.catalogo()["bichos"]]
+
+    def test_cada_bicho_tem_a_cabeca_os_olhos_e_as_bocas(self):
+        assert len(self.bichos()) >= 20                         # os 20 da folha do dono
+        for b in self.bichos():
+            grupos = _grade(f"cabeca/{b}.svg", por_grupo=True)
+            assert set(grupos) == {"cabeca", "pescoco", "corpo"}, b
+            # a pelagem é "pele": a cor escolhida pinta o bicho (e o pescoço e as mãos das poses)
+            assert sum(c.startswith("pele") for c in grupos["cabeca"].values()) > 300, b
+            for estado in ("aberto", "lado", "cima", "arregalado", "apertado", "meio"):
+                assert _grade(f"olhos/{b}.{estado}.svg"), (b, estado)
+            # o olho aberto tem a cor escolhida no de dentro e o brilho branco
+            aberto = _grade(f"olhos/{b}.aberto.svg").values()
+            assert "olho" in aberto and "branco" in aberto, b
+
+    def test_as_bocas_dos_bichos_sao_simetricas_e_debaixo_do_nariz(self):
+        info = {}
+        for b in self.bichos():
+            centros = set()
+            for estado in ("sorriso", "neutra", "o", "meia", "aberta", "rindo"):
+                g = _grade(f"boca/{b}.{estado}.svg")
+                if not g:
+                    # o bico fechado é o próprio bico (o pato, a galinha, o pinguim): falando, abre
+                    assert estado in ("sorriso", "neutra"), (b, estado)
+                    continue
+                xs = sorted({x for (_y, x) in g})
+                centros.add((xs[0] + xs[-1]) / 2)
+                for (y, x), c in g.items():
+                    assert g.get((y, xs[0] + xs[-1] - x)) == c, (b, estado, y, x)
+                info[b] = min(y for (y, _x) in g)
+            assert len(centros) == 1, (b, centros)
+            # a boca começa logo abaixo do nariz: a cabeça é pele ou contorno ali, não vazio
+            cabeca = _grade(f"cabeca/{b}.svg", por_grupo=True)["cabeca"]
+            assert (info[b], int(centros.pop())) in cabeca, b
+
+    def test_o_bicho_nao_leva_as_partes_da_cabeca_humana(self):
+        e = avatar.escolhas_validas({"cabeca": "gato", "cabelo": "afro", "barba": "cheia",
+                                     "oculos": "redondos", "acessorio": "bone", "roupa": "jaqueta"})
+        assert (e["cabeca"], e["olhos"], e["boca"]) == ("gato", "gato", "gato")
+        humanas = ("cabelo", "barba", "oculos", "acessorio", "sobrancelhas")
+        assert {e[c] for c in humanas} == {"nenhum"}
+        assert e["roupa"] == "jaqueta"                          # a roupa fica
+        # um bicho que não existe é a pessoa de sempre
+        assert avatar.escolhas_validas({"cabeca": "dragao"})["cabeca"] == "manequim"
 
 
 # ── guardar, listar e baixar ─────────────────────────────────────────────

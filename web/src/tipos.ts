@@ -40,6 +40,8 @@ export type Edicao = {
   estilo_da_legenda: EstiloDaLegenda;
   /** O texto que a pessoa falou: a legenda pega a grafia dele (fora dos presets). */
   texto_falado: string;
+  /** O tema do vídeo (passo 1): contexto para o Gemini nos cartões e nas cenas. */
+  tema: string;
 };
 
 export type Voz = 'original' | 'limpa' | 'estudio';
@@ -177,6 +179,8 @@ export type AudioInfo = {id: string; nome: string; tamanho_bytes: number; duraca
 export type MotorDeVoz = {
   instalado: boolean; falso: boolean; instalando: boolean; etapa: string; fracao: number; ultima: string;
   erro: string; espaco: string; tempo: string; aparelho: string; pasta: string;
+  /** Quanto a pasta do motor ocupa de verdade ("8,4 GB"); vazio quando não está instalado. */
+  ocupa: string;
 };
 export type VozSalva = {nome: string; apelido: string; criada: string; segundos: number; pronuncia: Record<string, string>};
 /** O motor da voz sintetizada e as vozes gravadas (``GET /api/vozes``). */
@@ -367,3 +371,13 @@ export type FotoPexels = {
   id: number; largura: number; altura: number; autor: string; autor_url: string; pagina: string;
   alt: string;
 };
+
+/** A versão nova publicada no GitHub (``GET /api/versao``); ``aviso`` é nulo quando não há. */
+export type AvisoDeVersao = {
+  atual: string; nova: string; data: string; endereco: string; versoes: string;
+  /** "editai --atualizar", ou, no Windows, o comando do instalador. */
+  comando: string;
+  /** No Windows, o editai.exe aberto não deixa trocar: é preciso fechar antes. */
+  fechar_antes: boolean;
+};
+export type EstadoDaVersao = {atual: string; aviso: AvisoDeVersao | null};

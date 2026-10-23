@@ -1,12 +1,7 @@
 /**
- * O tour guiado: os dois jeitos de usar e, depois, cada parte da página, na ordem em que
- * aparece (dezoito balões ao todo). Abre sozinho na primeira visita, e o botão "Tour" do
+ * O tour guiado: começar pelo que se tem e, depois, cada parte da página, na ordem em que
+ * aparece (dezesseis balões ao todo). Abre sozinho na primeira visita, e o botão "Tour" do
  * topo refaz.
- *
- * Os balões 4 a 6 mostram a montagem em camadas (o fundo, o que vai por cima, de onde vem
- * o áudio), que só existe no modo "Um fundo e, por cima…": o tour troca para ele e, ao
- * sair desses balões (ou ao fechar), volta ao modo em que a pessoa estava. Trocar de modo
- * não perde nada do que foi enviado.
  *
  * O balão abre ao lado do cartão (à direita na coluna das opções, à esquerda no painel):
  * por cima, ele cobria justamente as opções que estava explicando.
@@ -16,31 +11,15 @@ import 'driver.js/dist/driver.css';
 
 const VISTO = 'editor-tour-visto';
 
-type Modo = 'um' | 'montagem';
-
 const peca = (nome: string) => () => document.querySelector(`[data-tour="${nome}"]`) as Element;
 
-function modoAtual(): Modo {
-  return document.querySelector('[data-tour="modo-montagem"]')?.getAttribute('aria-pressed') === 'true'
-    ? 'montagem' : 'um';
-}
-
-function irPara(modo: Modo): void {
-  const botao = document.querySelector<HTMLButtonElement>(`[data-tour="modo-${modo}"]`);
-  if (botao && botao.getAttribute('aria-pressed') !== 'true') botao.click();
-}
-
-/** O React desenha a troca de modo antes do balão seguinte procurar a peça. */
-const depois = (f: () => void) => setTimeout(f, 80);
-
 export function comecarTour(): void {
-  const original = modoAtual();
   const passos: DriveStep[] = [
     {
       popover: {
-        title: 'Dois jeitos de usar',
-        description: '<b>Um vídeo seu falando</b> sai cortado, legendado, com zoom, sons e thumbnail. '
-          + '<b>Uma notícia com cenas</b> junta uma pasta de cenas, a narração e, se quiser, um personagem.<br><br>'
+        title: 'Comece pelo que você tem',
+        description: 'Um vídeo seu falando, um roteiro, um áudio, uma pasta de cenas ou só o tema: você marca o '
+          + 'que tem, e o editor monta o resto, com legenda, cortes, zoom, sons e thumbnail.<br><br>'
           + 'Tudo roda no seu computador: sem conta, sem assinatura e sem marca d\'água. Este tour passa por cada '
           + 'parte da página.',
       },
@@ -58,59 +37,27 @@ export function comecarTour(): void {
       },
     },
     {
-      element: '#passo-envio',
+      element: peca('materiais'),
       popover: {
         side: 'right',
         align: 'start',
-        title: '1. Envie o vídeo',
-        description: '<b>Um vídeo com você falando</b>, em pé ou deitado: é só arrastar. Ou <b>um fundo e, por '
-          + 'cima…</b>, a montagem em camadas, que o tour abre agora. Os arquivos são copiados para uma pasta do seu '
+        title: '1. O que você tem?',
+        description: 'Marque o que você tem: o <b>tema</b>, o <b>roteiro</b>, um <b>áudio</b>, o <b>vídeo '
+          + 'completo</b> (o fundo, com ou sem alguém falando), o <b>vídeo da pessoa</b> para ir recortado por cima, '
+          + 'um <b>personagem</b> ou uma pasta de <b>cenas</b>. Os arquivos são copiados para uma pasta do seu '
           + 'computador, não para a internet.',
-        onNextClick: () => {
-          irPara('montagem');
-          depois(() => tour.moveNext());
-        },
       },
     },
     {
-      element: peca('fundo'),
+      element: peca('trilha'),
       popover: {
         side: 'right',
         align: 'start',
-        title: 'O fundo',
-        description: 'Um vídeo (uma gravação de tela, um jogo) ou a <b>biblioteca de cenas</b>: uma pasta de vídeos '
-          + 'e fotos com a matriz <code>cenas.json</code>, que diz o que tem em cada uma. Sem matriz, <b>Gerar a '
-          + 'matriz</b> pede ao Gemini a descrição, e você revisa numa tabela.',
-        onPrevClick: () => {
-          irPara(original);
-          depois(() => tour.movePrevious());
-        },
-      },
-    },
-    {
-      element: peca('por-cima'),
-      popover: {
-        side: 'right',
-        align: 'start',
-        title: 'Por cima',
-        description: '<b>Você</b>: o vídeo da câmera, recortado sozinho (ou já com o fundo transparente). <b>Um '
-          + 'personagem</b>: um GIF que mexe a boca quando a voz fala. Ou <b>nada</b>, só o fundo. Quem vai por cima '
-          + 'pode mudar de lugar em alguns cortes.',
-      },
-    },
-    {
-      element: peca('audio'),
-      popover: {
-        side: 'right',
-        align: 'start',
-        title: 'O áudio vem de',
-        description: 'Do vídeo de fundo ou da pessoa; de <b>áudios separados</b> (um por parágrafo, na ordem do '
-          + 'nome); <b>das cenas</b>, clicando nas que têm som, na ordem; ou da <b>Minha voz</b>: você lê um texto '
-          + 'de 2 minutos uma vez, e a sua voz narra qualquer roteiro.',
-        onNextClick: () => {
-          irPara(original);
-          depois(() => tour.moveNext());
-        },
+        title: 'A trilha',
+        description: 'Com o que você marcou, o editor monta o caminho: de onde vem a <b>imagem</b>, quem vai '
+          + '<b>por cima</b> (você, o seu avatar, um personagem ou ninguém) e de onde vem a <b>fala</b>, que dá a '
+          + 'legenda e os cortes. Cada etapa pede só o que falta. Na montagem, <b>Ajustar as camadas</b> deixa trocar '
+          + 'à mão quem vai por cima e de onde vem a fala.',
       },
     },
     {
@@ -121,10 +68,6 @@ export function comecarTour(): void {
         title: 'Onde você vai postar',
         description: 'Marque uma ou várias: Shorts, TikTok, Reels, YouTube… O editor recomenda pelo formato do '
           + 'vídeo, a thumbnail sai no tamanho de cada uma e, na montagem, o vídeo sai em pé ou deitado.',
-        onPrevClick: () => {
-          irPara('montagem');
-          depois(() => tour.movePrevious());
-        },
       },
     },
     {
@@ -258,10 +201,8 @@ export function comecarTour(): void {
     allowClose: true,
     steps: passos,
     // O onDestroyStarted roda em qualquer fechamento (o Esc, o ×, o clique fora, o último
-    // botão); o onDestroyed só roda se o balão atual já terminou de animar, e um Esc no
-    // meio da troca deixava a página na montagem.
+    // botão); o onDestroyed só roda se o balão atual já terminou de animar.
     onDestroyStarted: () => {
-      irPara(original);
       try {
         localStorage.setItem(VISTO, '1');
       } catch {

@@ -208,6 +208,18 @@ class TestComOGemini:
         r = _escrever(gemini, biblioteca=None, cartoes=False, destaques=True)
         assert (1, 1, "ciano") in r.destaques                    # "Rockstar"
 
+    def test_o_tema_vai_de_contexto(self, de_verdade):
+        """O tema marcado no passo 1 entra no pedido, antes da fala; sem tema, nada muda."""
+        blocos = roteiro.cenas_mod.blocos_da_fala(PALAVRAS, DURACAO)
+        resposta = {"cenas": _cenas_boas(blocos), "cartoes": _cartoes_bons()}
+        com, sem = _Gemini(_resposta(resposta)), _Gemini(_resposta(resposta))
+        _escrever(com, tema="  a classificação indicativa do GTA 6 ")
+        _escrever(sem)
+        texto = com.texto(0)
+        assert "O TEMA DO VÍDEO" in texto and "a classificação indicativa do GTA 6\n" in texto
+        assert texto.index("O TEMA DO VÍDEO") < texto.index("A FALA")
+        assert "O TEMA DO VÍDEO" not in sem.texto(0)
+
     def test_quantos_cartoes_pela_duracao(self):
         assert roteiro.quantos_cartoes(46.0) == (6, 9)
         assert roteiro.quantos_cartoes(3.0) == (1, 1)

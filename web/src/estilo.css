@@ -115,6 +115,29 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .cabecalho nav { display: flex; gap: 10px; align-items: center; }
 
+/* o aviso de versão nova: uma faixa amarela logo abaixo do cabeçalho */
+.aviso-versao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  padding: 10px clamp(16px, 4vw, 40px);
+  border-bottom: 2.5px solid var(--linha);
+  background: color-mix(in srgb, var(--amarelo) 55%, var(--papel));
+  color: var(--tinta);
+  font-size: 14px;
+}
+.aviso-versao code {
+  padding: 1px 6px;
+  border: 1.5px solid var(--linha);
+  border-radius: 6px;
+  background: var(--papel);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.aviso-versao a { color: var(--tinta); font-weight: 700; text-decoration-thickness: 2px; }
+.aviso-versao-acoes { display: flex; gap: 14px; margin-left: auto; }
+
 /* ── layout ────────────────────────────────────────────────────────── */
 
 .pagina {
@@ -234,6 +257,41 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .envio.pequena { padding: 18px 14px; gap: 4px; border-width: 2px; }
 .envio.pequena strong { font-size: 16px; }
+
+/* ── o passo 1: o que você tem e a trilha ── */
+.materiais { margin-bottom: 14px; }
+.trilha { display: grid; gap: 12px; margin: 0 0 14px; padding: 0; list-style: none; counter-reset: etapa; }
+.etapa {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px 14px 52px;
+  position: relative;
+  border-radius: 12px;
+  border: 2px solid color-mix(in srgb, var(--linha) 18%, transparent);
+  background: var(--cartao);
+  counter-increment: etapa;
+}
+.etapa::before {
+  content: counter(etapa);
+  position: absolute;
+  left: 14px;
+  top: 13px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--linha);
+  border-radius: 50%;
+  font-family: var(--titulo);
+  font-size: 13px;
+}
+.etapa > strong { font-family: var(--titulo); font-size: 16px; }
+.etapa > small, .etapa .custo { color: var(--tinta-suave); }
+.trilha + .aviso { margin-bottom: 14px; }
+.ajustar-camadas { display: grid; gap: 10px; margin-bottom: 14px; }
+.ajustar-camadas > summary { cursor: pointer; font-weight: 700; width: max-content; }
+.ajustar-camadas[open] > summary { margin-bottom: 4px; }
+.ajustar-camadas > small { color: var(--tinta-suave); }
 
 /* ── a montagem em camadas ── */
 .modos { margin-bottom: 14px; }
@@ -1051,6 +1109,9 @@ button.link { padding: 0; border: none; background: none; color: inherit; font: 
   cursor: pointer;
 }
 .opcao-do-avatar small { font-size: 11px; line-height: 1.2; text-align: center; }
+/* o clique é sempre do botão: no Safari, se o "desenhando" vira a imagem entre o apertar e o
+   soltar do mouse, o clique se perdia */
+.opcao-do-avatar > * { pointer-events: none; }
 .opcao-do-avatar[aria-pressed='true'] {
   border-color: var(--linha);
   background: color-mix(in srgb, var(--amarelo) 40%, var(--cartao));

@@ -93,6 +93,13 @@ def escolhas_validas(dados: dict | None) -> dict:
         ids = {o["id"] for o in info["opcoes"]} | {"nenhum"}
         valor = dados.get(categoria)
         saida[categoria] = valor if valor in ids else padrao_[categoria]
+    # um bicho troca a cabeça, os olhos e a boca juntos, e as partes da cabeça humana (cabelo,
+    # barba, sobrancelha, óculos, acessório) saem: elas não encaixam nele
+    bicho = dados.get("cabeca")
+    if bicho in {b["id"] for b in cat.get("bichos", [])}:
+        saida.update(cabeca=bicho, olhos=bicho, boca=bicho, sobrancelhas="nenhum")
+        for categoria in ("cabelo", "barba", "oculos", "acessorio"):
+            saida[categoria] = "nenhum"
     cores_ = dados.get("cores") if isinstance(dados.get("cores"), dict) else {}
     saida["cores"] = {}
     for espaco, cor_padrao in padrao_["cores"].items():

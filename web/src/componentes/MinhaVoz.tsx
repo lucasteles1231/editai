@@ -298,8 +298,8 @@ export const PainelDaVoz: React.FC<{estado: EstadoDasVozes | null; aoMudar: (e: 
   };
 
   const desinstalar = async () => {
-    if (!window.confirm('Desinstalar a voz sintetizada? O motor e o modelo (uns 3,5 GB) saem do computador; as '
-      + 'vozes gravadas ficam, para quando você instalar de novo.')) return;
+    if (!window.confirm(`Desinstalar a voz sintetizada? O motor e o modelo (${motor.ocupa || 'uns 3,5 GB'}) `
+      + 'saem do computador; as vozes gravadas ficam, para quando você instalar de novo.')) return;
     try {
       aoMudar({...estado, motor: await api.desinstalarVoz()});
     } catch (e) {
@@ -325,8 +325,8 @@ export const PainelDaVoz: React.FC<{estado: EstadoDasVozes | null; aoMudar: (e: 
         <button type="button" className="botao pequeno" onClick={() => setCriando(true)}>Gravar outra voz</button>
       </div>
       <small>
-        Para narrar um roteiro com a sua voz, escolha "Um fundo e, por cima…" no passo 1 e, em "O áudio vem de",
-        Minha voz.
+        Para narrar um roteiro com a sua voz, marque "Roteiro" no passo 1: sem outra fala (um vídeo falando ou um
+        áudio), a trilha já põe a sua voz para narrar.
       </small>
       {erro ? <div className="aviso erro">{erro}</div> : null}
       <small className="custo">
@@ -343,11 +343,14 @@ type PropsDaNarracao = {
   aoMudar: (e: EstadoDasVozes) => void;
   narracao: AudioInfo | null;
   aoNarrar: (a: AudioInfo | null) => void;
+  /** O roteiro é o do passo 1 (o mesmo que corrige a legenda): quem narra só lê. */
+  roteiro: string;
+  aoMudarRoteiro: (t: string) => void;
 };
 
-export const MinhaVoz: React.FC<PropsDaNarracao> = ({estado, aoMudar, narracao, aoNarrar}) => {
+export const MinhaVoz: React.FC<PropsDaNarracao> = ({estado, aoMudar, narracao, aoNarrar, roteiro,
+  aoMudarRoteiro: setRoteiro}) => {
   const [escolhida, setEscolhida] = useState('');
-  const [roteiro, setRoteiro] = useState('');
   const [pronuncia, setPronuncia] = useState<string | null>(null);
   const [rodando, setRodando] = useState<Narracao | null>(null);
   const [narrado, setNarrado] = useState('');

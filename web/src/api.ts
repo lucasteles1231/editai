@@ -3,7 +3,8 @@
  * URL aberta pelo comando `editai` e fica guardado na aba (sessionStorage).
  */
 import type {
-  AudioInfo, AvatarSalvo, BibliotecaInfo, Edicao, EfeitosDaVoz, Estado, EstadoChave, EstadoDasVozes, EstadoIa, FotoPexels,
+  AudioInfo, AvatarSalvo, BibliotecaInfo, Edicao, EfeitosDaVoz, Estado, EstadoChave, EstadoDasVozes, EstadoDaVersao, EstadoIa,
+  FotoPexels,
   GeracaoDaMatriz, GravacaoDaVoz, Ideia, ImagemFundo, MotorDeVoz, Narracao, PartesDaFoto, PersonagemInfo, Preset, PresetsImportados, RecorteInfo, Saida, Tarefa,
   VideoInfo, VozSalva,
 } from './tipos';
@@ -78,6 +79,8 @@ export type PedidoDeMontagem = {
 
 export const api = {
   estado: () => pedir<Estado>('/api/estado'),
+  versao: () => pedir<EstadoDaVersao>('/api/versao'),
+  silenciarVersao: () => pedir<EstadoDaVersao>('/api/versao/silenciar', {method: 'POST'}),
 
   enviar: (arquivo: File, aoProgresso: (fracao: number) => void) =>
     enviarArquivo<VideoInfo>('/api/videos', arquivo, aoProgresso),

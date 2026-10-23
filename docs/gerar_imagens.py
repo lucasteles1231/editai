@@ -17,12 +17,13 @@ Gera em ``docs/img/``:
   ``quadro-montagem.png``. Este sai de uma montagem em camadas: o fundo é uma gravação
   de tela do próprio editor, feita pelo Playwright, e a pessoa do exemplo vai por cima,
   recortada pelo MODNet;
-- ``interface-montagem.png``: o passo 1 na montagem, com o fundo, um personagem de
-  palito (desenhado aqui mesmo, sem licença de ninguém) e a narração do exemplo;
+- ``interface-montagem.png``: o passo 1 com o vídeo completo, um personagem de palito
+  (desenhado aqui mesmo, sem licença de ninguém) e a narração à parte. Não precisa do
+  exemplo;
 - ``interface-noticia.png``, ``interface-matriz.png`` e ``interface-tour.png``: o passo 1
   com a biblioteca de cenas (clipes feitos das próprias imagens do README, com uma
-  matriz), o palito e dois áudios; a tabela de revisão da matriz; e o tour no passo que
-  explica os dois jeitos de usar. Não precisam do exemplo;
+  matriz), o palito e dois áudios; a tabela de revisão da matriz; e o tour no balão do
+  passo 1. Não precisam do exemplo;
 - ``interface*.png``: a página, pelo Playwright (precisa do Chromium:
   ``uv run playwright install chromium``), como ela chega para quem instala: sem chave
   nenhuma. A chave de quem gera as imagens nem é lida, porque o final dela apareceria;
@@ -525,9 +526,46 @@ def servidor_isolado(pasta: Path):
         srv.should_exit = True
 
 
+#: As pílulas do passo 1 (web/src/trilha.ts).
+MATERIAIS = ("Tema", "Roteiro", "Áudio", "Vídeo completo", "Vídeo da pessoa", "Personagem", "Cenas")
+
+
+def ter(pagina, *nomes: str) -> None:
+    """Deixa marcado no passo 1 exatamente o que a captura tem."""
+    grupo = pagina.get_by_role("group", name="o que você tem")
+    for m in MATERIAIS:
+        botao = grupo.get_by_role("button", name=m, exact=True)
+        if (botao.get_attribute("aria-pressed") == "true") != (m in nomes):
+            botao.click()
+
+
+def capturas_da_montagem(nav, url: str, pasta: Path) -> None:
+    """O passo 1 com o vídeo completo de fundo, o palito por cima e a narração à parte. O
+    fundo é um clipe da biblioteca de exemplo: no passo 1, só a ficha dele aparece."""
+    cenas = biblioteca_de_exemplo(pasta)
+    fundo = next(p for p in sorted(cenas.rglob("*.mp4")))
+    ctx = nav.new_context(bypass_csp=True, viewport={"width": 1280, "height": 1400},
+                          device_scale_factor=2, color_scheme="light")
+    ctx.add_init_script(SEM_TOUR)
+    pagina = ctx.new_page()
+    pagina.goto(url)
+    ter(pagina, "Vídeo completo", "Personagem", "Áudio")
+    pagina.set_input_files('[data-envio="completo"] input', str(fundo))
+    pagina.get_by_label("dados do fundo").wait_for(timeout=60_000)
+    pagina.set_input_files('[data-envio="personagem"] input',
+                           str(desenhar_palito(pasta / "palito.gif")))
+    pagina.get_by_label("dados do personagem").wait_for(timeout=60_000)
+    pagina.set_input_files('[data-envio="audio"] input', str(partes_de_narracao(pasta)[1]))
+    pagina.get_by_label("os áudios separados").wait_for(timeout=60_000)
+    pagina.wait_for_timeout(1200)
+    pagina.add_style_tag(content=".cabecalho { position: static !important; }")
+    salvar(pagina.locator("#passo-envio").screenshot(), "interface-montagem.png", 1200)
+    ctx.close()
+
+
 def capturas_da_noticia(nav, url: str, pasta: Path) -> None:
     """O passo 1 com a biblioteca de cenas, o palito por cima e dois áudios; e o tour, no
-    passo que explica os dois jeitos de usar."""
+    balão do passo 1."""
     cenas = biblioteca_de_exemplo(pasta)
     partes = partes_de_narracao(pasta)
     palito = desenhar_palito(pasta / "palito.gif")
@@ -537,11 +575,9 @@ def capturas_da_noticia(nav, url: str, pasta: Path) -> None:
     ctx.add_init_script(SEM_TOUR)
     pagina = ctx.new_page()
     pagina.goto(url)
-    pagina.get_by_role("button", name="Um fundo e, por cima").click()
-    pagina.get_by_role("button", name="Biblioteca de cenas").click()
+    ter(pagina, "Cenas", "Personagem", "Áudio")
     pagina.set_input_files('[data-envio="cenas"] input', str(cenas))
     pagina.get_by_label("dados da biblioteca de cenas").wait_for(timeout=60_000)
-    pagina.get_by_role("button", name="Personagem animado").click()
     pagina.set_input_files('[data-envio="personagem"] input', str(palito))
     pagina.get_by_label("dados do personagem").wait_for(timeout=60_000)
     pagina.set_input_files('[data-envio="audio"] input', [str(p) for p in partes])
@@ -567,11 +603,15 @@ def capturas_da_noticia(nav, url: str, pasta: Path) -> None:
     revisao.get_by_role("button", name="Fechar").click()
     estilo.evaluate("e => e.remove()")
 
-    # O tour, no primeiro passo: os dois jeitos de usar.
+    # O tour, no balão do passo 1: as pílulas do que a pessoa tem.
     pagina.set_viewport_size({"width": 1280, "height": 800})
     pagina.evaluate("window.scrollTo(0, 0)")
     pagina.get_by_role("button", name="Tour", exact=True).click()
-    pagina.locator(".driver-popover-title").get_by_text("Dois jeitos de usar").wait_for()
+    titulo = pagina.locator(".driver-popover-title")
+    titulo.get_by_text("Comece pelo que você tem").wait_for()
+    while titulo.inner_text() != "1. O que você tem?":
+        pagina.locator(".driver-popover-next-btn").click()
+        pagina.wait_for_timeout(400)
     pagina.wait_for_timeout(900)
     salvar(pagina.screenshot(), "interface-tour.png")
     ctx.close()
@@ -640,11 +680,7 @@ def capturas_da_voz(nav, url: str, pasta: Path) -> None:
         gravar.get_by_role("button", name="Salvar a minha voz").click()
         pagina.get_by_label("as suas vozes").get_by_text("Ana Lúcia").wait_for(timeout=30_000)
         pagina.get_by_role("button", name="fechar: Minha voz").click()
-        pagina.get_by_role("button", name="Um fundo e, por cima").click()
-        pagina.get_by_role("button", name="Biblioteca de cenas").click()
-        pagina.get_by_role("button", name="Nada", exact=True).click()
-        pagina.get_by_role("group", name="de onde vem o áudio").get_by_role(
-            "button", name="Minha voz (de um roteiro)").click()
+        ter(pagina, "Cenas", "Roteiro")
         voz = pagina.get_by_label("minha voz", exact=True)
         voz.get_by_label("o roteiro a narrar").fill(
             "A Rockstar confirmou: o PEGI deu 18 anos para o GTA 6, e ninguém se surpreendeu.\n\n"
@@ -654,7 +690,7 @@ def capturas_da_voz(nav, url: str, pasta: Path) -> None:
         voz.get_by_role("button", name="Narrar o roteiro").click()
         voz.get_by_text("pronta para editar").wait_for(timeout=60_000)
         pagina.wait_for_timeout(500)
-        camada = pagina.locator(".camada", has=pagina.get_by_label("minha voz", exact=True))
+        camada = pagina.locator(".etapa", has=pagina.get_by_label("minha voz", exact=True))
         salvar(camada.screenshot(), "interface-voz-narrar.png", 1200)
         ctx.close()
     finally:
@@ -880,30 +916,8 @@ def _capturas(exemplo: Path, pasta: Path, url: str, config_de_verdade, *,
                 salvar(pagina.screenshot(), "interface-resultado.png")
                 ctx.close()
 
-            # O passo 1 na montagem: o fundo, o personagem de palito e a narração.
-            if tela is not None:
-                ctx = nav.new_context(bypass_csp=True, viewport={"width": 1280, "height": 1400},
-                                      device_scale_factor=2, color_scheme="light")
-                ctx.add_init_script(sem_tour)
-                pagina = ctx.new_page()
-                pagina.goto(url)
-                pagina.get_by_role("button", name="Um fundo e, por cima").click()
-                pagina.set_input_files('[data-envio="fundo"] input', str(tela))
-                pagina.get_by_label("dados do fundo").wait_for(timeout=60_000)
-                pagina.get_by_role("button", name="Personagem animado").click()
-                pagina.set_input_files('[data-envio="personagem"] input',
-                                       str(desenhar_palito(pasta / "palito.gif")))
-                pagina.get_by_label("dados do personagem").wait_for(timeout=60_000)
-                pagina.get_by_role("group", name="de onde vem o áudio").get_by_role(
-                    "button", name="Áudio separado").click()
-                pagina.set_input_files('[data-envio="audio"] input',
-                                       str(narracao(exemplo, pasta / "narracao.wav")))
-                pagina.get_by_label("os áudios separados").wait_for(timeout=60_000)
-                pagina.wait_for_timeout(1200)
-                salvar(pagina.locator("#passo-envio").screenshot(), "interface-montagem.png", 1200)
-                ctx.close()
-
-            # A montagem com a biblioteca de cenas, e o tour.
+            # O passo 1 na montagem, a biblioteca de cenas e o tour.
+            capturas_da_montagem(nav, url, pasta)
             capturas_da_noticia(nav, url, pasta)
             capturas_da_voz(nav, url, pasta)
             capturas_do_avatar(nav, url, pasta)
@@ -953,6 +967,7 @@ def so_noticia() -> None:
             sync_playwright() as p:
         nav = p.chromium.launch()
         try:
+            capturas_da_montagem(nav, url, Path(tmp))
             capturas_da_noticia(nav, url, Path(tmp))
             capturas_da_voz(nav, url, Path(tmp))
             capturas_do_avatar(nav, url, Path(tmp))

@@ -143,12 +143,34 @@ _instalacao = Instalacao()
 _trava = threading.Lock()
 
 
+#: O tamanho da pasta, guardado pela data dela: medir passa por milhares de arquivos.
+_ocupa: tuple[float, int] | None = None
+
+
+def ocupa() -> int:
+    """Os bytes da pasta do motor, com o modelo (o que "Desinstalar" libera)."""
+    global _ocupa
+    from editor import desinstalar
+
+    try:
+        marca = pasta().stat().st_mtime
+    except OSError:
+        return 0
+    if _ocupa is None or _ocupa[0] != marca:
+        _ocupa = (marca, desinstalar.tamanho(pasta()))
+    return _ocupa[1]
+
+
 def estado() -> dict:
+    from editor import desinstalar
+
     i = _instalacao
+    n = ocupa() if instalado() and not i.rodando else 0
     return {"instalado": instalado(), "falso": falso(), "instalando": i.rodando,
             "etapa": ETAPAS.get(i.etapa, (i.etapa,))[0] if i.etapa else "",
             "fracao": round(i.fracao, 3), "ultima": i.linhas[-1] if i.linhas else "",
             "erro": i.erro, "espaco": ESPACO, "tempo": TEMPO,
+            "ocupa": desinstalar.legivel(n) if n else "",
             "aparelho": info().get("aparelho", ""), "pasta": str(pasta())}
 
 

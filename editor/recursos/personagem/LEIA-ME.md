@@ -11,7 +11,7 @@ projeto anterior (o `um projeto anterior`, de 12 a 16/10/2026).
 
 As partes, o padrão e o catálogo são uma cópia do repositório público
 [editai-personagens](https://github.com/lucasteles1231/editai-personagens), do commit
-`aa5bcc6` (21/10/2026), em domínio público (CC0). Lá estão também o manequim e as ferramentas
+`6f55947` (23/10/2026), em domínio público (CC0). Lá estão também o manequim e as ferramentas
 que geram e vetorizam a biblioteca. Para trazer uma versão nova, copie `partes/`, `padrao.json`
 e `catalogo.json` de lá e rode `uv run pytest tests/test_avatar.py`: o primeiro teste confere o
 hash de cada parte contra o catálogo.
@@ -21,10 +21,12 @@ hash de cada parte contra o catálogo.
 - **A cabeça em cápsula:** o alto da cabeça com a largura do rosto, como no exemplo que o dono
   mandou em 20/10/2026. O manequim gerado tinha o alto bem mais largo que o resto, como uma
   lâmpada. Alargar o maxilar deixou o queixo quadrado, então o alto é que encolheu (de 52 para
-  44 px na grade), e o queixo é o de sempre.
+  44 px na grade), e o queixo é o de sempre. Em 21/10, a cúpula foi redesenhada por uma curva em
+  degraus limpos (estreitar linha a linha tinha deixado a borda amassada), um pouco menos redonda
+  e 4 px mais baixa, mais perto da sobrancelha, como no exemplo.
 - **Os óculos:** desenhados em código, em volta dos olhos medidos na cabeça.
-- **O chapéu cortando o cabelo:** o boné e o gorro levam `data-cobre="cabelo"`, e o desenhista
-  só mostra o cabelo abaixo deles.
+- **O chapéu amassando o cabelo:** o boné e o gorro levam `data-cobre="cabelo"`. O desenhista
+  esconde o cabelo debaixo deles e achata o que sai pelos lados, sem cortar reto.
 
 **De onde vem cada regra:**
 

@@ -52,6 +52,7 @@ from editor import (
     recorte,
     sons,
     transcricao,
+    versao,
     voz,
     voz_clonada,
 )
@@ -311,6 +312,18 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
             "efeitos_da_voz": efeitos_da_voz.para_json(),
             "temas_dos_sons": sons.temas(),
         }
+
+    # ── o aviso de versão nova ────────────────────────────────────────────
+    # Uma vez por dia, no máximo (editor/versao.py); sem internet, sem aviso.
+
+    @app.get("/api/versao")
+    def versao_nova():
+        return {"atual": __version__, "aviso": versao.aviso()}
+
+    @app.post("/api/versao/silenciar")
+    def nao_avisar_mais():
+        versao.silenciar()
+        return {"atual": __version__, "aviso": None}
 
     # ── os presets de quem usa ─────────────────────────────────────────────
     # Ficam no presets.json da pasta de dados; a página recebe a lista inteira de volta.

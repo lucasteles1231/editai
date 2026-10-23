@@ -6,16 +6,19 @@ import {
 } from './plataformas';
 import {aplicarPreset, presetMarcado} from './presets';
 import {Painel} from './componentes/Painel';
-import {type Envio, PassoEdicoes, PassoEnvio, PassoLegenda, PassoSaida, type Revisao} from './componentes/Passos';
+import {PassoEdicoes, PassoLegenda, PassoSaida} from './componentes/Passos';
+import {type Envio, PassoEnvio, type Revisao} from './componentes/PassoEnvio';
+import {type Destino, type Material, montarTrilha} from './trilha';
 import {paraJson, paraLinhas} from './matriz';
 import {AntesDeComecar} from './componentes/AntesDeComecar';
+import {AvisoDeVersao} from './componentes/AvisoDeVersao';
 import type {Configuracao} from './configurar';
 import {ThumbPasso, chaveDoRecorte, propsDaThumb, type Recortes} from './componentes/ThumbPasso';
 import {PROPORCAO} from './componentes/thumb/AbaFundo';
 import {gerarPng} from './thumb/exportar';
 import {carregarFonte} from './thumb/medida';
 import type {
-  AudioInfo, AvatarSalvo, BibliotecaInfo, Camadas, CenaDaMatriz, Edicao, Estado, EstadoChave, EstadoDasVozes, EstadoIa, Ideia, Modo,
+  AudioInfo, AvatarSalvo, BibliotecaInfo, Camadas, CenaDaMatriz, Edicao, Estado, EstadoChave, EstadoDasVozes, EstadoIa, Ideia,
   MontagemConfig,
   PersonagemInfo, Preset, RecorteInfo, Saida, Tarefa, ThumbConfig, VideoInfo,
 } from './tipos';
@@ -23,9 +26,9 @@ import {comecarTour, tourJaVisto} from './tour';
 
 const MONTAGEM_PADRAO: MontagemConfig = {fonteDoFundo: 'video', porCima: 'pessoa', recorte: 'modnet', formato: 'fundo',
   tirarFundo: true, fala: null, cenasDoAudio: [], avatar: null};
-const NADA_ENVIANDO: Record<Envio, number | null> = {video: null, fundo: null, pessoa: null, personagem: null, audio: null,
+const NADA_ENVIANDO: Record<Envio, number | null> = {completo: null, pessoa: null, personagem: null, audio: null,
   biblioteca: null};
-const SEM_ERRO: Record<Envio, string> = {video: '', fundo: '', pessoa: '', personagem: '', audio: '', biblioteca: ''};
+const SEM_ERRO: Record<Envio, string> = {completo: '', pessoa: '', personagem: '', audio: '', biblioteca: ''};
 
 /** Os vídeos que a biblioteca aceita (``editor/cenas.py``). */
 const CLIPE = /\.(mp4|mov|m4v|webm|mkv|jpe?g|png|webp)$/i;
@@ -106,10 +109,15 @@ export const App: React.FC = () => {
   const [erroGeral, setErroGeral] = useState('');
   const [edicao, setEdicao] = useState<Edicao | null>(null);
   const [saida, setSaida] = useState<Saida | null>(null);
-  const [modo, setModo] = useState<Modo>('um');
-  const [unico, setUnico] = useState<VideoInfo | null>(null);
-  const [fundo, setFundo] = useState<VideoInfo | null>(null);
-  const [pessoa, setPessoa] = useState<VideoInfo | null>(null);
+  // O passo 1: o que a pessoa tem (começa pelo vídeo, o jeito mais comum) e os textos.
+  const [materiais, setMateriais] = useState<ReadonlySet<Material>>(() => new Set<Material>(['completo']));
+  const [tema, setTema] = useState('');
+  const [roteiro, setRoteiro] = useState('');
+  const [narrar, setNarrar] = useState(false);
+  const [porCimaEscolhido, setPorCimaEscolhido] = useState<'avatar' | 'nada' | null>(null);
+  // Os vídeos como chegaram: a trilha diz onde cada um entra (o vídeo único, o fundo ou por cima).
+  const [completo, setCompleto] = useState<VideoInfo | null>(null);
+  const [daPessoa, setDaPessoa] = useState<VideoInfo | null>(null);
   const [personagem, setPersonagem] = useState<PersonagemInfo | null>(null);
   const [recorteDoPersonagem, setRecorteDoPersonagem] = useState<RecorteInfo | null>(null);
   const [audios, setAudios] = useState<AudioInfo[]>([]);
@@ -155,6 +163,15 @@ export const App: React.FC = () => {
   const [baixando, setBaixando] = useState<string | null>(null);
   const [baixadas, setBaixadas] = useState<Record<string, {png: string; jpg: string; jpgBytes: number}>>({});
   const [erroThumb, setErroThumb] = useState('');
+  const trilha = useMemo(() => montarTrilha(materiais, {
+    completoTemSom: completo ? completo.tem_audio : null, pessoaTemSom: daPessoa ? daPessoa.tem_audio : null,
+    temAvatar: Boolean(avatares?.length), narrar, porCima: porCimaEscolhido,
+  }), [materiais, completo, daPessoa, avatares, narrar, porCimaEscolhido]);
+  const noLugar = (d: Destino) => (trilha.completo === d ? completo : trilha.daPessoa === d ? daPessoa : null);
+  const modo = trilha.modo;
+  const unico = noLugar('unico');
+  const fundo = noLugar('fundo');
+  const pessoa = noLugar('pessoa');
   // O vídeo da thumbnail: o único; na montagem, o da pessoa (com personagem, o do fundo,
   // de onde saem os quadros de trás dele).
   const naMontagem = modo === 'montagem';
@@ -203,7 +220,7 @@ export const App: React.FC = () => {
   const chaveDasPlataformas = plataformas.join(',');
   const porCimaPronto = montagem.porCima === 'nada'
     || Boolean(comAvatar ? avatarDaMontagem : comPersonagem ? personagem : pessoa);
-  const podeEditar = !naMontagem ? Boolean(unico)
+  const podeEditar = trilha.bloqueio ? false : !naMontagem ? Boolean(unico)
     : Boolean(fundoEfetivo && porCimaPronto && (fala === 'voz' ? narracao
       : fala === 'cenas' ? cenasDoAudio.length : fala !== 'audio' || audios.length));
   const pararDeAcompanhar = useRef<(() => void) | null>(null);
@@ -310,23 +327,56 @@ export const App: React.FC = () => {
     }
 
     api.enviar(arquivo, progresso)
-      .then((v) => {
-        if (qual === 'video') {
-          setUnico(v);
-          novoQuadroDaThumb(v);
-        } else if (qual === 'fundo') {
-          setFundo(v);
-          if (montagem.porCima === 'personagem' || montagem.porCima === 'avatar') novoQuadroDaThumb(v);
-        } else {
-          setPessoa(v);
-          // O vídeo já sem fundo dispensa o MODNet: a página escolhe sozinha.
-          setMontagem((m) => ({...m, recorte: v.tem_alfa ? 'transparente' : 'modnet'}));
-          novoQuadroDaThumb(v);
-        }
-      })
+      .then((v) => (qual === 'completo' ? setCompleto(v) : setDaPessoa(v)))
       .catch(falhou)
       .finally(fim);
-  }, [montagem.porCima, novoQuadroDaThumb]);
+  }, []);
+
+  // A trilha decide as camadas; "Ajustar as camadas" troca quem vai por cima e de onde vem a
+  // fala até a trilha mudar de novo.
+  useEffect(() => {
+    setMontagem((m) => ({...m, fonteDoFundo: trilha.fonteDoFundo, porCima: trilha.porCima, fala: trilha.fala}));
+  }, [trilha.fonteDoFundo, trilha.porCima, trilha.fala]);
+
+  // Quem vai por cima já sem fundo dispensa o MODNet: a página escolhe sozinha.
+  useEffect(() => {
+    if (pessoa) setMontagem((m) => ({...m, recorte: pessoa.tem_alfa ? 'transparente' : 'modnet'}));
+  }, [pessoa]);
+
+  // O vídeo de onde sai a thumbnail mudou (outro envio, outra trilha): o quadro volta para o
+  // mais nítido dele.
+  const idDaThumb = video?.id ?? '';
+  useEffect(() => {
+    if (video) novoQuadroDaThumb(video);
+  // só quando o vídeo troca: o resto do vídeo (o objeto) muda junto com o id
+  }, [idDaThumb, novoQuadroDaThumb]);
+
+  // O roteiro corrige a grafia da legenda (e é o que a voz lê). Só troca o que veio dele: o
+  // que a pessoa escreveu à mão no passo 3 fica.
+  const comRoteiro = materiais.has('roteiro');
+  const roteiroAplicado = useRef('');
+  useEffect(() => {
+    // o que veio do roteiro antes: o atualizador roda depois, com a referência já trocada
+    const anterior = roteiroAplicado.current;
+    const novo = comRoteiro ? roteiro : '';
+    roteiroAplicado.current = novo;
+    setEdicao((e) => (!e || (!comRoteiro && e.texto_falado !== anterior) ? e : {...e, texto_falado: novo}));
+  }, [comRoteiro, roteiro]);
+  // O tema vai de contexto para o Gemini (os cartões e as cenas).
+  const comTema = materiais.has('tema');
+  useEffect(() => {
+    setEdicao((e) => (e ? {...e, tema: comTema ? tema.trim() : ''} : e));
+  }, [comTema, tema]);
+
+  const alternarMaterial = (m: Material) => {
+    setMateriais((atual) => {
+      const novo = new Set(atual);
+      if (novo.has(m)) novo.delete(m);
+      else novo.add(m);
+      return novo;
+    });
+    setTarefa(null);
+  };
 
   /** Os áudios separados (um ou vários, um por parágrafo): sobem um a um e tocam na ordem
    *  do nome. O que chega passa a ser a escolha. */
@@ -354,9 +404,7 @@ export const App: React.FC = () => {
     setEnviandoBiblioteca('Lendo a matriz…');
     setErrosDeEnvio((x) => ({...x, biblioteca: ''}));
     try {
-      const b = await api.enviarMatriz(id, arquivo);
-      setBiblioteca(b);
-      if (montagem.porCima !== 'pessoa') novoQuadroDaThumb(b.capa);
+      setBiblioteca(await api.enviarMatriz(id, arquivo));
       return true;
     } catch (e) {
       setErrosDeEnvio((x) => ({...x, biblioteca: (e as Error).message}));
@@ -364,7 +412,7 @@ export const App: React.FC = () => {
     } finally {
       setEnviandoBiblioteca(null);
     }
-  }, [montagem.porCima, novoQuadroDaThumb]);
+  }, []);
 
   /** O Gemini descreve os clipes em segundo plano; a página acompanha e, no fim, abre a
    *  tabela de revisão. */
@@ -444,22 +492,7 @@ export const App: React.FC = () => {
     }
   }, [enviarMatriz]);
 
-  const mudarMontagem = (p: Partial<MontagemConfig>) => {
-    setMontagem((m) => ({...m, ...p}));
-    // Trocar o que vai por cima (ou o fundo) troca o vídeo da thumbnail.
-    const porCima = p.porCima ?? montagem.porCima;
-    const fonte = p.fonteDoFundo ?? montagem.fonteDoFundo;
-    if (porCima !== montagem.porCima || fonte !== montagem.fonteDoFundo) {
-      const v = porCima === 'pessoa' ? pessoa : fonte === 'cenas' ? biblioteca?.capa ?? null : fundo;
-      if (v) novoQuadroDaThumb(v);
-    }
-  };
-
-  const trocarModo = (m: Modo) => {
-    setModo(m);
-    const v = m === 'um' ? unico : montagem.porCima === 'pessoa' ? pessoa : fundoEfetivo;
-    if (v) novoQuadroDaThumb(v);
-  };
+  const mudarMontagem = (p: Partial<MontagemConfig>) => setMontagem((m) => ({...m, ...p}));
 
   const gerarThumbs = useCallback(async (tarefaId: string, v: VideoInfo, config: ThumbConfig,
                                          c: Camadas | null) => {
@@ -693,10 +726,11 @@ export const App: React.FC = () => {
         </div>
         <nav>
           <button type="button" className="botao pequeno" onClick={comecarTour}>Tour</button>
-          <a className="botao pequeno" href="https://github.com/lucasteles1231/editai"
+          <a className="botao pequeno" href="https://lucasteles1231.github.io/editai/"
             target="_blank" rel="noreferrer">Ajuda</a>
         </nav>
       </header>
+      <AvisoDeVersao />
 
       {erroGeral ? <div className="aviso erro" style={{margin: 24}}>{erroGeral}</div> : null}
 
@@ -713,7 +747,10 @@ export const App: React.FC = () => {
             aoApagarChavePexels={async () => setPexels(await api.apagarChavePexels())}
             vozes={vozes} aoMudarVozes={setVozes} avatares={avatares} aoMudarAvatares={setAvatares}
             aberto={configurando} abrir={setConfigurando} />
-          <PassoEnvio modo={modo} setModo={trocarModo} video={unico} fundo={fundo} pessoa={pessoa}
+          <PassoEnvio trilha={trilha} materiais={materiais} aoAlternarMaterial={alternarMaterial}
+            tema={tema} aoMudarTema={setTema} roteiro={roteiro} aoMudarRoteiro={setRoteiro}
+            narrar={narrar} aoMudarNarrar={setNarrar} aoEscolherPorCima={setPorCimaEscolhido}
+            completo={completo} daPessoa={daPessoa} fundo={fundo} pessoa={pessoa} fala={fala}
             personagem={personagem} audios={audios} narracao={narracao} aoNarrar={setNarracao} biblioteca={biblioteca}
             vozes={vozes} aoMudarVozes={setVozes} avatares={avatares}
             faltaMatriz={Boolean(bibliotecaAberta && !biblioteca)} enviandoBiblioteca={enviandoBiblioteca}

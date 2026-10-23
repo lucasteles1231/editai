@@ -1,0 +1,153 @@
+/*
+ * O visual do site é o do próprio Editai (web/src/estilo.css): papel creme, tinta preta, o
+ * amarelo dos adesivos e a sombra dura. A fonte dos títulos é a mesma da legenda.
+ */
+@font-face {
+  font-family: 'DejaVu Sans';
+  font-weight: 700;
+  src: url('../../../editor/recursos/DejaVuSans-Bold.ttf') format('truetype');
+  font-display: swap;
+}
+
+:root {
+  --papel: #fffcf5;
+  --papel-2: #f5eedf;
+  --tinta: #1a1a1a;
+  --tinta-suave: #5d5649;
+  --amarelo: #ffd400;
+  --ciano: #00c2ff;
+  --sombra: 4px 4px 0 var(--tinta);
+  --titulo: 'DejaVu Sans', 'Arial Black', system-ui, sans-serif;
+
+  --vp-c-bg: var(--papel);
+  --vp-c-bg-alt: var(--papel-2);
+  --vp-c-bg-soft: var(--papel-2);
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-text-1: var(--tinta);
+  --vp-c-text-2: var(--tinta-suave);
+  --vp-c-text-3: #8a816f;
+  --vp-c-divider: #e6dcc6;
+  --vp-c-gutter: #e6dcc6;
+  --vp-c-brand-1: #1a1a1a;
+  --vp-c-brand-2: #3a3a3a;
+  --vp-c-brand-3: #1a1a1a;
+  --vp-c-brand-soft: rgba(255, 212, 0, 0.32);
+  --vp-c-tip-1: #1a1a1a;
+  --vp-c-tip-soft: rgba(255, 212, 0, 0.22);
+  --vp-c-note-1: #00597a;
+  --vp-c-note-soft: rgba(0, 194, 255, 0.14);
+  --vp-font-family-base: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --vp-home-hero-name-color: var(--tinta);
+  --vp-home-hero-image-background-image: none;
+  --vp-code-copy-code-active-text: 'Copiado';
+}
+
+.dark {
+  --papel: #15130f;
+  --papel-2: #1d1a15;
+  --tinta: #f4eedf;
+  --tinta-suave: #b7ad99;
+  --sombra: 4px 4px 0 #000;
+
+  --vp-c-bg: var(--papel);
+  --vp-c-bg-alt: #110f0c;
+  --vp-c-bg-soft: var(--papel-2);
+  --vp-c-bg-elv: #221f19;
+  --vp-c-text-1: var(--tinta);
+  --vp-c-text-2: var(--tinta-suave);
+  --vp-c-text-3: #857c6a;
+  --vp-c-divider: #34302a;
+  --vp-c-gutter: #0d0c0a;
+  --vp-c-brand-1: #ffd400;
+  --vp-c-brand-2: #ffe14d;
+  --vp-c-brand-3: #ffd400;
+  --vp-c-brand-soft: rgba(255, 212, 0, 0.16);
+  --vp-c-tip-1: #ffd400;
+  --vp-c-tip-soft: rgba(255, 212, 0, 0.12);
+  --vp-c-note-1: #6fdcff;
+  --vp-c-note-soft: rgba(0, 194, 255, 0.12);
+}
+
+/* os títulos na fonte da legenda */
+.vp-doc h1, .vp-doc h2, .VPHero .name, .VPHero .text, .titulo-da-secao {
+  font-family: var(--titulo);
+  letter-spacing: -0.01em;
+}
+.vp-doc h1 { font-size: 34px; line-height: 1.2; }
+.vp-doc h2 { border-top-color: var(--vp-c-divider); }
+
+/* os links do texto: tinta com o grifo amarelo, como a palavra-chave da legenda */
+.vp-doc a {
+  color: var(--vp-c-text-1);
+  text-decoration: underline;
+  text-decoration-color: var(--amarelo);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+.vp-doc a:hover { background: var(--vp-c-brand-soft); }
+.dark .vp-doc a { color: var(--tinta); }
+
+/* os botões viram adesivos */
+.VPButton.brand, .botao-adesivo {
+  background: var(--amarelo) !important;
+  color: #1a1a1a !important;
+  border: 2.5px solid #1a1a1a !important;
+  box-shadow: var(--sombra);
+  font-weight: 700;
+}
+.VPButton.brand:hover, .botao-adesivo:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 #1a1a1a; }
+.VPButton.alt {
+  background: var(--vp-c-bg-elv) !important;
+  border: 2.5px solid var(--vp-c-text-1) !important;
+  color: var(--vp-c-text-1) !important;
+}
+
+/* o código em linha com borda, como os chips da interface */
+.vp-doc :not(pre) > code {
+  border: 1.5px solid var(--vp-c-divider);
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+}
+
+/* as imagens da documentação com o contorno e a sombra do editor */
+.vp-doc img:not(.sem-moldura) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 14px;
+}
+
+/* o ícone do hero, inclinado como o adesivo; no celular, o tamanho é o do VitePress */
+.VPHero .image-src { transform: translate(-50%, -50%) rotate(-4deg); }
+@media (min-width: 960px) {
+  .VPHero .image-src { max-width: 260px; }
+}
+
+/* a grade de funções da página inicial */
+.funcoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  margin: 24px 0 8px;
+}
+.funcoes a {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 4px 12px;
+  align-items: start;
+  padding: 14px;
+  border: 2px solid var(--vp-c-divider);
+  border-radius: 14px;
+  background: var(--vp-c-bg-elv);
+  color: var(--vp-c-text-1);
+  text-decoration: none !important;
+  font-weight: 400 !important;
+}
+.funcoes a:hover { border-color: var(--vp-c-text-1); background: var(--vp-c-bg-elv) !important; }
+.funcoes img { grid-row: span 2; border-radius: 0 !important; }
+.funcoes b { font-family: var(--titulo); font-size: 15px; }
+.funcoes span { color: var(--vp-c-text-2); font-size: 13.5px; line-height: 1.45; }
+
+@media (prefers-reduced-motion: reduce) {
+  .VPButton.brand:hover, .botao-adesivo:hover { transform: none; }
+}

@@ -37,6 +37,7 @@ from editor import (
     servidor,
     sons,
     transcricao,
+    versao,
     voz_clonada,
 )
 
@@ -48,6 +49,7 @@ def _isolado(tmp_path, monkeypatch):
     monkeypatch.setenv(ia.VARIAVEL_FALSA, "falsa")
     monkeypatch.setenv(pexels.VARIAVEL_FALSA, "falso")
     monkeypatch.setenv(motor_de_voz.VARIAVEL_FALSA, "falsa")
+    monkeypatch.setenv(versao.VARIAVEL_FALSA, "falsa")
     monkeypatch.delenv(ia.VARIAVEL_DA_CHAVE, raising=False)
     monkeypatch.delenv(pexels.VARIAVEL_DA_CHAVE, raising=False)
     monkeypatch.setattr(ia, "_geradas", 0)

@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # o versao.yml roda os testes antes de publicar
+  workflow_call:
 
 # Só leitura: os testes não escrevem nada no repositório.
 permissions:
@@ -59,3 +61,55 @@ jobs:
       - run: uv sync --locked
       - run: uv run playwright install --with-deps chromium firefox webkit
       - run: uv run pytest -m navegador -q -rs
+
+  instalador:
+    name: instalador (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      # o instalador de verdade, com o pacote montado aqui no lugar do da versão publicada
+      - run: uv build --wheel --out-dir pacote
+      - run: uv run --no-project python instalador/montar.py instaladores --so-scripts --versao teste
+      - name: instala (macOS e Linux)
+        if: runner.os != 'Windows'
+        run: |
+          EDITAI_PACOTE="$(ls pacote/*.whl)" sh instaladores/instalar.sh
+          "$(uv tool dir --bin)/editai" --versao
+      - name: o atalho (macOS)
+        if: runner.os == 'macOS'
+        run: test -x "$HOME/Applications/Editai.app/Contents/MacOS/abrir"
+      - name: o atalho (Linux)
+        if: runner.os == 'Linux'
+        run: grep -q "Terminal=true" "$HOME/.local/share/applications/editai.desktop"
+      - name: instala e confere o atalho (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:EDITAI_PACOTE = (Get-ChildItem pacote\*.whl).FullName
+          powershell -NoProfile -ExecutionPolicy Bypass -File instaladores\instalar.ps1
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          & "$(uv tool dir --bin)\editai.exe" --versao
+          $menu = [Environment]::GetFolderPath('Programs')
+          if (-not (Test-Path "$menu\Editai.lnk")) { throw "o atalho do menu Iniciar não foi criado" }
+
+  site:
+    name: site (documentação)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      # o VitePress reprova link quebrado entre as páginas; as âncoras e o README são do
+      # tests/test_documentacao.py, que roda no núcleo
+      - working-directory: docs
+        run: |
+          npm ci
+          npm run build
