@@ -18,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      # para chamar o site.yml: uma release criada com o token do próprio workflow não
+      # dispara o "release: published" de outro workflow (regra do GitHub)
+      actions: write
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
@@ -31,3 +34,7 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" anexos/* \
             --title "Editai ${GITHUB_REF_NAME#v}" --notes-file notas.md --verify-tag
+      - name: refaz o site com a versão nova
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run site.yml --repo "$GITHUB_REPOSITORY" --ref main

@@ -6,6 +6,8 @@ on:
   push:
     branches: [main]
     paths: ["docs/**", "CHANGELOG.md", "instalador/**", ".github/workflows/site.yml"]
+  # (o versao.yml chama este pelo workflow_dispatch depois de publicar: a release criada
+  # pelo token dele não dispara o "release: published")
   release:
     types: [published]
   workflow_dispatch:
