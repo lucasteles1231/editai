@@ -8,13 +8,17 @@ protege a página, como o que é baixado é conferido e o que a última verifica
 
 | O quê | Para onde | Quando |
 |---|---|---|
-| nada do vídeo, do áudio nem da sua voz | — | nunca: a transcrição, o recorte, a edição e a Minha voz rodam no computador |
+| nada do vídeo, do áudio nem da sua voz | — | nunca: a transcrição, o recorte, a edição, a Minha voz e a voz local rodam no computador |
 | o texto da fala e 8 quadros pequenos (512 px) | Google (Gemini) | só com a sua chave, nas ideias de thumbnail |
 | o texto da fala | Google (Gemini) | só com a sua chave e o roteiro ligado (cenas, cartões e destaques) |
 | 3 quadros pequenos de cada clipe | Google (Gemini) | só quando você clica em **Gerar a matriz** |
 | a descrição de uma cena | Google (Gemini) | só quando você gera um fundo (pago) |
 | a foto do avatar, reduzida a 1024 px e sem os metadados (o lugar e o aparelho) | Google (Gemini) | só quando você clica em **Montar pela foto com o Gemini**; o Editai não guarda a foto |
-| o texto da busca | Pexels | só com a chave do Pexels, quando você busca uma foto |
+| o tema | Google (Gemini) | só com a sua chave, quando você clica em **Escrever o roteiro** |
+| o roteiro | Google (Gemini) | quando uma voz do Gemini narra, e ao achar as fotos (o Gemini diz o que buscar em cada trecho) |
+| o texto da busca | Pexels | só com a chave do Pexels, quando você busca uma foto ou acha as fotos do roteiro |
+| o texto da busca, em inglês | Openverse | só quando você clica em **Achar as fotos** |
+| o pedido de cada foto achada | o site de onde ela vem (Flickr, Wikimedia Commons…) | ao achar as fotos: o Editai baixa cada uma |
 | os pedidos de download | GitHub, `astral.sh` (o uv), PyPI, Hugging Face e `remotion.media` | na instalação e no primeiro uso de cada modelo ou som |
 | o pedido da última versão publicada, sem nada seu | GitHub (`api.github.com`) | uma vez por dia, ao abrir o editor; desliga com "Não avisar mais", na faixa do aviso, ou com `EDITAI_SEM_AVISO_DE_VERSAO=1` ([Atualizar](./instalacao-em-detalhe#atualizar)) |
 
@@ -48,6 +52,8 @@ a página, que só mostra os quatro últimos caracteres.
 | o modelo do recorte (MODNet) | Hugging Face (Xenova) | um commit fixo |
 | os 4 sons do tema Notícia sem licença livre | `remotion.media` | o SHA-256 de cada arquivo: o diferente é descartado, e toca a reserva da Kenney |
 | o modelo da Minha voz | Hugging Face (Qwen) | um commit fixo |
+| o motor da voz local (o Piper) | PyPI | a versão testada (`piper-tts` 1.8.0) |
+| a voz local (a Faber) | Hugging Face (rhasspy) | um commit fixo e o SHA-256 |
 | as bibliotecas da Minha voz | PyPI | as versões testadas, em [`editor/recursos/motor-de-voz-versoes.txt`](https://github.com/lucasteles1231/editai/blob/main/editor/recursos/motor-de-voz-versoes.txt) |
 | as bibliotecas do editor | PyPI, pelo uv | as versões mínimas do `pyproject.toml`; o CI testa as do `uv.lock` |
 

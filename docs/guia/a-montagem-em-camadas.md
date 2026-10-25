@@ -126,6 +126,36 @@ sai a escolha das cenas.
 
 <br clear="right">
 
+### Um vídeo longo vira a biblioteca
+
+Não tem os clipes cortados? Marque **Cenas** e solte o vídeo inteiro (um trailer, uma
+gameplay, as imagens de um imóvel) em **Ou solte um vídeo longo**. O Editai acha os cortes,
+grava cada cena numa pasta e escreve o `cenas.json`. No fim, abre a mesma tabela de revisão
+de **Gerar a matriz**.
+
+- **Os cortes:** cada quadro é comparado com o anterior, em tamanho pequeno. Um corte é o
+  quadro que muda muito mais que os vizinhos. A câmera andando muda em vários quadros
+  seguidos e não vira corte; a troca de plano muda num quadro só.
+- **O preto** (um fade, a tela escura entre duas cenas) separa as cenas e fica de fora. Uma
+  cena de menos de 0,6 s, como um clarão, também.
+- **A tomada comprida** é partida em pedaços de uns 2 s. A montagem toca cada cena do
+  começo, e assim o vídeo inteiro serve, e não só os primeiros segundos de cada plano.
+- **A pasta** fica em `Filmes/editor-de-video/cenas/<nome do vídeo>`, com os clipes
+  (`<nome>-001.mp4`, `<nome>-002.mp4`...) e o `cenas.json`. Os clipes são gravados de novo,
+  em H.264, com o som, até 1080p. A matriz revisada também vai para essa pasta: para usar
+  as cenas em outro vídeo, é só soltar a pasta. **Abrir a pasta** mostra onde ela está.
+- **A descrição:** os pedaços de uma tomada são quase iguais, então só o do meio vai ao
+  Gemini, e os outros herdam a descrição. Um vídeo de tomadas longas gasta bem menos
+  pedidos. Sem a chave, cada cena diz de onde saiu ("Trecho de 0:12 a 0:14 do vídeo"),
+  para você descrever na tabela.
+- **O tempo:** os 52 s do trailer do Sintel, em 1080p, viraram 19 cenas em 6 s num MacBook
+  M5. Os cortes conferem com os do PySceneDetect.
+- **O que ele não acha:** a fusão lenta de uma cena na outra (a mudança se espalha por
+  muitos quadros) e o corte entre dois planos quase iguais. Na revisão, uma cena com dois
+  planos dentro aparece com a descrição dos dois.
+- **No terminal,** `editai --separar-cenas trailer.mp4 --assunto "trailers do GTA 6"` faz
+  o mesmo e mostra o comando para usar a pasta na montagem.
+
 A fala é dividida em trechos de 2 a 6 s, fechados no fim das frases, e cada trecho ganha
 uma cena a cada 2 s, mais ou menos:
 

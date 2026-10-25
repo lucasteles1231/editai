@@ -390,7 +390,7 @@ def test_minha_voz(navegador, endereco, tmp_path):
     pagina.set_input_files('[data-envio="completo"] input', str(fundo))
     expect(pagina.get_by_label("dados do fundo")).to_contain_text("320×180")
     expect(pagina.get_by_role("listitem", name="A fala")).to_contain_text(
-        "A sua voz narra o roteiro")
+        "Uma voz narra o roteiro")
     editar = pagina.get_by_role("button", name="Editar vídeo")
     expect(editar).to_be_disabled()                 # sem a narração, ainda não
     voz = pagina.get_by_label("minha voz", exact=True)
@@ -628,6 +628,126 @@ def test_gerar_e_revisar_a_matriz(navegador, endereco, tmp_path):
     pagina.get_by_role("button", name="Revisar a matriz").click()
     expect(pagina.get_by_label("descrição de c02-carro.mp4")).to_have_value(
         "Carro vermelho correndo na pista")
+    assert not erros, erros
+
+
+def test_o_video_longo_vira_as_cenas(navegador, endereco, tmp_path):
+    """Sem montar a pasta (o dono, 23/10/2026): o vídeo longo entra no campo das cenas, a página
+    mostra as etapas, a tabela abre com uma linha por cena e, usada a matriz, a biblioteca está
+    pronta e a pasta das cenas fica dita, com o cenas.json revisado dentro."""
+    import json as _json
+
+    from tests.test_separar import fazer_video_de_planos
+
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 1100})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
+    pagina.goto(endereco)
+
+    longo = fazer_video_de_planos(tmp_path / "trailer.mp4")
+    ter(pagina, "Cenas")
+    pagina.set_input_files('[data-envio="longo"] input', str(longo))
+    revisao = pagina.get_by_role("region", name="revisão da matriz")
+    expect(revisao).to_contain_text("5 cenas", timeout=60_000)
+    expect(revisao.locator("img")).to_have_count(5)
+    pasta = tmp_path / "saida" / "cenas" / "trailer"
+    expect(pagina.locator(".pasta-das-cenas")).to_contain_text(str(pasta))
+    revisao.get_by_label("descrição de trailer-002.mp4").fill("Faixas azuis andando")
+    revisao.get_by_role("button", name="Usar esta matriz").click()
+    ficha = pagina.get_by_label("dados da biblioteca de cenas")
+    expect(ficha).to_contain_text("5 cenas", timeout=30_000)
+    salvo = _json.loads((pasta / "cenas.json").read_text(encoding="utf-8"))
+    assert salvo[1]["descricao"] == "Faixas azuis andando"
+    assert len(list(pasta.glob("trailer-*.mp4"))) == 5
+    assert not erros, erros
+
+
+def test_o_video_so_pelo_tema(navegador, endereco, tmp_path):
+    """Só o tema (o dono, 25/10/2026): a IA escreve o roteiro no tamanho de um Short, a pessoa
+    revisa ali mesmo, as fotos saem do roteiro revisado (em pé) e viram a biblioteca, a voz do
+    Gemini narra (a IA, as fotos e a voz são as falsas) e o vídeo sai editado, com a grafia
+    do roteiro na legenda."""
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 1100})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
+    pagina.add_init_script(VIGIAR_A_CSP)
+    pagina.goto(endereco)
+    ter(pagina, "Tema")
+    trilha = pagina.get_by_role("list", name="a trilha do vídeo")
+    texto = trilha.get_by_role("listitem", name="O texto")
+    imagem = trilha.get_by_role("listitem", name="A imagem")
+    fala = trilha.get_by_role("listitem", name="A fala")
+    editar = pagina.get_by_role("button", name="Editar vídeo")
+    expect(pagina.locator("#passo-envio [role=status]")).to_have_count(0)
+    expect(imagem.get_by_role("button", name="Achar as fotos")).to_be_disabled()
+    expect(editar).to_be_disabled()
+
+    # o roteiro: 45 s porque o padrão, só pelo tema, é o Short em pé
+    escrever = texto.get_by_role("button", name="Escrever o roteiro")
+    expect(escrever).to_be_disabled()               # sem o tema, ainda não
+    pagina.get_by_label("o tema").fill("O céu azul")
+    duracao = texto.get_by_role("group", name="a duração do vídeo")
+    expect(duracao.get_by_role("button", name="45 s")).to_have_attribute("aria-pressed", "true")
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/roteiro")) as pedido:
+        escrever.click()
+    assert pedido.value.post_data_json == {"tema": "O céu azul", "segundos": 45, "idioma": "pt"}
+    roteiro = texto.get_by_label("o roteiro", exact=True)
+    expect(roteiro).to_have_value(re.compile(r"^Por que o céu azul funciona"))
+    expect(texto.get_by_role("button", name="Escrever de novo")).to_be_visible()
+    roteiro.fill(roteiro.input_value() + "\n\nE no pôr do sol, por que ele fica laranja?")
+
+    # as fotos, do roteiro revisado
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/fotos")) as pedido:
+        imagem.get_by_role("button", name="Achar as fotos").click()
+    corpo = pedido.value.post_data_json
+    assert corpo["orientacao"] == "retrato" and "laranja" in corpo["roteiro"]
+    ficha = imagem.get_by_label("dados da biblioteca de cenas")
+    expect(ficha).to_contain_text("fotos", timeout=60_000)
+    pasta = tmp_path / "saida" / "fotos" / "o-ceu-azul"
+    expect(imagem.locator(".pasta-das-cenas")).to_contain_text("creditos.txt")
+    assert (pasta / "cenas.json").is_file() and (pasta / "creditos.txt").is_file()
+    assert len(list(pasta.glob("foto-*.jpg"))) >= 4
+    imagem.get_by_role("button", name="Revisar as fotos").click()
+    revisao = pagina.get_by_role("region", name="revisão da matriz")
+    expect(revisao.locator("img").first).to_be_visible()
+    revisao.get_by_role("button", name="Fechar").click()
+
+    # a voz: a do Gemini, com a cota do dia à vista; o roteiro fica lá em cima
+    voz = fala.get_by_label("minha voz", exact=True)
+    prontas = voz.get_by_role("group", name="as vozes prontas")
+    expect(prontas.get_by_role("button", name="Orus")).to_have_attribute("aria-pressed", "true")
+    expect(voz).to_contain_text("sobram 10 de 10 narrações hoje")
+    expect(voz.get_by_label("o roteiro a narrar")).to_have_count(0)
+    with pagina.expect_request(
+            lambda r: r.url.split("?")[0].endswith("/api/vozes/prontas/narrar")) as pedido:
+        voz.get_by_role("button", name="Narrar o roteiro").click()
+    corpo = pedido.value.post_data_json
+    assert corpo["voz"] == "gemini:Orus" and "laranja" in corpo["roteiro"]
+    expect(voz).to_contain_text("pronta para editar", timeout=30_000)
+
+    # mudar o roteiro depois deixa as fotos para trás (e a narração também)
+    roteiro.fill(roteiro.input_value() + " Comenta aí.")
+    expect(imagem).to_contain_text("O roteiro mudou depois das fotos")
+    expect(voz).to_contain_text("narre de novo para valer")
+    roteiro.fill(roteiro.input_value().removesuffix(" Comenta aí."))
+
+    expect(editar).to_be_enabled()
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/tarefas")
+                               and r.method == "POST") as pedido:
+        editar.click()
+    dados = pedido.value.post_data_json
+    montagem = dados["montagem"]
+    assert montagem["biblioteca_id"] and montagem["fala"] == "audio"
+    assert len(montagem["audio_ids"]) == 1 and montagem["formato"] == "vertical"
+    assert "laranja" in dados["edicao"]["texto_falado"]
+    assert dados["edicao"]["tema"] == "O céu azul"
+    pagina.locator(".miniaturas img").first.wait_for(timeout=180_000)
+    assert list((tmp_path / "saida").glob("*-editado.mp4"))
+    assert not _barrados(pagina), _barrados(pagina)
     assert not erros, erros
 
 
@@ -1014,8 +1134,8 @@ def test_o_avatar_de_bicho(navegador, endereco):
 def test_a_trilha_pelo_que_voce_tem(navegador, endereco, tmp_path):
     """O passo 1 começa pelo que a pessoa tem (o dono, 20/10/2026): cada combinação monta a
     trilha (a imagem, quem vai por cima, a fala) e mostra só os campos que ela pede; o que
-    ainda não existe (o roteiro pelo tema, as fotos achadas) aparece escrito e não deixa
-    editar. O roteiro vai para a grafia da legenda, e o tema, para o pedido."""
+    falta aparece escrito e não deixa editar. O roteiro vai para a grafia da legenda, e o tema,
+    para o pedido."""
     pagina = navegador.new_page(viewport={"width": 1366, "height": 900})
     pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
     erros: list[str] = []
@@ -1036,10 +1156,12 @@ def test_a_trilha_pelo_que_voce_tem(navegador, endereco, tmp_path):
     expect(ajustar).to_have_count(0)
     expect(bloqueio).to_have_count(0)
 
-    # só o tema: a trilha diz o que ainda não existe, e não há o que enviar
+    # só o tema: a IA escreve o roteiro, as fotos saem dele, e não há o que enviar
     ter(pagina, "Tema")
-    expect(bloqueio).to_contain_text("próxima versão")
+    expect(bloqueio).to_have_count(0)
+    expect(etapa("O texto")).to_contain_text("A IA escreve o roteiro a partir do tema")
     expect(etapa("A imagem")).to_contain_text("Fotos achadas")
+    expect(etapa("A imagem").get_by_role("button", name="Achar as fotos")).to_be_visible()
     expect(pagina.get_by_label("o tema")).to_be_visible()
     expect(pagina.locator("#passo-envio [data-envio]")).to_have_count(0)
 
@@ -1048,7 +1170,7 @@ def test_a_trilha_pelo_que_voce_tem(navegador, endereco, tmp_path):
     expect(bloqueio).to_have_count(0)
     expect(etapa("O texto")).to_contain_text("é o que a voz lê")
     expect(etapa("A imagem").locator('[data-envio="cenas"]')).to_have_count(1)
-    expect(etapa("A fala")).to_contain_text("A sua voz narra o roteiro")
+    expect(etapa("A fala")).to_contain_text("Uma voz narra o roteiro")
     expect(etapa("A fala").get_by_label("minha voz", exact=True)).to_be_visible()
 
     # o vídeo completo com as cenas: as cenas de fundo, e o vídeo vai por cima, recortado; o

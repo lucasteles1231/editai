@@ -90,11 +90,27 @@ dele. Quem não usa a Minha voz não baixa nada disto.
 A gravação da pessoa, a voz salva e as narrações ficam no computador. O motor não fala
 com a internet depois de instalado.
 
+## Instalado à parte, só com a voz local (não vem neste repositório)
+
+O botão **Instalar a voz local** (ou `editai --instalar-voz-local`) cria outro ambiente,
+em `voz-local`, na pasta de dados do editor. Quem não usa a voz local não baixa nada disto.
+
+| Pacote | Para quê | Licença |
+|---|---|---|
+| [Piper](https://github.com/OHF-voice/piper1-gpl) (`piper-tts` 1.8.0) | sintetizar a voz | GPL-3.0-or-later |
+| [espeak-ng](https://github.com/espeak-ng/espeak-ng), dentro do Piper | transformar o texto em fonemas | GPL-3.0-or-later |
+| [ONNX Runtime](https://onnxruntime.ai/) | rodar o modelo | MIT |
+| A voz [pt_BR-faber-medium](https://huggingface.co/rhasspy/piper-voices/tree/main/pt/pt_BR/faber/medium) (63 MB) | a voz | MIT, treinada em dados CC0 |
+
+**Por que à parte:** o Piper é GPL, e o Editai é MIT. Ele roda num ambiente próprio, como
+outro programa que o editor chama, e cada um fica com a sua licença. Este repositório não
+traz o Piper: ele é baixado do PyPI, no seu computador, quando você instala a voz local.
+
 ## Serviços opcionais
 
-Nenhum deles é chamado sem uma chave de quem usa o editor. As chaves ficam no
-`config.json` da pasta de configuração, com leitura só para o próprio usuário, e nunca
-voltam para a página.
+O Gemini e o Pexels só são chamados com a chave de quem usa o editor, e o Openverse, só
+quando a pessoa pede as fotos. As chaves ficam no `config.json` da pasta de configuração,
+com leitura só para o próprio usuário, e nunca voltam para a página.
 
 ### O Gemini
 
@@ -108,6 +124,10 @@ A thumbnail com IA usa a [API do Gemini](https://ai.google.dev/), do Google, sob
   faturamento ativo no Google, uns US$ 0,04 por imagem. O Gemini recebe só a descrição
   da cena. O editor gera no máximo 10 imagens por sessão e anota cada uma num
   `gastos.jsonl`, na pasta de dados dele.
+- **O vídeo só pelo tema:** o Gemini recebe o tema e devolve o roteiro; depois, recebe o
+  roteiro e diz o que buscar nas fotos de cada trecho.
+- **A voz do Gemini** (`gemini-2.5-flash-preview-tts`): recebe o roteiro e devolve a
+  narração. Na cota gratuita, são 10 narrações por dia.
 
 ### O Pexels
 
@@ -116,6 +136,16 @@ grátis, sob as [regras da API](https://www.pexels.com/api/documentation/#guidel
 [licença do Pexels](https://www.pexels.com/license/), que permite uso livre. O Pexels
 recebe só o texto da busca. O próprio editor baixa as fotos, e a página mostra o link do
 Pexels e o nome de cada fotógrafo, como as regras pedem.
+
+### O Openverse
+
+As fotos achadas pelo roteiro (no vídeo só pelo tema) também vêm do
+[Openverse](https://openverse.org/), da WordPress Foundation, pela
+[API](https://api.openverse.org/v1/) dele, sem chave. Só entram as licenças CC0, domínio
+público e CC BY. A CC BY pede o crédito: o editor escreve o de cada foto no `creditos.txt`,
+ao lado delas, para colar na descrição do vídeo. O Openverse recebe só o texto da busca, em
+inglês. Cada foto é de quem a publicou, sob a licença dela, e este repositório não traz
+nenhuma.
 
 ## As imagens do README
 

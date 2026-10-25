@@ -5,8 +5,8 @@
 import type {
   AudioInfo, AvatarSalvo, BibliotecaInfo, Edicao, EfeitosDaVoz, Estado, EstadoChave, EstadoDasVozes, EstadoDaVersao, EstadoIa,
   FotoPexels,
-  GeracaoDaMatriz, GravacaoDaVoz, Ideia, ImagemFundo, MotorDeVoz, Narracao, PartesDaFoto, PersonagemInfo, Preset, PresetsImportados, RecorteInfo, Saida, Tarefa,
-  VideoInfo, VozSalva,
+  GeracaoDaMatriz, GravacaoDaVoz, Ideia, ImagemFundo, MotorDeVoz, Narracao, PartesDaFoto, PersonagemInfo, Preset, PresetsImportados, RecorteInfo, RoteiroEscrito, Saida, Tarefa,
+  VideoInfo, VozLocal, VozSalva,
 } from './tipos';
 
 const CHAVE = 'editor-token';
@@ -104,6 +104,23 @@ export const api = {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({assunto}),
     }),
   andamentoDaMatriz: (biblioteca: string) => pedir<GeracaoDaMatriz>(`/api/bibliotecas/${biblioteca}/gerar-matriz`),
+  /** O vídeo longo sobe, e o editor separa as cenas e escreve a matriz (em segundo plano: o mesmo
+   *  andamento da matriz, com a etapa). */
+  separarVideoLongo: (biblioteca: string, arquivo: File, assunto: string, aoProgresso: (fracao: number) => void) =>
+    enviarArquivo<GeracaoDaMatriz>(
+      `/api/bibliotecas/${biblioteca}/video-longo?assunto=${encodeURIComponent(assunto)}`, arquivo, aoProgresso),
+  abrirPastaDasCenas: (biblioteca: string) => pedir(`/api/bibliotecas/${biblioteca}/abrir`, {method: 'POST'}),
+  /** Sem vídeo e sem cenas: o roteiro vira uma biblioteca de fotos achadas (em segundo plano: o mesmo
+   *  andamento da matriz), que já vale ao terminar. */
+  acharFotos: (biblioteca: string, roteiro: string, tema: string, orientacao: string) =>
+    pedir<GeracaoDaMatriz>(`/api/bibliotecas/${biblioteca}/fotos`, {
+      method: 'POST', headers: JSON_, body: JSON.stringify({roteiro, tema, orientacao}),
+    }),
+  /** O roteiro escrito pela IA a partir do tema, para revisar antes de narrar. */
+  escreverRoteiro: (tema: string, segundos: number, idioma: string) =>
+    pedir<RoteiroEscrito>('/api/roteiro', {
+      method: 'POST', headers: JSON_, body: JSON.stringify({tema, segundos, idioma}),
+    }),
   matrizAtual: (biblioteca: string) =>
     pedir<{cenas: Record<string, unknown>[]}>(`/api/bibliotecas/${biblioteca}/matriz`),
   quadroDaCenaUrl: (biblioteca: string, arquivo: string) =>
@@ -281,6 +298,15 @@ export const api = {
     pedir<Narracao>(`/api/vozes/${apelido}/narrar`, {
       method: 'POST', headers: JSON_, body: JSON.stringify({roteiro, pronuncia}),
     }),
+  /** O roteiro narrado por uma voz pronta ("gemini:Orus", "local:faber"). */
+  narrarComVozPronta: (voz: string, roteiro: string, pronuncia: string) =>
+    pedir<Narracao>('/api/vozes/prontas/narrar', {
+      method: 'POST', headers: JSON_, body: JSON.stringify({voz, roteiro, pronuncia}),
+    }),
+  vozLocal: () => pedir<VozLocal>('/api/vozes/local'),
+  instalarVozLocal: () => pedir<VozLocal>('/api/vozes/local', {method: 'POST'}),
+  cancelarVozLocal: () => pedir<VozLocal>('/api/vozes/local/cancelar', {method: 'POST'}),
+  desinstalarVozLocal: () => pedir<VozLocal>('/api/vozes/local', {method: 'DELETE'}),
   narracao: (id: string) => pedir<Narracao>(`/api/vozes/narracoes/${id}`),
   cancelarNarracao: (id: string) => pedir(`/api/vozes/narracoes/${id}/cancelar`, {method: 'POST'}),
   audioUrl: (id: string) => comToken(`/api/audios/${id}/arquivo`),

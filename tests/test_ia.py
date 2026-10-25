@@ -176,6 +176,16 @@ class TestOPedido:
         assert [p.url.path.rsplit("/", 1)[-1] for p in gemini.pedidos] == [
             f"{m}:generateContent" for m in ia.MODELOS]
 
+    def test_o_pedido_leve_comeca_pelo_modelo_leve(self, de_verdade):
+        gemini = _Gemini(httpx.Response(429, json={"error": {"message": "quota"}}),
+                         _resposta({"ok": True}))
+        r, modelo = ia.perguntar_json("sistema", "pedido", {"type": "object"}, temperatura=0.2,
+                                      transporte=gemini.transporte, leve=True)
+        assert r == {"variantes": {"ok": True}} and modelo == ia.MODELOS_LEVES[1]
+        assert [p.url.path.rsplit("/", 1)[-1] for p in gemini.pedidos] == [
+            f"{m}:generateContent" for m in ia.MODELOS_LEVES[:2]]
+        assert set(ia.MODELOS_LEVES) == set(ia.MODELOS)
+
     def test_sem_cota_em_todos(self, de_verdade):
         gemini = _Gemini(*[httpx.Response(429, json={"error": {"message": "quota"}})] * 3)
         with pytest.raises(ia.ErroDaIA, match="cota grátis"):

@@ -63,10 +63,11 @@ export const AntesDeComecar: React.FC<Props> = (p) => {
     {id: 'gemini', titulo: 'Chave do Gemini', pronto: Boolean(p.ia?.configurada),
       estado: !p.ia ? 'carregando…' : p.ia.configurada ? `ligado · ${p.ia.origem === 'variavel' ? 'variável' : p.ia.final}`
         : 'sem chave',
-      liga: 'Ideias de capa, cartões animados, a matriz das cenas e o avatar pela foto. Grátis.'},
+      liga: 'O vídeo só pelo tema (o roteiro e a voz), ideias de capa, cartões, a matriz das cenas e o avatar pela '
+        + 'foto. Grátis.'},
     {id: 'pexels', titulo: 'Chave do Pexels', pronto: p.pexels.configurada,
       estado: p.pexels.configurada ? 'ligado' : 'sem chave',
-      liga: 'Fotos grátis para o fundo da thumbnail.'},
+      liga: 'Fotos grátis para o fundo da thumbnail e para o vídeo só pelo tema.'},
   ];
   const aberto = cartoes.find((c) => c.id === p.aberto);
 

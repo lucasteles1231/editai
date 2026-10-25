@@ -183,8 +183,21 @@ export type MotorDeVoz = {
   ocupa: string;
 };
 export type VozSalva = {nome: string; apelido: string; criada: string; segundos: number; pronuncia: Record<string, string>};
-/** O motor da voz sintetizada e as vozes gravadas (``GET /api/vozes``). */
-export type EstadoDasVozes = {motor: MotorDeVoz; vozes: VozSalva[]};
+/** Uma voz pronta: a do Gemini ou a local (o Piper). */
+export type VozPronta = {id: string; nome: string; descricao: string; motor: 'gemini' | 'local'};
+/** A voz local: instalada à parte, como o motor da Minha voz. */
+export type VozLocal = {
+  instalado: boolean; instalando: boolean; etapa: string; fracao: number; erro: string; espaco: string;
+  tempo: string; ocupa: string;
+};
+/** As vozes prontas e o que falta para cada uma (a cota do Gemini, a instalação da local). */
+export type EstadoDasProntas = {
+  vozes: VozPronta[]; gemini: {ligado: boolean; restantes_hoje: number; por_dia: number}; local: VozLocal;
+};
+/** O motor da voz sintetizada, as vozes gravadas e as prontas (``GET /api/vozes``). */
+export type EstadoDasVozes = {motor: MotorDeVoz; vozes: VozSalva[]; prontas: EstadoDasProntas};
+/** O roteiro escrito pela IA a partir do tema (``POST /api/roteiro``). */
+export type RoteiroEscrito = {titulo: string; texto: string; palavras: number; por: string; pedidos: number};
 export type MedidasDaLeitura = {segundos: number; lufs: number; snr_db: number; estouro: number};
 export type ParagrafoDaLeitura = {
   indice: number; texto: string; estado: 'pendente' | 'ok' | 'refazer'; motivos: string[]; cobertura: number;
@@ -214,7 +227,18 @@ export type CenaDaMatriz = {
 export type GeracaoDaMatriz = {
   rodando: boolean; prontas: number; total: number; pedidos: number;
   por: string; aviso: string; erro: string; cenas: Record<string, unknown>[] | null;
+  /** Só num vídeo longo separado: a etapa, a fração das duas primeiras, a pasta das cenas e
+   *  quantas saíram (a descrição conta as tomadas, uma por plano). */
+  etapa?: EtapaDaSeparacao; fracao?: number; pasta?: string; clipes?: number; cortes?: number;
+  /** Só nas fotos achadas: quantas, os trechos sem foto e a biblioteca, que já vale ao terminar. */
+  fotos?: number; sem_foto?: number[]; biblioteca?: BibliotecaInfo | null;
 };
+
+export type EtapaDaSeparacao = 'analisando' | 'gravando' | 'descrevendo' | 'buscando' | 'baixando';
+
+/** O andamento da matriz na página (gerada de uma pasta, ou de um vídeo longo separado). */
+export type AndamentoDaMatriz = {prontas: number; total: number; pedidos: number; etapa?: EtapaDaSeparacao;
+  fracao?: number};
 
 /** Quem escreveu o roteiro (as cenas e os cartões) e quanto. */
 export type ResumoDoRoteiro = {por: string; aviso: string; pedidos: number; cenas: number; cartoes: number};

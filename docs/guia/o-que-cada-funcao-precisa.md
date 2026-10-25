@@ -12,6 +12,9 @@ sua. As medidas são de um MacBook com Apple M5 (10 núcleos, 16 GB).
 | **O Gemini:** ideias de thumbnail, roteiro, cartões, destaques e matriz | não | serviço, com uma chave grátis | | | nos servidores do Google | sim | segundos por pedido |
 | **O fundo gerado** pelo Gemini | não | serviço pago, uns US$ 0,04 por imagem | | | nos servidores do Google | sim | |
 | **As fotos do Pexels**, na thumbnail | não | serviço, com uma chave grátis | | | nos servidores do Pexels | sim | |
+| **O vídeo só pelo tema:** o roteiro, a busca das fotos e a voz do Gemini | não | serviço, com a chave grátis do Gemini (a voz: 10 narrações por dia) | | | nos servidores do Google | sim | o roteiro, de 30 s a 2 min; a busca das fotos, uns 2 s; a voz, uns 20 s num vídeo de 45 s |
+| **As fotos achadas** (Pexels e Openverse) | não | serviço; o Openverse não pede chave | ~0,4 MB por foto (uns 5 MB num vídeo de 45 s) | | nos servidores das fotos | sim | uns 15 s com a chave do Pexels; sem ela, uns 5 s a mais por trecho |
+| **A voz local** (Piper, a Faber) | não | instalação à parte, por um botão | ~210 MB | ~270 MB | processador | só para instalar | 37 s de fala em 1,3 s (27 vezes o tempo real); a instalação, uns 2 min |
 | **O avatar:** o criador, os 36 quadros e o avatar na montagem e na thumbnail | não | vem na instalação | ~900 KB de partes | | os quadros, no navegador; a montagem, no processador | não | menos de 3 s para os 36 quadros |
 | **O avatar pela foto** (o Gemini escolhe as partes) | não | serviço, com a chave grátis | | | nos servidores do Google | sim | segundos |
 | **Os 4 sons do tema Notícia** sem licença livre | não | baixam no primeiro uso | ~0,6 MB | | | só na primeira vez; sem ela, toca um parecido | |

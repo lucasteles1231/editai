@@ -40,6 +40,7 @@ export default defineConfig({
           {text: 'A interface', link: '/guia/a-interface'},
           {text: 'A thumbnail', link: '/guia/a-thumbnail'},
           {text: 'A montagem em camadas', link: '/guia/a-montagem-em-camadas'},
+          {text: 'O vídeo só pelo tema', link: '/guia/o-video-so-pelo-tema'},
           {text: 'Presets', link: '/guia/presets'},
           {text: 'Cartões animados', link: '/guia/cartoes-animados'},
           {text: 'A legenda em destaques', link: '/guia/a-legenda-em-destaques'},

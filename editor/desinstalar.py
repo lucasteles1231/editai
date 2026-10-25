@@ -143,9 +143,13 @@ def _dentro(filha: Path, mae: Path) -> bool:
         return False
 
 
+#: Os motores instalados à parte dentro dos dados, mostrados cada um na sua linha (são o grosso).
+MOTORES = (("motor-de-voz", "o motor da voz sintetizada"), ("voz-local", "a voz local (o Piper)"))
+
+
 def principais() -> list[Item]:
-    """O que sempre sai: o motor da voz (à parte, por ser o grosso) e as pastas do sistema,
-    sem repetir a que está dentro de outra (o cache do Windows, dentro dos dados)."""
+    """O que sempre sai: os motores de voz (à parte, por serem o grosso) e as pastas do
+    sistema, sem repetir a que está dentro de outra (o cache do Windows, dentro dos dados)."""
     papeis: dict[Path, list[str]] = {}
     for papel, pasta in pastas_do_sistema().items():
         papeis.setdefault(pasta, []).append(papel)
@@ -157,14 +161,15 @@ def principais() -> list[Item]:
     for raiz in raizes:
         if not raiz.exists():
             continue
-        motor = raiz / "motor-de-voz"
-        if motor.is_dir():
-            itens.append(Item("o motor da voz sintetizada", motor, tamanho(motor)))
+        motores = [raiz / nome for nome, _ in MOTORES]
+        for (_, rotulo_do_motor), motor in zip(MOTORES, motores, strict=True):
+            if motor.is_dir():
+                itens.append(Item(rotulo_do_motor, motor, tamanho(motor)))
         nomes = [n for p, ps in papeis.items() if p == raiz or _dentro(p, raiz) for papel in ps
                  for n in rotulos[papel]]
         rotulo = ", ".join(nomes[:-1]) + " e " + nomes[-1] if len(nomes) > 1 else nomes[0]
-        # (o resto da pasta, sem passar de novo pelos milhares de arquivos do motor)
-        resto = sum(tamanho(c) for c in raiz.iterdir() if c != motor)
+        # (o resto da pasta, sem passar de novo pelos milhares de arquivos dos motores)
+        resto = sum(tamanho(c) for c in raiz.iterdir() if c not in motores)
         itens.append(Item(rotulo, raiz, resto))
     return itens
 
@@ -353,7 +358,7 @@ def so_o_motor(*, sim: bool = False, perguntar: Perguntar = input,
     return 0
 
 
-__all__ = ["FERRAMENTA", "NOME", "ONDE_CANCELAR", "Item", "atalhos", "cache_do_hugging_face",
-           "caminhos_dos_atalhos", "chaves_guardadas", "legivel", "modelos", "pasta_dos_videos",
-           "pastas_do_sistema", "principais", "programa", "repositorios_dos_modelos", "so_o_motor",
-           "tamanho", "tudo", "videos"]
+__all__ = ["FERRAMENTA", "MOTORES", "NOME", "ONDE_CANCELAR", "Item", "atalhos",
+           "cache_do_hugging_face", "caminhos_dos_atalhos", "chaves_guardadas", "legivel",
+           "modelos", "pasta_dos_videos", "pastas_do_sistema", "principais", "programa",
+           "repositorios_dos_modelos", "so_o_motor", "tamanho", "tudo", "videos"]

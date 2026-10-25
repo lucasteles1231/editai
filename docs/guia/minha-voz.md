@@ -5,6 +5,10 @@ roteiro com ela: depois disso, você traz só o texto e as cenas. O motor é o
 [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) 0.6B, de código aberto (Apache 2.0), e
 roda no seu computador.
 
+Sem gravar nada, o roteiro também pode ser narrado por uma voz pronta: as do Gemini ou a
+local, que roda no computador. Elas aparecem ao lado das suas, na hora de narrar (veja
+[As vozes](./o-video-so-pelo-tema#as-vozes)).
+
 <img src="../img/interface-voz-leitura.png" alt="A leitura no teleprompter: os nove parágrafos numerados, todos aprovados, o terceiro aberto em letra grande (o das perguntas e dos números), o botão Regravar, a barra do microfone e a nota do parágrafo: 7 s, volume, fala 43 dB acima do ruído e 100% das palavras" width="420" align="right">
 
 1. **Instale a voz.** Em **Antes de começar**, no cartão **Minha voz**, clique em

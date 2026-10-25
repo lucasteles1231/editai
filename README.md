@@ -34,8 +34,10 @@ a edição que tomaria uma tarde, no estilo dos Shorts, Reels e TikTok:
 - põe zoom, ícones e efeitos sonoros;
 - e ainda gera a thumbnail.
 
-Para um vídeo de notícia, você nem aparece: traz uma pasta de cenas, a narração (ou só o
-roteiro, lido pela sua voz, gravada uma vez) e, se quiser, um personagem ou o seu avatar.
+Para um vídeo de notícia, você nem aparece: traz uma pasta de cenas (ou um vídeo longo, que
+ele separa em cenas), a narração (ou só o roteiro, lido pela sua voz, gravada uma vez) e, se
+quiser, um personagem ou o seu avatar. Ou só o tema: a IA escreve o roteiro, o Editai acha
+fotos com licença livre e uma voz narra.
 
 Por padrão, ele roda **inteiro no seu computador**, sem conta, sem chave de API, sem
 assinatura e sem marca d'água. A transcrição é feita pelo Whisper na sua própria máquina,
@@ -80,6 +82,7 @@ O que o instalador faz, passo a passo, e como instalar à mão estão em
 | **[A montagem em camadas](https://lucasteles1231.github.io/editai/guia/a-montagem-em-camadas)** | um fundo ou uma [biblioteca de cenas](https://lucasteles1231.github.io/editai/guia/a-montagem-em-camadas#biblioteca-de-cenas), e você, um personagem ou o seu avatar por cima |
 | **[Cartões animados](https://lucasteles1231.github.io/editai/guia/cartoes-animados)** e **[legenda em destaques](https://lucasteles1231.github.io/editai/guia/a-legenda-em-destaques)** | selo, lista, quadro e número na palavra certa; opcionais, com o Gemini |
 | **[Voz e bipe](https://lucasteles1231.github.io/editai/guia/voz-e-bipe)** e **[efeitos na voz](https://lucasteles1231.github.io/editai/guia/efeitos-na-voz)** | voz limpa ou de estúdio, robô ou esquilo, e bipe nas palavras proibidas |
+| **[O vídeo só pelo tema](https://lucasteles1231.github.io/editai/guia/o-video-so-pelo-tema)** | escreva o assunto: a IA escreve o roteiro, você revisa, as fotos chegam com os créditos e uma voz narra |
 | **[Minha voz](https://lucasteles1231.github.io/editai/guia/minha-voz)** | leia um texto uma vez, e a sua voz narra qualquer roteiro |
 | **[Meu avatar](https://lucasteles1231.github.io/editai/guia/meu-avatar)** | um personagem seu em pixel art, de pessoa ou de bicho, que fala no seu lugar |
 | **[Presets](https://lucasteles1231.github.io/editai/guia/presets)** | gameplay, vlog, review, aula, notícia: um clique muda tudo |
@@ -100,6 +103,7 @@ Tudo também funciona [no terminal](https://lucasteles1231.github.io/editai/guia
 - **O mínimo:** uns 0,8 GB de disco (o editor e o modelo de transcrição) e 8 GB de memória.
 - **A Minha voz,** opcional: mais uns 3,5 GB e, de preferência, um Mac com chip Apple ou um
   PC com placa NVIDIA.
+- **A voz local,** opcional: mais uns 210 MB, em qualquer computador.
 - **Internet:** só para instalar e no primeiro uso de cada modelo.
 
 O detalhe de cada função, medido, está em
@@ -121,7 +125,8 @@ O detalhe de cada função, medido, está em
 Nada do vídeo, do áudio nem da sua voz sai do computador. O que sai, e só quando você usa:
 
 - o texto da fala e quadros pequenos para o Gemini, com a sua chave;
-- a busca de fotos no Pexels;
+- no vídeo só pelo tema, o tema e o roteiro para o Gemini, com a sua chave;
+- a busca de fotos no Pexels e no Openverse;
 - os downloads da instalação e dos modelos;
 - o pedido da última versão ao GitHub, uma vez por dia.
 
@@ -144,9 +149,6 @@ cada um, os testes e como publicar uma versão estão em
 [Desenvolvimento](https://lucasteles1231.github.io/editai/guia/desenvolvimento).
 
 ## Créditos e licenças
-
-O editor nasceu da edição do canal **um projeto anterior**. É a mesma legenda, os mesmos
-adesivos e ícones, só que para o vídeo de qualquer pessoa.
 
 - **Henrique Monteiro**, co-participante: os testes práticos e as ideias.
 - **Guilherme Cabrera**, mentor: as dúvidas e as ideias de ajustes.

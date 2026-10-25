@@ -11,8 +11,7 @@ sempre legível e continua editável nos controles.
 texto da fala e 8 quadros pequenos (512 px), com a chave de quem usa. O vídeo não vai.
 Sem chave, a thumbnail continua sendo feita por regras, aqui mesmo.
 
-O jeito de conversar com o Gemini vem de um projeto anterior, que fala com ele todo dia
-(``um projeto anterior``):
+O jeito de conversar com o Gemini, aprendido com o uso diário dele:
 
 - uma **escada de modelos**: se um está sem cota ou fora do ar, tenta o próximo;
 - **sem raciocínio estendido** (``thinkingBudget: 0``): o modelo que pensa gastava 96%
@@ -45,6 +44,9 @@ API = "https://generativelanguage.googleapis.com/v1beta"
 #: toda queda. Cada modelo tem a própria cota — no 3.8, a grátis era de 20 pedidos por
 #: dia —, por isso a escada desce quando um deles esgota.
 MODELOS = ("gemini-flash-latest", "gemini-3.5-flash", "gemini-flash-lite-latest")
+#: A escada dos pedidos simples (as buscas das fotos), com o leve primeiro: em 25/10/2026 ele
+#: respondeu em 1,7 s, e o flash-latest levou de 83 a 130 s no mesmo tipo de pedido.
+MODELOS_LEVES = ("gemini-flash-lite-latest", "gemini-flash-latest", "gemini-3.5-flash")
 #: A maior fração do quadro, em altura ou largura, que uma caixa de rosto pode ter.
 ROSTO_MAXIMO = 0.6
 #: A espera antes de tentar de novo o mesmo modelo quando ele diz que está sobrecarregado
@@ -76,8 +78,7 @@ PLATAFORMAS = {
 }
 EM_PE = frozenset({"shorts", "tiktok", "reels"})
 
-#: A chamada, com as regras de um projeto anterior (``um projeto anterior``): ela é lida num quadro
-#: de 120 px de largura, ao lado de outros vídeos.
+#: A chamada: ela é lida num quadro de 120 px de largura, ao lado de outros vídeos.
 CHAMADA_PALAVRAS = (2, 5)
 CHAMADA_TETO = 28
 SELO_TETO = 12
@@ -93,8 +94,8 @@ LAYOUTS = {
                 "vídeo responde a uma pergunta",
     "alerta": "uma faixa de aviso no topo — use para erro, cuidado, proibição ou golpe",
 }
-#: A paleta fechada: todas aguentam o contorno preto em qualquer foto (lição do
-#: ``miniatura.CORES`` de um projeto anterior — escolher qualquer matiz dava verde-musgo em floresta).
+#: A paleta fechada: todas aguentam o contorno preto em qualquer foto (escolher qualquer
+#: matiz dava verde-musgo em floresta).
 CORES = ("amarelo", "rosa", "ciano", "lima", "laranja", "roxo", "vermelho")
 #: O que vai atrás da pessoa: um quadro do vídeo que mostre o assunto, o quadro dela
 #: desfocado, a cor de destaque, uma foto do Pexels ou uma imagem gerada.
@@ -106,7 +107,7 @@ BUSCA_TETO = 60
 CENA_TETO = 300
 
 #: A geração de fundo: o único gasto em dinheiro do editor, e por isso com teto. Um erro
-#: que chamasse isto em laço custaria umas imagens, não o saldo (a lição de um projeto anterior).
+#: que chamasse isto em laço custaria umas imagens, não o saldo.
 MODELO_DE_IMAGEM = "gemini-2.5-flash-image"
 TETO_DE_IMAGENS = 10
 PROPORCOES = ("16:9", "9:16", "1:1")
@@ -115,7 +116,7 @@ SEM_FATURAMENTO = ("A geração de imagens do Gemini não está liberada na cota
                    "(aistudio.google.com, em Billing); cada imagem custa uns US$ 0,04.")
 _geradas = 0
 
-#: Fórmulas gastas, as mesmas que um projeto anterior recusa nos títulos.
+#: Fórmulas gastas, recusadas nas chamadas.
 PROIBIDAS = (
     "tudo sobre", "tudo o que voce precisa saber", "voce nao vai acreditar",
     "voce nunca vai adivinhar", "o segredo que ninguem conta", "ninguem te contou",
@@ -367,7 +368,8 @@ _PENSA_SEMPRE: set[str] = set()
 
 def _perguntar(chave_: str, sistema: str, pedido: str, imagens: Sequence[bytes],
                esquema: dict, *, temperatura: float, transporte=None,
-               gasto: list[str] | None = None) -> tuple[dict, str]:
+               gasto: list[str] | None = None,
+               modelos: Sequence[str] = MODELOS) -> tuple[dict, str]:
     """O JSON da resposta e o modelo que respondeu, descendo a escada.
 
     ``gasto`` recebe o modelo de cada pedido feito: a cota grátis conta pedidos, e quem
@@ -377,7 +379,7 @@ def _perguntar(chave_: str, sistema: str, pedido: str, imagens: Sequence[bytes],
     por_minuto = False
     esperas: list[float] = []
     with _cliente(transporte) as cliente:
-        for modelo in MODELOS:
+        for modelo in modelos:
             pensar, de_novo, recusou_sem_pensar = modelo in _PENSA_SEMPRE, False, False
             while True:
                 if gasto is not None:
@@ -428,16 +430,18 @@ def _perguntar(chave_: str, sistema: str, pedido: str, imagens: Sequence[bytes],
 
 def perguntar_json(sistema: str, pedido: str, esquema_: dict, *, temperatura: float,
                    transporte=None, gasto: list[str] | None = None,
-                   imagens: Sequence[bytes] = ()) -> tuple[dict, str]:
+                   imagens: Sequence[bytes] = (), leve: bool = False) -> tuple[dict, str]:
     """Um pedido com a chave salva, descendo a escada de modelos: só de texto (o roteiro
     do vídeo: as cenas e os cartões) ou com imagens JPEG antes do texto (a descrição das
-    cenas da biblioteca). Levanta :class:`ErroDaIA` sem chave."""
+    cenas da biblioteca). ``leve`` começa pelo modelo leve (:data:`MODELOS_LEVES`), para os
+    pedidos simples. Levanta :class:`ErroDaIA` sem chave."""
     valor, _origem = chave()
     if not valor:
         raise ErroDaIA("Falta a chave do Gemini: cole a sua no passo 5 "
                        f"(crie uma em {ONDE_PEGAR_A_CHAVE}).")
     return _perguntar(valor, sistema, pedido, list(imagens), esquema_,
-                      temperatura=temperatura, transporte=transporte, gasto=gasto)
+                      temperatura=temperatura, transporte=transporte, gasto=gasto,
+                      modelos=MODELOS_LEVES if leve else MODELOS)
 
 
 def ligada() -> bool:
@@ -807,7 +811,7 @@ def sugerir(fala: str, quadros: Sequence[tuple[float, bytes]], *, idioma: str,
     if ruins and len(boas) < VARIANTES:
         logger.info("conserto de %d ideia(s): %s", len(ruins),
                     " | ".join("; ".join(p) for _, p in ruins))
-        # Um conserto, com o que estava errado — o mesmo que o diretor de um projeto anterior faz.
+        # Um conserto, com o que estava errado.
         # O "ideia" é lido por quem escolhe: num teste real, ele voltou dizendo
         # "corrigindo o modelo para classico".
         conserto = (pedido + "\n\nESTAS IDEIAS VIERAM COM PROBLEMAS. Mande de novo só elas, "
@@ -916,8 +920,8 @@ def gerar_fundo(cena: str, proporcao: str = "16:9", *, lado_do_texto: str = "esq
     """Uma imagem de fundo gerada pelo Gemini (PNG ou JPEG). Levanta :class:`ErroDaIA`.
 
     **Custa dinheiro**: só roda a pedido, e no máximo :data:`TETO_DE_IMAGENS` vezes por
-    sessão. A proporção vai como parâmetro, e não no texto: num projeto anterior, todo pedido
-    que dizia "imagem larga" em palavras voltou quadrado.
+    sessão. A proporção vai como parâmetro, e não no texto: todo pedido que dizia "imagem
+    larga" em palavras voltou quadrado.
     """
     import httpx
 
@@ -983,6 +987,7 @@ __all__ = [
     "LUZES",
     "MAOS",
     "MODELOS",
+    "MODELOS_LEVES",
     "RECUSAS",
     "Bloqueado",
     "ErroDaIA",

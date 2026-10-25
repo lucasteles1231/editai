@@ -12,13 +12,13 @@ topo) mostra como.
 | **Cenas** | Uma pasta de vídeos e fotos, escolhidos pelo que é dito. Com o vídeo completo, as cenas viram o fundo, e o vídeo vai por cima, recortado |
 | **Áudio** | A fala gravada à parte: dela saem a legenda e os cortes |
 | **Roteiro** | Com um vídeo falando, corrige a grafia da legenda. Sem ele, a sua voz narra o roteiro ([Minha voz](./minha-voz)) |
-| **Tema** | O assunto, em uma frase: vai de contexto para o Gemini, nos cartões e na escolha das cenas |
+| **Tema** | O assunto, em uma frase. Sozinho, a IA escreve o roteiro, o Editai acha as fotos e uma voz narra ([O vídeo só pelo tema](./o-video-so-pelo-tema)). Com um vídeo, vai de contexto para o Gemini, nos cartões e na escolha das cenas |
 
 **De onde vem a fala**, que dá a legenda e os cortes: do áudio; senão, do vídeo de quem
 fala; senão, do roteiro narrado. **Quem vai por cima**, quando ninguém fala na tela: o seu
 avatar, se você tiver um, ou ninguém. Na montagem, **Ajustar as camadas** troca as duas
-coisas à mão. Duas trilhas ainda não existem, e a página avisa: só o tema (o Gemini vai
-escrever o roteiro) e nenhuma imagem (o editor vai achar fotos pelo que é dito).
+coisas à mão. **Sem vídeo e sem cenas**, a imagem são fotos achadas pelo que é dito, e só
+com o tema a IA escreve o roteiro: veja [O vídeo só pelo tema](./o-video-so-pelo-tema).
 
 Logo abaixo do título, **Antes de começar** junta o que se configura uma vez e vale para
 todos os vídeos, tudo opcional: a sua voz gravada ([Minha voz](./minha-voz)), o seu avatar em

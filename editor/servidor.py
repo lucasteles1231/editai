@@ -42,6 +42,8 @@ from editor import (
     catalogo,
     cenas,
     efeitos_da_voz,
+    escrita,
+    fotos,
     ia,
     icones,
     imagens,
@@ -50,11 +52,14 @@ from editor import (
     pexels,
     presets,
     recorte,
+    separar,
     sons,
     transcricao,
     versao,
     voz,
     voz_clonada,
+    voz_local,
+    voz_pronta,
 )
 from editor import avatar as avatar_mod
 from editor import saida as saida_mod
@@ -746,7 +751,34 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
 
     @app.get("/api/vozes")
     def estado_das_vozes():
-        return {"motor": motor_de_voz.estado(), "vozes": voz_clonada.vozes()}
+        return {"motor": motor_de_voz.estado(), "vozes": voz_clonada.vozes(),
+                "prontas": voz_pronta.estado()}
+
+    # A voz local (o Piper, num ambiente à parte): instalar, acompanhar e desinstalar.
+
+    @app.post("/api/vozes/local")
+    def instalar_a_voz_local():
+        try:
+            return voz_local.instalar_em_segundo_plano()
+        except voz_local.ErroDaVozLocal as erro:
+            raise HTTPException(409, str(erro)) from erro
+
+    @app.get("/api/vozes/local")
+    def andamento_da_voz_local():
+        return voz_local.estado()
+
+    @app.post("/api/vozes/local/cancelar")
+    def cancelar_a_voz_local():
+        voz_local.cancelar_instalacao()
+        return voz_local.estado()
+
+    @app.delete("/api/vozes/local")
+    def desinstalar_a_voz_local():
+        try:
+            voz_local.desinstalar()
+        except voz_local.ErroDaVozLocal as erro:
+            raise HTTPException(409, str(erro)) from erro
+        return voz_local.estado()
 
     @app.post("/api/vozes/motor")
     def instalar_o_motor():
@@ -856,6 +888,62 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
         except voz_clonada.VozInvalida as erro:
             raise HTTPException(404, str(erro)) from erro
 
+    def _narrar_em_segundo_plano(nome: str, fazer) -> dict:
+        """Roda ``fazer(destino, progresso, parar)`` numa thread; quando termina, o WAV vira um
+        áudio separado. A Minha voz e as vozes prontas passam por aqui."""
+        nid = uuid.uuid4().hex[:12]
+        estado = {"id": nid, "rodando": True, "feitas": 0, "total": 0, "erro": "",
+                  "audio": None, "cancelar": threading.Event()}
+        narracoes[nid] = estado
+
+        def andou(feitas: int, total: int) -> None:
+            estado.update(feitas=feitas, total=total)
+
+        def rodar() -> None:
+            try:
+                aid = uuid.uuid4().hex[:12]
+                destino = envios / aid / f"narracao-{nome}.wav"
+                destino.parent.mkdir(parents=True)
+                n = fazer(destino, andou, estado["cancelar"].is_set)
+                audios[aid] = {"caminho": destino, "nome": destino.name, "duracao": n.segundos}
+                estado["audio"] = {"id": aid, "nome": destino.name, "duracao": n.segundos,
+                                   "tamanho_bytes": destino.stat().st_size,
+                                   "reaproveitados": n.reaproveitados, "aparelho": n.aparelho}
+            except (voz_clonada.VozInvalida, motor_de_voz.ErroDoMotor,
+                    voz_pronta.SemVoz) as erro:
+                estado["erro"] = str(erro)
+            except Exception as erro:
+                logger.exception("a narração não saiu")
+                estado["erro"] = f"A narração não saiu: {type(erro).__name__}: {erro}"
+            finally:
+                estado["rodando"] = False
+
+        threading.Thread(target=rodar, daemon=True, name=f"narrar-{nid}").start()
+        return {k: v for k, v in estado.items() if k != "cancelar"}
+
+    @app.post("/api/vozes/prontas/narrar")
+    def narrar_com_voz_pronta(dados: Annotated[dict, Body()]):
+        """O roteiro narrado por uma voz pronta (a do Gemini ou a local)."""
+        if any(n["rodando"] for n in narracoes.values()):
+            raise HTTPException(409, "Já há uma narração rodando.")
+        roteiro = str(dados.get("roteiro") or "")
+        try:
+            v = voz_pronta.achar(str(dados.get("voz") or ""))
+            if not roteiro.strip():
+                raise voz_pronta.SemVoz("O roteiro está vazio.")
+            if v.motor == "local" and not voz_local.instalado():
+                raise voz_pronta.SemVoz("Instale a voz local primeiro.")
+            if v.motor == "gemini" and not ia.ligada():
+                raise voz_pronta.SemVoz("A voz do Gemini precisa da chave do Gemini (em \"Antes "
+                                        "de começar\").")
+        except voz_pronta.SemVoz as erro:
+            raise HTTPException(422, str(erro)) from erro
+        pronuncia = (voz_clonada.ler_pronuncia(str(dados["pronuncia"]))
+                     if dados.get("pronuncia") is not None else None)
+        nome = re.sub(r"[^a-z0-9]+", "-", v.id.lower()).strip("-")
+        return _narrar_em_segundo_plano(nome, lambda destino, andou, parar: voz_pronta.narrar(
+            v.id, roteiro, destino, pronuncia=pronuncia, progresso=andou, parar=parar))
+
     @app.post("/api/vozes/{slug}/narrar")
     def narrar(slug: str, dados: Annotated[dict, Body()]):
         """Narra o roteiro em segundo plano; quando termina, o WAV vira um áudio separado."""
@@ -872,35 +960,8 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
             raise HTTPException(409, "Instale a voz sintetizada primeiro.")
         pronuncia = (voz_clonada.ler_pronuncia(str(dados["pronuncia"]))
                      if dados.get("pronuncia") is not None else None)
-        nid = uuid.uuid4().hex[:12]
-        estado = {"id": nid, "rodando": True, "feitas": 0, "total": 0, "erro": "",
-                  "audio": None, "cancelar": threading.Event()}
-        narracoes[nid] = estado
-
-        def andou(feitas: int, total: int) -> None:
-            estado.update(feitas=feitas, total=total)
-
-        def rodar() -> None:
-            try:
-                aid = uuid.uuid4().hex[:12]
-                destino = envios / aid / f"narracao-{slug}.wav"
-                destino.parent.mkdir(parents=True)
-                n = voz_clonada.narrar(slug, roteiro, destino, pronuncia=pronuncia,
-                                       progresso=andou, parar=estado["cancelar"].is_set)
-                audios[aid] = {"caminho": destino, "nome": destino.name, "duracao": n.segundos}
-                estado["audio"] = {"id": aid, "nome": destino.name, "duracao": n.segundos,
-                                   "tamanho_bytes": destino.stat().st_size,
-                                   "reaproveitados": n.reaproveitados, "aparelho": n.aparelho}
-            except (voz_clonada.VozInvalida, motor_de_voz.ErroDoMotor) as erro:
-                estado["erro"] = str(erro)
-            except Exception as erro:
-                logger.exception("a narração não saiu")
-                estado["erro"] = f"A narração não saiu: {type(erro).__name__}: {erro}"
-            finally:
-                estado["rodando"] = False
-
-        threading.Thread(target=rodar, daemon=True, name=f"narrar-{nid}").start()
-        return {k: v for k, v in estado.items() if k != "cancelar"}
+        return _narrar_em_segundo_plano(slug, lambda destino, andou, parar: voz_clonada.narrar(
+            slug, roteiro, destino, pronuncia=pronuncia, progresso=andou, parar=parar))
 
     @app.get("/api/vozes/narracoes/{nid}")
     def andamento_da_narracao(nid: str):
@@ -970,7 +1031,10 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
         pasta = envios / bid / "clipes"
         pasta.mkdir(parents=True)
         nome = Path(_nome_seguro(str((dados or {}).get("nome") or "cenas"))).stem or "cenas"
-        bibliotecas[bid] = {"pasta": pasta, "nome": nome, "matriz": None, "capa": None}
+        # a "raiz" guarda a matriz e a capa; a pasta dos clipes, de um vídeo longo separado,
+        # fica nos vídeos da pessoa (Filmes/editor-de-video/cenas), para usar de novo
+        bibliotecas[bid] = {"pasta": pasta, "raiz": pasta.parent, "nome": nome, "matriz": None,
+                            "capa": None}
         return {"id": bid, "nome": nome}
 
     @app.post("/api/bibliotecas/{bid}/clipes")
@@ -990,6 +1054,10 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
         dados = arquivo.file.read(MATRIZ_MAXIMA + 1)
         if len(dados) > MATRIZ_MAXIMA:
             raise HTTPException(400, "A matriz passa de 2 MB.")
+        return _aplicar_matriz(bid, b, dados)
+
+    def _aplicar_matriz(bid: str, b: dict, dados: bytes) -> dict:
+        """A matriz passa a valer na biblioteca: a enviada, a revisada ou a das fotos achadas."""
         try:
             lida = cenas.ler_matriz(dados.decode("utf-8-sig"), cenas.clipes_da_pasta(b["pasta"]))
         except UnicodeDecodeError as erro:
@@ -997,15 +1065,18 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
                                 ) from erro
         except cenas.MatrizInvalida as erro:
             raise HTTPException(422, str(erro)) from erro
-        destino = b["pasta"].parent / "matriz.json"
+        destino = b["raiz"] / "matriz.json"
         destino.write_bytes(dados)
         b["matriz"] = destino
+        if b.get("separacao") or b.get("fotos"):
+            # a matriz revisada vale também na pasta das cenas: soltar a pasta de novo já vem pronta
+            (b["pasta"] / "cenas.json").write_bytes(dados)
         # A capa: uma cena forte, registrada como vídeo, para a thumbnail e as ideias. Só
         # com fotos, um vídeo curto da primeira faz esse papel.
         videos_ = [c for c in lida.cenas if not c.imagem]
         capa = next((c for c in videos_ if c.energia == "alta"), videos_[0] if videos_ else None)
         arquivo_da_capa = capa.arquivo if capa else _video_da_foto(
-            lida.cenas[0].arquivo, b["pasta"].parent / "capa.mp4")
+            lida.cenas[0].arquivo, b["raiz"] / "capa.mp4")
         b["capa"] = _registrar_video(arquivo_da_capa)
         b["com_som"] = _cenas_com_som(b["pasta"])
         return {"id": bid, "nome": b["nome"], **lida.ficha(), "capa": b["capa"],
@@ -1032,7 +1103,9 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
 
         def rodar() -> None:
             try:
-                g = catalogo.gerar(clipes, assunto=assunto, progresso=andou)
+                sep = b.get("separacao")
+                g = (separar.descrever(sep, assunto=assunto, progresso=andou) if sep
+                     else catalogo.gerar(clipes, assunto=assunto, progresso=andou))
                 estado.update(cenas=g.cenas, por=g.por, aviso=g.aviso, pedidos=g.pedidos)
             except Exception as erro:
                 logger.exception("a matriz não saiu")
@@ -1042,6 +1115,129 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
 
         threading.Thread(target=rodar, daemon=True).start()
         return {k: v for k, v in estado.items() if k != "cenas"}
+
+    # O vídeo longo vira a biblioteca: os cortes, os clipes numa pasta dos vídeos da pessoa e a
+    # matriz, tudo em segundo plano, no mesmo andamento da matriz gerada (com a etapa).
+
+    @app.post("/api/bibliotecas/{bid}/video-longo")
+    def separar_video_longo(bid: str, arquivo: Annotated[UploadFile, File()], assunto: str = ""):
+        b = _biblioteca(bid)
+        if (b.get("geracao") or {}).get("rodando"):
+            raise HTTPException(409, "As cenas já estão sendo separadas.")
+        nome = _nome_seguro(arquivo.filename or "video.mp4")
+        if Path(nome).suffix.lower() not in cenas.VIDEOS:
+            raise HTTPException(400, "Solte um vídeo: MP4, MOV, M4V, WebM ou MKV.")
+        longo = b["raiz"] / nome
+        with longo.open("wb") as f:
+            shutil.copyfileobj(arquivo.file, f, length=1024 * 1024)
+        try:
+            info = video_mod.sondar(longo)
+        except Exception as erro:
+            longo.unlink(missing_ok=True)
+            raise HTTPException(422, "Não consegui ler este vídeo.") from erro
+        destino = separar.pasta_nova(saida_base / "cenas", Path(nome).stem)
+        assunto = re.sub(r"\s+", " ", assunto).strip()[:200]
+        estado = {"rodando": True, "etapa": "analisando", "fracao": 0.0, "prontas": 0, "total": 0,
+                  "pedidos": 0, "por": "", "aviso": "", "erro": "", "cenas": None,
+                  "pasta": str(destino), "clipes": 0, "cortes": 0,
+                  "duracao": round(info.duracao, 1)}
+        b.update(geracao=estado, pasta=destino, nome=destino.name)
+
+        def separando(etapa: str, fracao: float) -> None:
+            estado.update(etapa=etapa, fracao=round(fracao, 3))
+
+        def andou(prontas: int, total: int, pedidos: int) -> None:
+            estado.update(prontas=prontas, total=total, pedidos=pedidos)
+
+        def rodar() -> None:
+            try:
+                sep = separar.separar(longo, destino, progresso=separando)
+                b["separacao"] = sep
+                estado.update(etapa="descrevendo", fracao=1.0, clipes=len(sep.clipes),
+                              cortes=sep.cortes, total=sep.tomadas)
+                g = separar.descrever(sep, assunto=assunto, progresso=andou)
+                (destino / "cenas.json").write_text(
+                    json.dumps(g.cenas, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                estado.update(cenas=g.cenas, por=g.por, aviso=g.aviso, pedidos=g.pedidos)
+            except Exception as erro:
+                logger.exception("as cenas não saíram")
+                estado["erro"] = f"As cenas não saíram: {erro}"
+            finally:
+                estado["rodando"] = False
+                longo.unlink(missing_ok=True)       # as cenas ficam; o vídeo longo era cópia
+
+        threading.Thread(target=rodar, daemon=True).start()
+        return {k: v for k, v in estado.items() if k != "cenas"}
+
+    # As fotos achadas pelo que é dito: sem vídeo e sem cenas, o roteiro vira uma biblioteca
+    # de fotos (com a licença conferida e os créditos), que já vale ao terminar.
+
+    @app.post("/api/bibliotecas/{bid}/fotos")
+    def achar_as_fotos(bid: str, dados: Annotated[dict, Body()]):
+        b = _biblioteca(bid)
+        if (b.get("geracao") or {}).get("rodando"):
+            raise HTTPException(409, "As fotos já estão sendo buscadas.")
+        roteiro = str(dados.get("roteiro") or "").strip()
+        if not roteiro:
+            raise HTTPException(422, "Escreva (ou gere) o roteiro antes de achar as fotos.")
+        tema = re.sub(r"\s+", " ", str(dados.get("tema") or "")).strip()[:200]
+        orientacao = str(dados.get("orientacao") or "paisagem")
+        destino = separar.pasta_nova(saida_base / "fotos", tema or " ".join(roteiro.split()[:6]))
+        estado = {"rodando": True, "etapa": "buscando", "fracao": 0.0, "prontas": 0, "total": 0,
+                  "pedidos": 0, "por": "", "aviso": "", "erro": "", "cenas": None,
+                  "pasta": str(destino), "fotos": 0, "sem_foto": [], "biblioteca": None}
+        b.update(geracao=estado, pasta=destino, nome=destino.name, fotos=True)
+
+        def andou(etapa: str, feitos: int, total: int) -> None:
+            estado.update(etapa=etapa, prontas=feitos, total=total,
+                          fracao=round(feitos / max(1, total), 3))
+
+        def rodar() -> None:
+            try:
+                achado = fotos.achar(roteiro, destino, tema=tema, orientacao=orientacao,
+                                     progresso=andou)
+                estado.update(cenas=achado.cenas, fotos=len(achado.cenas),
+                              sem_foto=achado.sem_foto, pedidos=achado.pedidos, por="fotos")
+                matriz = (destino / "cenas.json").read_bytes()
+                estado["biblioteca"] = _aplicar_matriz(bid, b, matriz)
+                if achado.sem_foto:
+                    n = len(achado.sem_foto)
+                    estado["aviso"] = (f"{n} trecho{'s' if n > 1 else ''} ficou sem foto: as dos "
+                                       "vizinhos cobrem.")
+            except fotos.SemFotos as erro:
+                estado["erro"] = str(erro)
+            except HTTPException as erro:
+                estado["erro"] = str(erro.detail)
+            except Exception as erro:
+                logger.exception("as fotos não saíram")
+                estado["erro"] = f"As fotos não saíram: {erro}"
+            finally:
+                estado["rodando"] = False
+
+        threading.Thread(target=rodar, daemon=True).start()
+        return {k: v for k, v in estado.items() if k != "cenas"}
+
+    @app.post("/api/roteiro")
+    def escrever_o_roteiro(dados: Annotated[dict, Body()]):
+        """O roteiro pelo tema, para a pessoa revisar antes de narrar."""
+        try:
+            segundos = float(dados.get("segundos") or 45)
+        except (TypeError, ValueError):
+            segundos = 45.0
+        try:
+            r = escrita.escrever(str(dados.get("tema") or ""), segundos,
+                                 idioma=str(dados.get("idioma") or "pt"))
+        except escrita.SemRoteiro as erro:
+            raise HTTPException(422, str(erro)) from erro
+        return r.para_dict()
+
+    @app.post("/api/bibliotecas/{bid}/abrir")
+    def abrir_a_pasta_das_cenas(bid: str):
+        b = _biblioteca(bid)
+        if not (b.get("separacao") or b.get("fotos")):
+            raise HTTPException(404, "Esta biblioteca veio de uma pasta sua.")
+        abrir_pasta(b["pasta"])
+        return {"ok": True}
 
     @app.get("/api/bibliotecas/{bid}/gerar-matriz")
     def andamento_da_matriz(bid: str):

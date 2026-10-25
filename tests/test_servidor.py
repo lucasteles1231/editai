@@ -665,6 +665,135 @@ class TestAMatrizGerada:
         assert cliente.get(f"/api/bibliotecas/{bid}/matriz", headers=CABECA).status_code == 404
 
 
+class TestOVideoLongo:
+    """O vídeo longo vira a biblioteca (o dono, 23/10/2026): sobe inteiro, as cenas saem numa
+    pasta nova dos vídeos (com o cenas.json), a página acompanha as etapas, e a matriz
+    revisada vale também nessa pasta."""
+
+    def test_separa_descreve_e_guarda_na_pasta(self, cliente, tmp_path):
+        from tests.test_separar import fazer_video_de_planos
+
+        longo = fazer_video_de_planos(tmp_path / "Meu Trailer.mp4")
+        bid = cliente.post("/api/bibliotecas", headers=CABECA,
+                           json={"nome": "Meu Trailer"}).json()["id"]
+        assert cliente.post(f"/api/bibliotecas/{bid}/abrir", headers=CABECA).status_code == 404
+        with open(longo, "rb") as f:
+            r = cliente.post(f"/api/bibliotecas/{bid}/video-longo?assunto=um%20trailer",
+                             headers=CABECA, files={"arquivo": ("Meu Trailer.mp4", f, "video/mp4")})
+        assert r.status_code == 200, r.text
+        pasta = Path(r.json()["pasta"])
+        assert pasta == tmp_path / "saida" / "cenas" / "meu-trailer"
+        etapas = {r.json()["etapa"]}
+        fim = time.monotonic() + 60
+        while True:
+            estado = cliente.get(f"/api/bibliotecas/{bid}/gerar-matriz", headers=CABECA).json()
+            etapas.add(estado["etapa"])
+            if not estado["rodando"] or time.monotonic() > fim:
+                break
+            time.sleep(0.05)
+        assert estado["erro"] == "" and estado["por"] == "falsa"
+        assert estado["clipes"] == 5 and estado["total"] == 3 and "descrevendo" in etapas
+        arquivos = [c["arquivo"] for c in estado["cenas"]]
+        assert arquivos == [f"meu-trailer-00{k}.mp4" for k in range(1, 6)]
+        assert sorted(p.name for p in pasta.glob("*.mp4")) == arquivos
+        assert json.loads((pasta / "cenas.json").read_text(encoding="utf-8")) == estado["cenas"]
+        # o vídeo longo era cópia e sai; as cenas ficam
+        assert not any(p.suffix == ".mp4" and p.stem == "Meu Trailer"
+                       for p in Path(servidor.pasta_de_envios()).rglob("*"))
+        # a revisada vale na biblioteca e na pasta
+        revisada = [{**c, "descricao": "Revisada à mão"} for c in estado["cenas"]]
+        r = cliente.post(f"/api/bibliotecas/{bid}/matriz", headers=CABECA,
+                         files={"arquivo": ("cenas.json", json.dumps(revisada).encode(),
+                                            "application/json")})
+        assert r.status_code == 200 and r.json()["cenas"] == 5
+        assert {c["descricao"] for c in json.loads((pasta / "cenas.json").read_text(
+            encoding="utf-8"))} == {"Revisada à mão"}
+        # o mesmo vídeo de novo vai para outra pasta, sem tocar na primeira
+        bid2 = cliente.post("/api/bibliotecas", headers=CABECA, json={}).json()["id"]
+        with open(longo, "rb") as f:
+            r = cliente.post(f"/api/bibliotecas/{bid2}/video-longo", headers=CABECA,
+                             files={"arquivo": ("Meu Trailer.mp4", f, "video/mp4")})
+        assert Path(r.json()["pasta"]).name == "meu-trailer-2"
+        fim = time.monotonic() + 60
+        rota = f"/api/bibliotecas/{bid2}/gerar-matriz"
+        while cliente.get(rota, headers=CABECA).json()["rodando"]:
+            assert time.monotonic() < fim
+            time.sleep(0.05)
+        assert (pasta.parent / "meu-trailer-2" / "cenas.json").exists()
+
+    def test_o_que_nao_e_video(self, cliente, tmp_path):
+        bid = cliente.post("/api/bibliotecas", headers=CABECA, json={}).json()["id"]
+        r = cliente.post(f"/api/bibliotecas/{bid}/video-longo", headers=CABECA,
+                         files={"arquivo": ("notas.txt", b"oi", "text/plain")})
+        assert r.status_code == 400
+        r = cliente.post(f"/api/bibliotecas/{bid}/video-longo", headers=CABECA,
+                         files={"arquivo": ("quebrado.mp4", b"nao sou video", "video/mp4")})
+        assert r.status_code == 422
+
+
+class TestOVideoSoPeloTema:
+    """O vídeo só pelo tema (o dono, 25/10/2026): o roteiro escrito pela IA, a narração por uma
+    voz pronta e as fotos achadas, que viram uma biblioteca de cenas pronta para a montagem."""
+
+    def _esperar(self, cliente, rota: str, limite: float = 30.0) -> dict:
+        fim = time.monotonic() + limite
+        while True:
+            estado = cliente.get(rota, headers=CABECA).json()
+            if not estado["rodando"] or time.monotonic() > fim:
+                return estado
+            time.sleep(0.05)
+
+    def test_o_roteiro_pelo_tema(self, cliente):
+        r = cliente.post("/api/roteiro", headers=CABECA,
+                         json={"tema": "Como o freio ABS funciona", "segundos": 30})
+        assert r.status_code == 200, r.text
+        assert r.json()["titulo"] == "Como o freio ABS funciona" and "\n\n" in r.json()["texto"]
+        r = cliente.post("/api/roteiro", headers=CABECA, json={"tema": "  "})
+        assert r.status_code == 422 and "tema" in r.json()["detail"]
+
+    def test_narra_com_a_voz_pronta(self, cliente):
+        vozes = cliente.get("/api/vozes", headers=CABECA).json()["prontas"]
+        assert {v["id"] for v in vozes["vozes"]} >= {"gemini:Orus", "local:faber"}
+        assert vozes["gemini"]["restantes_hoje"] == vozes["gemini"]["por_dia"] == 10
+        r = cliente.post("/api/vozes/prontas/narrar", headers=CABECA,
+                         json={"voz": "local:faber", "roteiro": "Uma frase.\n\nOutra frase."})
+        assert r.status_code == 200, r.text
+        estado = self._esperar(cliente, f"/api/vozes/narracoes/{r.json()['id']}")
+        assert estado["erro"] == "" and estado["audio"]["duracao"] > 1
+        ouvir = cliente.get(f"/api/audios/{estado['audio']['id']}/arquivo", headers=CABECA)
+        assert ouvir.status_code == 200 and ouvir.content[:4] == b"RIFF"
+        for ruim in ({"voz": "gemini:Inventada", "roteiro": "Oi."},
+                     {"voz": "gemini:Orus", "roteiro": "  "}):
+            assert cliente.post("/api/vozes/prontas/narrar", headers=CABECA,
+                                json=ruim).status_code == 422
+
+    def test_a_voz_local_instala_e_desinstala(self, cliente):
+        assert cliente.post("/api/vozes/local", headers=CABECA).status_code == 200
+        assert cliente.get("/api/vozes/local", headers=CABECA).json()["instalado"]
+        assert cliente.delete("/api/vozes/local", headers=CABECA).status_code == 200
+
+    def test_as_fotos_viram_a_biblioteca(self, cliente, tmp_path, monkeypatch):
+        abertas: list[Path] = []
+        monkeypatch.setattr(servidor, "abrir_pasta", abertas.append)
+        bid = cliente.post("/api/bibliotecas", headers=CABECA, json={"nome": "fotos"}).json()["id"]
+        assert cliente.post(f"/api/bibliotecas/{bid}/fotos", headers=CABECA,
+                            json={"roteiro": " "}).status_code == 422
+        roteiro = "Por que o céu é azul?\n\nA luz do Sol tem todas as cores.\n\nE você?"
+        r = cliente.post(f"/api/bibliotecas/{bid}/fotos", headers=CABECA,
+                         json={"roteiro": roteiro, "tema": "O céu azul"})
+        assert r.status_code == 200, r.text
+        pasta = Path(r.json()["pasta"])
+        assert pasta == tmp_path / "saida" / "fotos" / "o-ceu-azul"
+        estado = self._esperar(cliente, f"/api/bibliotecas/{bid}/gerar-matriz")
+        assert estado["erro"] == "" and estado["fotos"] >= 4
+        ficha = estado["biblioteca"]
+        assert ficha["cenas"] == estado["fotos"] and ficha["fotos"] == estado["fotos"]
+        assert ficha["capa"]["id"]                         # a capa, para a thumbnail
+        assert (pasta / "creditos.txt").is_file() and (pasta / "cenas.json").is_file()
+        assert cliente.post(f"/api/bibliotecas/{bid}/abrir", headers=CABECA).status_code == 200
+        assert abertas == [pasta]
+
+
 class TestAMinhaVoz:
     """ "Minha voz": a leitura gravada pela página (um parágrafo por vez, ou o arquivo
     inteiro), a voz salva e a narração do roteiro, que vira um áudio separado. O motor e o

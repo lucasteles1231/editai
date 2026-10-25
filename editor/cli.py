@@ -203,9 +203,27 @@ def argumentos() -> argparse.ArgumentParser:
     g2.add_argument("--gerar-matriz", type=Path, metavar="PASTA",
                     help="escreve o cenas.json de uma pasta de clipes: o Gemini descreve cada "
                          "cena (sem a chave, sai um rascunho para completar)")
+    g2.add_argument("--separar-cenas", type=Path, metavar="VIDEO",
+                    help="separa um vídeo longo em cenas: os clipes e o cenas.json numa pasta "
+                         "nova em Filmes/editor-de-video/cenas, prontos para o --cenas")
     g2.add_argument("--assunto", metavar="TEXTO", default="",
                     help='do que são as cenas ("trailers do GTA 6"): ajuda a reconhecer '
                          "personagens")
+    t = p.add_argument_group("o vídeo só pelo tema")
+    t.add_argument("--tema", metavar="TEXTO",
+                   help="o assunto do vídeo, em uma frase. Sozinho, o Editai escreve o roteiro, "
+                        "narra, acha as fotos e monta; com um vídeo ou as cenas, vai de "
+                        "contexto para a IA")
+    t.add_argument("--duracao", type=float, default=45, metavar="SEGUNDOS",
+                   help="com --tema: quanto o vídeo deve durar, em segundos (padrão: 45)")
+    t.add_argument("--narrador", metavar="VOZ",
+                   help="com --tema: quem narra: gemini:Orus (ou outra voz do Gemini), local "
+                        "(a voz do computador) ou o nome de uma voz sua (padrão: o Gemini com "
+                        "a chave; sem ela, a local)")
+    t.add_argument("--instalar-voz-local", action="store_true",
+                   help="instala a voz local (o Piper, uns 210 MB, num ambiente à parte)")
+    t.add_argument("--desinstalar-voz-local", action="store_true",
+                   help="apaga a voz local")
     v = p.add_argument_group("minha voz (opcional: a sua voz narrando um roteiro)")
     v.add_argument("--instalar-voz", action="store_true",
                    help="instala o motor da voz sintetizada (~3,5 GB, num ambiente à parte)")
@@ -305,6 +323,47 @@ def _gerar_matriz(pasta: Path, assunto: str) -> int:
     return 0
 
 
+def _separar_cenas(video: Path, assunto: str) -> int:
+    """O vídeo longo vira a pasta da biblioteca: os clipes e o ``cenas.json`` (revise as
+    descrições antes de usar)."""
+    import json
+
+    from editor import separar, servidor
+
+    if not video.is_file():
+        print(f"não achei o vídeo {video}", file=sys.stderr)
+        return 2
+    pasta = separar.pasta_nova(servidor.pasta_de_saida_padrao() / "cenas", video.stem)
+    nomes = {"analisando": "achando os cortes", "gravando": "gravando as cenas"}
+
+    def andou(etapa: str, fracao: float) -> None:
+        print(f"\r  {nomes.get(etapa, etapa):<20} {fracao * 100:5.1f}%", end="", flush=True)
+
+    try:
+        sep = separar.separar(video, pasta, progresso=andou)
+    except (ValueError, OSError) as erro:
+        print(f"\nerro: {erro}", file=sys.stderr)
+        return 1
+    print(f"\n{len(sep.clipes)} cenas de {sep.tomadas} tomadas ({sep.cortes} cortes) em {pasta}")
+
+    def descrevendo(prontas: int, total: int, pedidos: int) -> None:
+        print(f"\r  descrevendo {prontas} de {total} tomadas ({pedidos} pedidos ao Gemini)",
+              end="", flush=True)
+
+    g = separar.descrever(sep, assunto=assunto, progresso=descrevendo)
+    print()
+    (pasta / "cenas.json").write_text(json.dumps(g.cenas, ensure_ascii=False, indent=2) + "\n",
+                                      encoding="utf-8")
+    quem = {"gemini": "pelo Gemini", "falsa": "pela IA de teste",
+            "rascunho": "como rascunho (sem o Gemini)"}.get(g.por, "")
+    print(f"a matriz foi escrita {quem}: {pasta / 'cenas.json'}")
+    if g.aviso:
+        print(f"aviso: {g.aviso}")
+    print(f'Revise as descrições e use com: editai --cenas "{pasta}" --matriz '
+          f'"{pasta / "cenas.json"}"')
+    return 0
+
+
 def _instalar_voz() -> int:
     from editor import motor_de_voz
 
@@ -380,6 +439,67 @@ def _narrar(nome: str, roteiro: Path | None, pronuncia: str | None, destino: Pat
     return n.caminho, ""
 
 
+def _pelo_tema(a: argparse.Namespace) -> str:
+    """O vídeo só pelo tema, de uma vez: o roteiro (ou o ``--roteiro``), a narração, as fotos
+    achadas e, daí, a montagem de sempre com a biblioteca. Preenche as flags da montagem e
+    devolve o erro, se houver."""
+    from editor import escrita, fotos, ia, separar, servidor, voz_clonada, voz_local, voz_pronta
+
+    pasta = separar.pasta_nova(servidor.pasta_de_saida_padrao() / "fotos", a.tema)
+    if a.roteiro is not None:
+        if not a.roteiro.is_file():
+            return f"não achei o roteiro: {a.roteiro}"
+        roteiro = a.roteiro.read_text(encoding="utf-8", errors="replace")
+    else:
+        print(f"escrevendo o roteiro de uns {a.duracao:.0f} s sobre: {a.tema}")
+        try:
+            r = escrita.escrever(a.tema, a.duracao, idioma=a.idioma)
+        except escrita.SemRoteiro as erro:
+            return f"erro: {erro}"
+        roteiro = r.texto
+        print(f"\n{r.titulo}\n\n{roteiro}\n")
+    pasta.mkdir(parents=True, exist_ok=True)
+    (pasta / "roteiro.txt").write_text(roteiro, encoding="utf-8")
+
+    narrador = a.narrador or ("gemini:Orus" if ia.ligada() else "local")
+    if narrador == "local":
+        narrador = voz_pronta.VOZ_LOCAL.id
+    destino = pasta / "narracao.wav"
+
+    def andou(feitas: int, total: int) -> None:
+        print(f"\r  narrando {feitas} de {total}", end="", flush=True)
+
+    try:
+        if narrador.startswith(("gemini:", "local:")):
+            if narrador.startswith("local:") and not voz_local.instalado():
+                return "a voz local não está instalada: rode editai --instalar-voz-local"
+            n = voz_pronta.narrar(narrador, roteiro, destino, progresso=andou)
+        else:
+            n = voz_clonada.narrar(voz_clonada.apelido(narrador), roteiro, destino,
+                                   progresso=andou)
+    except (voz_pronta.SemVoz, voz_clonada.VozInvalida) as erro:
+        return f"\nerro: {erro}"
+    except Exception as erro:          # o motor da Minha voz
+        return f"\nerro: {erro}"
+    print(f"\nnarração: {n.segundos:.1f} s")
+
+    def achando(etapa: str, feitos: int, total: int) -> None:
+        print(f"\r  {'buscando as fotos' if etapa == 'buscando' else 'baixando as fotos'} "
+              f"{feitos} de {total}", end="", flush=True)
+
+    if a.quadro == "fundo":
+        a.quadro = "vertical"          # sem vídeo de fundo, o padrão é o Short em pé
+    try:
+        achado = fotos.achar(roteiro, pasta, tema=a.tema, progresso=achando,
+                             orientacao="retrato" if a.quadro == "vertical" else "paisagem")
+    except fotos.SemFotos as erro:
+        return f"\nerro: {erro}"
+    print(f"\n{len(achado.cenas)} fotos em {pasta} (os créditos em creditos.txt)")
+    a.cenas, a.matriz, a.audio, a.fala = pasta, pasta / "cenas.json", [destino], "audio"
+    a.texto_falado = pasta / "roteiro.txt"
+    return ""
+
+
 def _salvar_preset(a: argparse.Namespace) -> int:
     """Um preset seu: o de partida (``--preset``, ou o padrão) com as flags por cima."""
     base = presets.todos()[a.preset or "padrao"]
@@ -434,6 +554,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if a.gerar_matriz is not None:
         return _gerar_matriz(a.gerar_matriz, a.assunto)
+    if a.separar_cenas is not None:
+        return _separar_cenas(a.separar_cenas, a.assunto)
 
     if a.atualizar:
         from editor import versao
@@ -471,6 +593,26 @@ def main(argv: list[str] | None = None) -> int:
         if not lista:
             print("nenhuma voz salva: crie uma com --criar-voz NOME")
         return 0
+    if a.instalar_voz_local or a.desinstalar_voz_local:
+        from editor import voz_local
+
+        try:
+            if a.desinstalar_voz_local:
+                voz_local.desinstalar()
+                print("a voz local foi apagada")
+            else:
+                print(f"instalando a voz local: {voz_local.ESPACO}, {voz_local.TEMPO}")
+                voz_local.instalar()
+                print("a voz local está pronta: use com --tema \"...\" --narrador local")
+        except voz_local.ErroDaVozLocal as erro:
+            print(f"erro: {erro}", file=sys.stderr)
+            return 1
+        return 0
+    if a.tema and a.video is None and a.fundo is None and a.cenas is None:
+        erro = _pelo_tema(a)
+        if erro:
+            print(erro, file=sys.stderr)
+            return 2
     if a.minha_voz is not None:
         if a.audio:
             print("--minha-voz já é o áudio: não passe --audio junto", file=sys.stderr)
@@ -509,7 +651,8 @@ def main(argv: list[str] | None = None) -> int:
     edicao = preset.opcoes(**{k: getattr(a, k) for k in presets.EDICAO
                               if getattr(a, k) is not None},
                            ancora_x=a.ancora[0], ancora_y=a.ancora[1], idioma=a.idioma,
-                           modelo=a.modelo, texto_falado=texto_falado)
+                           modelo=a.modelo, texto_falado=texto_falado,
+                           tema=(a.tema or "")[:200])
     # Sem --formato, vale a extensão do -o: "-o final.mov" grava MOV.
     formato = a.formato or _formato_de(a.saida) or "mp4"
     da_saida = {k: getattr(a, k) or preset.saida[k] for k in presets.SAIDA}

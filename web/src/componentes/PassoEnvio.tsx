@@ -13,7 +13,7 @@ import {bytes, duracao, numero} from '../formatar';
 import {ORDEM, PLATAFORMAS, type Plataforma, juntar} from '../plataformas';
 import {MATERIAIS, type Material, type Trilha} from '../trilha';
 import type {
-  AudioInfo, AvatarSalvo, BibliotecaInfo, CenaDaMatriz, EstadoDasVozes, Fala, MontagemConfig, PersonagemInfo, PorCima,
+  AndamentoDaMatriz, AudioInfo, AvatarSalvo, BibliotecaInfo, CenaDaMatriz, EstadoDasVozes, Fala, MontagemConfig, PersonagemInfo, PorCima,
   VideoInfo,
 } from '../tipos';
 import {Interruptor} from './Interruptor';
@@ -24,8 +24,12 @@ import {RevisaoDaMatriz} from './RevisaoDaMatriz';
 /** A matriz na tabela de revisão: as linhas e quem as escreveu. */
 export type Revisao = {linhas: CenaDaMatriz[]; por: string; aviso: string; pedidos: number};
 
-/** O que se envia: o vídeo completo, o da pessoa, o personagem, os áudios ou a pasta das cenas. */
-export type Envio = 'completo' | 'pessoa' | 'personagem' | 'audio' | 'biblioteca';
+/** As fotos achadas pelo roteiro: quantas, o aviso (os trechos sem foto) e o roteiro de quando foram achadas. */
+export type FotosAchadas = {roteiro: string; fotos: number; aviso: string};
+
+/** O que se envia: o vídeo completo, o da pessoa, o personagem, os áudios, a pasta das cenas ou o
+ *  vídeo longo que vira as cenas. */
+export type Envio = 'completo' | 'pessoa' | 'personagem' | 'audio' | 'biblioteca' | 'longo';
 
 /** O custo de recortar a pessoa no vídeo inteiro pelo MODNet, medido num Apple M5 em
  *  04/10/2026: uns 0,07 s por quadro (um vídeo de 27 s a 25 fps levou uns 31 s a mais). */
@@ -33,6 +37,11 @@ const CUSTO_DO_RECORTE_POR_QUADRO = 0.07;
 
 /** Quantas palavras por segundo se fala, para estimar a duração do roteiro. */
 const PALAVRAS_POR_SEGUNDO = 2.6;
+
+/** As durações do roteiro escrito pelo tema. O padrão sai de onde o vídeo vai: 45 s em pé, 3 min no YouTube. */
+const DURACOES: [number, string][] = [[30, '30 s'], [45, '45 s'], [60, '1 min'], [180, '3 min'], [300, '5 min']];
+
+const contarPalavras = (texto: string) => (texto.trim() ? texto.trim().split(/\s+/).length : 0);
 
 const Soltar: React.FC<{
   rotulo: string; dica: string; aceita: string; progresso: number | null;
@@ -126,28 +135,34 @@ const SoltarPasta: React.FC<{progresso: string | null; aoEscolher: (arquivos: Fi
   );
 };
 
-const FichaDaBiblioteca: React.FC<{b: BibliotecaInfo}> = ({b}) => (
-  <div className="ficha" aria-label="dados da biblioteca de cenas">
-    <span className="etiqueta">{b.nome}</span>
-    <span className="etiqueta">{b.cenas} cenas{b.fotos ? ` (${b.fotos} foto${b.fotos > 1 ? 's' : ''})` : ''}</span>
-    <span className="etiqueta">{duracao(b.duracao)} de cenas</span>
-    {b.evitadas ? (
+const FichaDaBiblioteca: React.FC<{b: BibliotecaInfo}> = ({b}) => {
+  // só de fotos (as achadas pelo roteiro), a duração das cenas não diz nada: cada foto fica o quanto o trecho pedir
+  const soFotos = b.fotos > 0 && b.fotos === b.cenas;
+  return (
+    <div className="ficha" aria-label="dados da biblioteca de cenas">
+      <span className="etiqueta">{b.nome}</span>
       <span className="etiqueta">
-        {b.evitadas} marcada{b.evitadas > 1 ? 's' : ''} “evitar” (fica{b.evitadas > 1 ? 'm' : ''} de fora)
+        {soFotos ? `${b.fotos} fotos` : `${b.cenas} cenas${b.fotos ? ` (${b.fotos} foto${b.fotos > 1 ? 's' : ''})` : ''}`}
       </span>
-    ) : null}
-    {b.sem_descricao.length ? (
-      <span className="etiqueta" title={b.sem_descricao.join(', ')}>
-        {b.sem_descricao.length} clipe{b.sem_descricao.length > 1 ? 's' : ''} sem descrição
-      </span>
-    ) : null}
-    {b.sem_clipe.length ? (
-      <span className="etiqueta" title={b.sem_clipe.join(', ')}>
-        {b.sem_clipe.length} na matriz sem clipe
-      </span>
-    ) : null}
-  </div>
-);
+      {soFotos ? null : <span className="etiqueta">{duracao(b.duracao)} de cenas</span>}
+      {b.evitadas ? (
+        <span className="etiqueta">
+          {b.evitadas} marcada{b.evitadas > 1 ? 's' : ''} “evitar” (fica{b.evitadas > 1 ? 'm' : ''} de fora)
+        </span>
+      ) : null}
+      {b.sem_descricao.length ? (
+        <span className="etiqueta" title={b.sem_descricao.join(', ')}>
+          {b.sem_descricao.length} clipe{b.sem_descricao.length > 1 ? 's' : ''} sem descrição
+        </span>
+      ) : null}
+      {b.sem_clipe.length ? (
+        <span className="etiqueta" title={b.sem_clipe.join(', ')}>
+          {b.sem_clipe.length} na matriz sem clipe
+        </span>
+      ) : null}
+    </div>
+  );
+};
 
 const FichaDoVideo: React.FC<{video: VideoInfo; rotulo?: string}> = ({video, rotulo = 'dados do vídeo'}) => (
   <div className="ficha" aria-label={rotulo}>
@@ -200,8 +215,8 @@ export type PropsDoEnvio = {
   enviandoBiblioteca: string | null;
   /** A biblioteca aberta no servidor (depois da pasta), para a matriz e as miniaturas. */
   bibliotecaId: string | null;
-  /** O Gemini descrevendo as cenas, e a matriz na tabela de revisão. */
-  gerandoMatriz: {prontas: number; total: number; pedidos: number} | null;
+  /** O Gemini descrevendo as cenas (ou o vídeo longo sendo separado), e a matriz na tabela de revisão. */
+  gerandoMatriz: AndamentoDaMatriz | null;
   revisao: Revisao | null;
   salvandoMatriz: boolean;
   aoGerarMatriz: (assunto: string) => void;
@@ -215,6 +230,20 @@ export type PropsDoEnvio = {
   aoEscolher: (qual: Envio, arquivo: File) => void;
   aoEscolherAudios: (arquivos: File[]) => void;
   aoEscolherPasta: (arquivos: File[]) => void;
+  /** Um vídeo longo: o editor separa as cenas numa pasta e escreve a matriz. */
+  aoEscolherVideoLongo: (arquivo: File) => void;
+  /** Onde as cenas do vídeo longo (ou as fotos achadas) ficaram. */
+  pastaDasCenas: string | null;
+  /** O roteiro pelo tema: a IA escreve (com a duração em segundos), e ele cai no roteiro de sempre. */
+  aoEscreverRoteiro: (segundos: number) => void;
+  escrevendoRoteiro: boolean;
+  erroDoRoteiro: string;
+  /** Sem vídeo e sem cenas: as fotos achadas pelo roteiro viram a biblioteca de cenas. */
+  aoAcharFotos: () => void;
+  fotosAchadas: FotosAchadas | null;
+  /** O roteiro mudou depois que as fotos foram achadas. */
+  fotosDesatualizadas: boolean;
+  aoAbrirPastaDasCenas: () => void;
   aoEscolherMatriz: (arquivo: File) => void;
   aoTirarAudio: () => void;
   recorte: {baixado: boolean; tamanho: string};
@@ -298,7 +327,8 @@ const GerarMatriz: React.FC<PropsDoEnvio> = (p) => {
       </div>
       {g ? (
         <small className="andamento" aria-live="polite">
-          Descrevendo {g.prontas} de {g.total} cenas… ({g.pedidos} {g.pedidos === 1 ? 'pedido' : 'pedidos'} ao Gemini)
+          Descrevendo {g.prontas} de {g.total} {g.etapa ? 'tomadas' : 'cenas'}…{' '}
+          ({g.pedidos} {g.pedidos === 1 ? 'pedido' : 'pedidos'} ao Gemini)
         </small>
       ) : null}
     </div>
@@ -319,10 +349,58 @@ const CampoDoVideo: React.FC<PropsDoEnvio & {qual: 'completo' | 'pessoa'; grande
   );
 };
 
+/** Só com o tema: a IA escreve o roteiro no tamanho escolhido, e ele aparece aqui para a pessoa revisar
+ *  antes de narrar (a voz lê exatamente este texto, e cada parágrafo vira um trecho com a sua imagem). */
+const EscreverRoteiro: React.FC<PropsDoEnvio> = (p) => {
+  const [segundos, setSegundos] = useState<number | null>(null);
+  const emPe = p.plataformas.every((pl) => PLATAFORMAS[pl].emPe);
+  const alvo = segundos ?? (emPe ? 45 : 180);
+  const palavras = contarPalavras(p.roteiro);
+  const escrever = () => {
+    if (p.roteiro.trim() && !window.confirm('Escrever de novo? O roteiro de agora, com as suas mudanças, é trocado.')) {
+      return;
+    }
+    p.aoEscreverRoteiro(alvo);
+  };
+  return (
+    <div className="escrever-roteiro">
+      <div className="campo">
+        <span>A duração</span>
+        <div className="linha-de-opcoes" role="group" aria-label="a duração do vídeo">
+          {DURACOES.map(([s, nome]) => (
+            <button key={s} type="button" className="pilula" aria-pressed={alvo === s} disabled={p.escrevendoRoteiro}
+              onClick={() => setSegundos(s)}>{nome}</button>
+          ))}
+        </div>
+      </div>
+      <div className="linha-de-opcoes">
+        <button type="button" className="botao pequeno usar" disabled={!p.tema.trim() || p.escrevendoRoteiro}
+          title={p.tema.trim() ? undefined : 'escreva o tema primeiro'} onClick={escrever}>
+          {p.escrevendoRoteiro ? 'Escrevendo…' : p.roteiro.trim() ? 'Escrever de novo' : 'Escrever o roteiro'}
+        </button>
+      </div>
+      {p.escrevendoRoteiro ? (
+        <small className="andamento" aria-live="polite">A IA está escrevendo o roteiro (leva de 30 s a 2 min)…</small>
+      ) : null}
+      <Aviso texto={p.erroDoRoteiro} />
+      <label className="campo">
+        <span>O roteiro</span>
+        <textarea rows={8} value={p.roteiro} maxLength={20000} aria-label="o roteiro"
+          placeholder="O roteiro escrito pela IA aparece aqui, para você revisar. Ou escreva o seu."
+          onChange={(e) => p.aoMudarRoteiro(e.target.value)} />
+        <small>
+          {palavras} palavras · uns {duracao(palavras / PALAVRAS_POR_SEGUNDO)} de fala. Revise antes de narrar: a voz lê
+          exatamente este texto, e cada parágrafo (separado por uma linha em branco) vira um trecho, com a sua imagem.
+        </small>
+      </label>
+    </div>
+  );
+};
+
 /** O tema e o roteiro, quando marcados. Narrado, o roteiro é escrito na etapa da fala, junto
- *  da voz. */
+ *  da voz; escrito pela IA, aqui mesmo, logo abaixo do tema. */
 const CamposDoTexto: React.FC<PropsDoEnvio> = (p) => {
-  const palavras = p.roteiro.trim() ? p.roteiro.trim().split(/\s+/).length : 0;
+  const palavras = contarPalavras(p.roteiro);
   return (
     <>
       {p.materiais.has('tema') ? (
@@ -332,6 +410,7 @@ const CamposDoTexto: React.FC<PropsDoEnvio> = (p) => {
             placeholder="do que é o vídeo: por que o céu é azul" onChange={(e) => p.aoMudarTema(e.target.value)} />
         </label>
       ) : null}
+      {p.trilha.escreveRoteiro ? <EscreverRoteiro {...p} /> : null}
       {p.materiais.has('roteiro') && p.fala !== 'voz' ? (
         <label className="campo">
           <span>O roteiro</span>
@@ -351,24 +430,104 @@ const CamposDoTexto: React.FC<PropsDoEnvio> = (p) => {
   );
 };
 
+/** Sem vídeo e sem cenas: as fotos saem do roteiro (2 por trecho), e daí é uma biblioteca de cenas como as
+ *  outras: a ficha, a tabela de revisão (para tirar uma foto ruim) e a pasta, com os créditos. */
+const CamposDasFotos: React.FC<PropsDoEnvio> = (p) => {
+  const g = p.gerandoMatriz;
+  const achando = g?.etapa === 'buscando' || g?.etapa === 'baixando';
+  const semRoteiro = !p.roteiro.trim();
+  return (
+    <>
+      <div className="linha-de-opcoes">
+        <button type="button" className="botao pequeno usar" disabled={semRoteiro || Boolean(g)} onClick={p.aoAcharFotos}>
+          {achando ? 'Achando…' : p.biblioteca ? 'Achar de novo' : 'Achar as fotos'}
+        </button>
+        {p.biblioteca && !g ? (
+          <button type="button" className="botao pequeno" onClick={p.aoRevisarMatriz}>Revisar as fotos</button>
+        ) : null}
+      </div>
+      {semRoteiro && !g ? (
+        <small>{p.trilha.escreveRoteiro ? 'Primeiro, escreva o roteiro (em “O texto”): as fotos saem dele.'
+          : 'Primeiro, cole o roteiro: as fotos saem dele.'}</small>
+      ) : null}
+      {achando ? (
+        <>
+          <div className="barra" role="progressbar" aria-valuemin={0} aria-valuemax={100}
+            aria-valuenow={Math.round((g.fracao ?? 0) * 100)}>
+            <div style={{width: `${Math.max(3, (g.fracao ?? 0) * 100)}%`}} />
+          </div>
+          <small className="andamento" aria-live="polite">
+            {g.etapa === 'buscando' ? 'Escolhendo o que mostrar em cada trecho…'
+              : `Baixando as fotos: trecho ${Math.min(g.prontas + 1, Math.max(1, g.total))} de ${g.total}…`}
+          </small>
+        </>
+      ) : null}
+      {p.fotosDesatualizadas && !g ? (
+        <div className="aviso">O roteiro mudou depois das fotos: ache de novo para elas seguirem o texto novo.</div>
+      ) : null}
+      <Aviso texto={p.erro.biblioteca} />
+      {p.fotosAchadas?.aviso && !g ? <small>{p.fotosAchadas.aviso}</small> : null}
+      {p.biblioteca ? <FichaDaBiblioteca b={p.biblioteca} /> : null}
+      {p.pastaDasCenas && p.biblioteca && !g ? (
+        <div className="pasta-das-cenas">
+          <small>
+            As fotos ficaram em <code>{p.pastaDasCenas}</code>, com o <code>cenas.json</code> e o{' '}
+            <code>creditos.txt</code>: cole os créditos na descrição do vídeo (as fotos CC BY pedem).
+          </small>
+          <button type="button" className="botao pequeno" onClick={p.aoAbrirPastaDasCenas}>Abrir a pasta</button>
+        </div>
+      ) : null}
+      {p.revisao && p.bibliotecaId ? (
+        <RevisaoDaMatriz biblioteca={p.bibliotecaId} linhas={p.revisao.linhas} por={p.revisao.por}
+          aviso={p.revisao.aviso} pedidos={p.revisao.pedidos} salvando={p.salvandoMatriz}
+          aoUsar={p.aoUsarMatriz} aoFechar={p.aoFecharRevisao} />
+      ) : null}
+    </>
+  );
+};
+
 const CamposDaImagem: React.FC<PropsDoEnvio> = (p) => {
   const t = p.trilha;
+  if (t.fotos) return <CamposDasFotos {...p} />;
   if (t.modo === 'um') {
     const qual = t.completo === 'unico' ? 'completo' : 'pessoa';
     return <CampoDoVideo {...p} qual={qual} grande rotulo="Arraste o vídeo aqui"
       dica="ou clique para escolher · MP4, MOV, MKV, WebM…" rotuloDaFicha="dados do vídeo" />;
   }
   if (p.montagem.fonteDoFundo === 'cenas') {
+    const g = p.gerandoMatriz;
+    const separando = g?.etapa === 'analisando' || g?.etapa === 'gravando';
+    const comMatriz = !separando && (p.faltaMatriz || p.biblioteca);
     return (
       <>
-        <small>A pasta com os clipes e a matriz que descreve cada um (o <code>cenas.json</code>).</small>
+        <small>
+          A pasta com os clipes e a matriz que descreve cada um (o <code>cenas.json</code>), ou um vídeo longo: o
+          Editai separa as cenas e escreve a matriz.
+        </small>
         <SoltarPasta progresso={p.enviandoBiblioteca} aoEscolher={p.aoEscolherPasta} />
-        {p.faltaMatriz || p.biblioteca ? (
+        <Soltar nome="longo" rotulo="Ou solte um vídeo longo"
+          dica="o Editai acha os cortes, grava cada cena numa pasta e escreve o cenas.json · MP4, MOV, MKV, WebM…"
+          aceita="video/*,.mkv,.mov,.webm" progresso={p.progresso.longo} aoEscolher={p.aoEscolherVideoLongo} />
+        {separando ? (
+          <small className="andamento" aria-live="polite">
+            {g.etapa === 'analisando' ? 'Achando os cortes' : 'Gravando as cenas'}… {numero((g.fracao ?? 0) * 100)}%
+          </small>
+        ) : null}
+        {comMatriz ? (
           <Soltar nome="matriz" rotulo={p.biblioteca ? 'Trocar a matriz' : 'Agora, a matriz'}
             dica="o cenas.json: uma lista com o arquivo e a descrição de cada cena" aceita=".json,application/json"
             progresso={null} aoEscolher={p.aoEscolherMatriz} />
         ) : null}
-        {p.faltaMatriz || p.biblioteca ? <GerarMatriz {...p} /> : null}
+        {comMatriz ? <GerarMatriz {...p} /> : null}
+        {p.pastaDasCenas && !separando ? (
+          <div className="pasta-das-cenas">
+            <small>
+              As cenas ficaram em <code>{p.pastaDasCenas}</code>, com o <code>cenas.json</code>: para usar em outro
+              vídeo, é só soltar essa pasta.
+            </small>
+            <button type="button" className="botao pequeno" onClick={p.aoAbrirPastaDasCenas}>Abrir a pasta</button>
+          </div>
+        ) : null}
         <Aviso texto={p.erro.biblioteca} />
         {p.biblioteca ? <FichaDaBiblioteca b={p.biblioteca} /> : null}
         {p.revisao && p.bibliotecaId ? (
@@ -538,7 +697,8 @@ const CamposDaFala: React.FC<PropsDoEnvio> = (p) => {
             aoEscolher={(f) => p.aoEscolherAudios([f])} aoEscolherVarios={p.aoEscolherAudios} />
         </>
       ) : fala === 'voz' ? <MinhaVoz estado={p.vozes} aoMudar={p.aoMudarVozes} narracao={p.narracao}
-        aoNarrar={p.aoNarrar} roteiro={p.roteiro} aoMudarRoteiro={p.aoMudarRoteiro} />
+        aoNarrar={p.aoNarrar} roteiro={p.roteiro} aoMudarRoteiro={p.aoMudarRoteiro}
+        roteiroAcima={t.escreveRoteiro} />
         : fala === 'cenas' ? (p.biblioteca && p.bibliotecaId ? (
           <CenasDoAudio biblioteca={p.biblioteca} bibliotecaId={p.bibliotecaId} escolhidas={m.cenasDoAudio}
             aoMudar={(cenasDoAudio) => p.mudarMontagem({cenasDoAudio})} />
@@ -597,7 +757,8 @@ const OndePostar: React.FC<PropsDoEnvio> = (p) => {
       <small>
         {p.recomendadas.length
           ? `Para um vídeo ${emPe ? 'em pé' : 'deitado'}, o editor recomenda ${juntar(p.recomendadas.map((x) => PLATAFORMAS[x].nome))}. `
-          : 'Envie o vídeo, e o editor recomenda pelo formato dele. '}
+          : p.trilha.fotos ? 'As fotos se ajustam: em pé nos Shorts, no TikTok e nos Reels, deitadas no YouTube. '
+            : 'Envie o vídeo, e o editor recomenda pelo formato dele. '}
         Dá para marcar várias: a thumbnail sai no formato de cada uma{p.trilha.modo === 'montagem'
           ? ', e o vídeo montado também' : ''}.
       </small>

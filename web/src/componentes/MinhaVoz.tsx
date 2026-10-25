@@ -4,8 +4,10 @@
  * voz dela. O motor (o Qwen3-TTS) é instalado à parte, pelo botão daqui.
  *
  * Duas partes: o ``PainelDaVoz`` (em "Antes de começar": instalar, gravar, ouvir e apagar as
- * vozes) e a ``MinhaVoz`` da montagem (escolher a voz e narrar o roteiro). A narração pronta
- * vira um áudio separado: dali em diante, a montagem é a de sempre.
+ * vozes) e a ``MinhaVoz`` da montagem (escolher a voz e narrar o roteiro). Na montagem, ao lado
+ * das gravadas, ficam as vozes prontas: as do Gemini (pela internet, na cota grátis do dia) e a
+ * local (o Piper, instalado à parte, sem internet). A narração pronta vira um áudio separado:
+ * dali em diante, a montagem é a de sempre.
  */
 import React, {useEffect, useState} from 'react';
 import {api} from '../api';
@@ -13,7 +15,7 @@ import {abrirConfiguracao} from '../configurar';
 import {duracao, numero} from '../formatar';
 import {useGravador} from '../gravador';
 import type {
-  AudioInfo, EstadoDasVozes, GravacaoDaVoz, MotorDeVoz, Narracao, ParagrafoDaLeitura, VozSalva,
+  AudioInfo, EstadoDasVozes, GravacaoDaVoz, MotorDeVoz, Narracao, ParagrafoDaLeitura, VozLocal, VozSalva,
 } from '../tipos';
 
 /** De quanto em quanto tempo a página pergunta pela instalação e pela narração. */
@@ -336,6 +338,55 @@ export const PainelDaVoz: React.FC<{estado: EstadoDasVozes | null; aoMudar: (e: 
   );
 };
 
+// ── as vozes prontas: a do Gemini e a local ────────────────────────────────
+
+/** A hora em que a cota grátis do Gemini volta (meia-noite em UTC), no relógio de quem usa. */
+function voltaDaCota(): string {
+  const agora = new Date();
+  const volta = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth(), agora.getUTCDate() + 1));
+  return volta.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+}
+
+/** A voz local (o Piper) é instalada à parte, como o motor da Minha voz: o ok antes, o andamento e o cancelar. */
+const InstalarVozLocal: React.FC<{local: VozLocal; aoMudar: (l: VozLocal) => void}> = ({local, aoMudar}) => {
+  const [erro, setErro] = useState('');
+  useEffect(() => {
+    if (!local.instalando) return undefined;
+    const t = setInterval(() => api.vozLocal().then(aoMudar).catch(() => undefined), ESPERA_MS);
+    return () => clearInterval(t);
+  }, [local.instalando, aoMudar]);
+  const instalar = () => {
+    setErro('');
+    api.instalarVozLocal().then(aoMudar).catch((e) => setErro(mensagem(e)));
+  };
+  return (
+    <div className="instalar-voz-local" aria-label="instalar a voz local">
+      <small>
+        A voz local não vem com o editor: o motor (o Piper, de código aberto) e a voz ficam num ambiente à parte, com
+        {' '}{local.espaco}. Leva {local.tempo}, uma vez só. Depois, ela narra no seu computador, sem internet e sem
+        cota.
+      </small>
+      {local.instalando ? (
+        <>
+          <div className="barra" role="progressbar" aria-valuenow={Math.round(local.fracao * 100)}
+            aria-valuemin={0} aria-valuemax={100}><div style={{width: `${Math.max(3, local.fracao * 100)}%`}} /></div>
+          <small className="andamento" aria-live="polite">{local.etapa || 'Começando…'}</small>
+          <div className="linha-de-opcoes">
+            <button type="button" className="botao pequeno" onClick={() => void api.cancelarVozLocal().then(aoMudar)}>
+              Cancelar
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="linha-de-opcoes">
+          <button type="button" className="botao pequeno usar" onClick={instalar}>Instalar a voz local</button>
+        </div>
+      )}
+      {local.erro || erro ? <div className="aviso erro">{local.erro || erro}</div> : null}
+    </div>
+  );
+};
+
 // ── o roteiro narrado (na montagem) ───────────────────────────────────────
 
 type PropsDaNarracao = {
@@ -346,10 +397,14 @@ type PropsDaNarracao = {
   /** O roteiro é o do passo 1 (o mesmo que corrige a legenda): quem narra só lê. */
   roteiro: string;
   aoMudarRoteiro: (t: string) => void;
+  /** O roteiro está em "O texto", lá em cima (o que a IA escreveu pelo tema): aqui vai só o tamanho dele. */
+  roteiroAcima?: boolean;
 };
 
+/** Quem narra: uma voz pronta (as do Gemini, pela internet, ou a local, no computador) ou uma voz gravada
+ *  (a sua). Sem escolha, vale a sua; sem ela, a do Gemini enquanto houver cota hoje; senão, a local. */
 export const MinhaVoz: React.FC<PropsDaNarracao> = ({estado, aoMudar, narracao, aoNarrar, roteiro,
-  aoMudarRoteiro: setRoteiro}) => {
+  aoMudarRoteiro: setRoteiro, roteiroAcima = false}) => {
   const [escolhida, setEscolhida] = useState('');
   const [pronuncia, setPronuncia] = useState<string | null>(null);
   const [rodando, setRodando] = useState<Narracao | null>(null);
@@ -365,91 +420,124 @@ export const MinhaVoz: React.FC<PropsDaNarracao> = ({estado, aoMudar, narracao, 
         if (n.rodando) return;
         if (n.audio) aoNarrar(n.audio);
         if (n.erro) setErro(n.erro);
+        // o que sobrou da cota do Gemini hoje
+        api.vozes().then(aoMudar).catch(() => undefined);
       }).catch(() => undefined);
     }, ESPERA_MS);
     return () => clearInterval(t);
-  }, [emAndamento, aoNarrar]);
+  }, [emAndamento, aoNarrar, aoMudar]);
 
   if (!estado) return <small>Carregando as vozes…</small>;
-  if (!estado.motor.instalado || !estado.vozes.length) {
-    return (
-      <div className="minha-voz" aria-label="minha voz">
-        <small>
-          {estado.motor.instalado ? 'Nenhuma voz gravada ainda.' : 'A voz sintetizada ainda não está instalada.'} A
-          gravação é feita uma vez, em "Antes de começar", no topo da página.
-        </small>
-        <div className="linha-de-opcoes">
-          <button type="button" className="botao pequeno usar" onClick={() => abrirConfiguracao('voz')}>
-            Gravar a minha voz
-          </button>
-        </div>
-      </div>
-    );
-  }
 
-  const {motor, vozes} = estado;
-  const voz = vozes.find((v) => v.apelido === escolhida) ?? vozes[0];
-  const regrasDaVoz = comoTexto(voz.pronuncia);
+  const {motor, vozes, prontas} = estado;
+  const gravadas = motor.instalado ? vozes : [];
+  const doGemini = prontas.vozes.filter((v) => v.motor === 'gemini');
+  const local = prontas.vozes.find((v) => v.motor === 'local') ?? null;
+  const gemini = prontas.gemini;
+  const geminiHoje = gemini.ligado && gemini.restantes_hoje > 0;
+  const padrao = gravadas[0]?.apelido
+    ?? (geminiHoje || (gemini.ligado && !prontas.local.instalado) ? doGemini[0]?.id : local?.id) ?? '';
+  const existe = gravadas.some((v) => v.apelido === escolhida) || prontas.vozes.some((v) => v.id === escolhida);
+  const id = existe ? escolhida : padrao;
+  const gravada = gravadas.find((v) => v.apelido === id) ?? null;
+  const pronta = gravada ? null : prontas.vozes.find((v) => v.id === id) ?? null;
+  const faltaInstalar = pronta?.motor === 'local' && !prontas.local.instalado;
+  const regrasDaVoz = gravada ? comoTexto(gravada.pronuncia) : '';
   const lista = pronuncia ?? regrasDaVoz;
-  const chave = `${voz.apelido}\n${lista}\n${roteiro}`;
+  const chave = `${id}\n${lista}\n${roteiro}`;
   const palavras = roteiro.trim() ? roteiro.trim().split(/\s+/).length : 0;
   const regras = lista.split('\n').filter((l) => /\S\s*(=|→|->|:)\s*\S/.test(l)).length;
 
-  const escolher = (v: VozSalva) => {
-    setEscolhida(v.apelido);
+  const escolher = (novo: string) => {
+    setEscolhida(novo);
     setPronuncia(null);
   };
 
   const narrar = async () => {
     setErro('');
     try {
-      if (lista !== regrasDaVoz) {
-        const nova = await api.salvarPronuncia(voz.apelido, lista);
+      if (gravada && lista !== regrasDaVoz) {
+        const nova = await api.salvarPronuncia(gravada.apelido, lista);
         aoMudar({...estado, vozes: vozes.map((x) => (x.apelido === nova.apelido ? nova : x))});
       }
       setNarrado(chave);
-      setRodando(await api.narrar(voz.apelido, roteiro, lista));
+      setRodando(gravada ? await api.narrar(gravada.apelido, roteiro, lista)
+        : await api.narrarComVozPronta(id, roteiro, lista));
     } catch (e) {
       setErro(mensagem(e));
     }
   };
 
+  const sobre = gravada ? `A sua voz, gravada em ${gravada.criada}: narra no seu computador.`
+    : pronta?.motor === 'gemini' ? `${pronta.nome}: ${pronta.descricao}. Do Gemini, pela internet: `
+      + (gemini.restantes_hoje > 0
+        ? `sobram ${gemini.restantes_hoje} de ${gemini.por_dia} narrações hoje na cota grátis.`
+        : `as ${gemini.por_dia} narrações de hoje da cota grátis acabaram; ela volta às ${voltaDaCota()}.`)
+    : pronta ? `${pronta.nome}: ${pronta.descricao}.` : '';
+
   return (
     <div className="minha-voz" aria-label="minha voz">
       <div className="campo">
         <span>A voz</span>
-        <div className="linha-de-opcoes" role="group" aria-label="as vozes salvas">
-          {vozes.map((v) => (
-            <button key={v.apelido} type="button" className="pilula" aria-pressed={v.apelido === voz.apelido}
-              onClick={() => escolher(v)}>{v.nome}</button>
+        <div className="linha-de-opcoes" role="group" aria-label="as vozes prontas">
+          {doGemini.map((v) => (
+            <button key={v.id} type="button" className="pilula" aria-pressed={v.id === id} disabled={!gemini.ligado}
+              title={gemini.ligado ? v.descricao : 'precisa da chave do Gemini, em "Antes de começar"'}
+              onClick={() => escolher(v.id)}>{v.nome}</button>
           ))}
-          <button type="button" className="pilula" onClick={() => abrirConfiguracao('voz')}>Gravar outra voz</button>
+          {local ? (
+            <button type="button" className="pilula" aria-pressed={local.id === id} title={local.descricao}
+              onClick={() => escolher(local.id)}>{local.nome} (no computador)</button>
+          ) : null}
         </div>
+        <div className="linha-de-opcoes" role="group" aria-label="as vozes salvas">
+          {gravadas.map((v) => (
+            <button key={v.apelido} type="button" className="pilula" aria-pressed={v.apelido === id}
+              onClick={() => escolher(v.apelido)}>{v.nome}</button>
+          ))}
+          <button type="button" className="pilula" onClick={() => abrirConfiguracao('voz')}>
+            {gravadas.length ? 'Gravar outra voz' : 'Gravar a minha voz'}
+          </button>
+        </div>
+        {sobre ? <small>{sobre}</small> : null}
+        {!gemini.ligado ? <small>As vozes do Gemini precisam da chave dele, em "Antes de começar".</small> : null}
       </div>
-      <label className="campo">
-        <span>O roteiro</span>
-        <textarea rows={7} value={roteiro} onChange={(e) => setRoteiro(e.target.value)} aria-label="o roteiro a narrar"
-          placeholder="Cole aqui o texto do vídeo. Uma linha em branco separa os parágrafos." />
+      {faltaInstalar ? (
+        <InstalarVozLocal local={prontas.local}
+          aoMudar={(l) => aoMudar({...estado, prontas: {...prontas, local: l}})} />
+      ) : null}
+      {roteiroAcima ? (
         <small>
-          {palavras} palavras · uns {duracao(palavras / PALAVRAS_POR_SEGUNDO)} de fala.{' '}
-          <label className="link">
-            Abrir um .txt
-            <input type="file" accept=".txt,text/plain" hidden aria-label="abrir o roteiro de um arquivo"
-              onChange={(e) => e.target.files?.[0]?.text().then(setRoteiro)} />
-          </label>
+          O roteiro de “O texto”, lá em cima: {palavras} palavras, uns {duracao(palavras / PALAVRAS_POR_SEGUNDO)} de
+          fala.
         </small>
-      </label>
+      ) : (
+        <label className="campo">
+          <span>O roteiro</span>
+          <textarea rows={7} value={roteiro} onChange={(e) => setRoteiro(e.target.value)} aria-label="o roteiro a narrar"
+            placeholder="Cole aqui o texto do vídeo. Uma linha em branco separa os parágrafos." />
+          <small>
+            {palavras} palavras · uns {duracao(palavras / PALAVRAS_POR_SEGUNDO)} de fala.{' '}
+            <label className="link">
+              Abrir um .txt
+              <input type="file" accept=".txt,text/plain" hidden aria-label="abrir o roteiro de um arquivo"
+                onChange={(e) => e.target.files?.[0]?.text().then(setRoteiro)} />
+            </label>
+          </small>
+        </label>
+      )}
       <details className="campo pronuncia">
         <summary>Pronúncia{regras ? ` (${regras})` : ''}</summary>
         <textarea rows={3} value={lista} onChange={(e) => setPronuncia(e.target.value)} aria-label="a lista de pronúncia"
           placeholder={'PEGI = pégui\nGTA = gê tê á'} />
         <small>
-          Como o motor deve ler uma palavra: siglas e nomes estrangeiros. Vale só para a voz (a legenda continua com a
-          grafia do roteiro) e fica salva com ela.
+          Como a voz deve ler uma palavra: siglas e nomes estrangeiros. Vale só para a voz (a legenda continua com a
+          grafia do roteiro){gravada ? ' e fica salva com ela' : ', enquanto a página estiver aberta'}.
         </small>
       </details>
       <div className="linha-de-opcoes">
-        <button type="button" className="botao pequeno usar" disabled={!roteiro.trim() || Boolean(emAndamento)}
+        <button type="button" className="botao pequeno usar"
+          disabled={!roteiro.trim() || Boolean(emAndamento) || !id || faltaInstalar}
           onClick={() => void narrar()}>{narracao ? 'Narrar de novo' : 'Narrar o roteiro'}</button>
         {emAndamento ? (
           <button type="button" className="botao pequeno" onClick={() => void api.cancelarNarracao(emAndamento)}>
@@ -464,7 +552,8 @@ export const MinhaVoz: React.FC<PropsDaNarracao> = ({estado, aoMudar, narracao, 
             <div style={{width: `${Math.max(3, (rodando.feitas / Math.max(1, rodando.total)) * 100)}%`}} />
           </div>
           <small className="andamento" aria-live="polite">
-            {rodando.total ? `Narrando ${rodando.feitas} de ${rodando.total} trechos…` : 'Carregando o motor…'}
+            {pronta?.motor === 'gemini' ? 'O Gemini está narrando o roteiro inteiro (uns 20 s num vídeo de 45 s)…'
+              : rodando.total ? `Narrando ${rodando.feitas} de ${rodando.total} trechos…` : 'Carregando o motor…'}
           </small>
         </>
       ) : null}
@@ -473,15 +562,27 @@ export const MinhaVoz: React.FC<PropsDaNarracao> = ({estado, aoMudar, narracao, 
           <audio controls src={api.audioUrl(narracao.id)} aria-label="ouvir a narração" />
           <small>
             {duracao(narracao.duracao)} de narração
-            {narrado && narrado !== chave ? '. O texto mudou: narre de novo para valer.' : ', pronta para editar.'}
+            {narrado && narrado !== chave ? '. O texto ou a voz mudou: narre de novo para valer.'
+              : ', pronta para editar.'}
           </small>
         </div>
       ) : null}
       {erro ? <div className="aviso erro">{erro}</div> : null}
       <small className="custo">
-        Num Mac com chip Apple, narrar leva de 1,5 a 2 vezes a duração da fala, mais uns segundos para o motor carregar
-        {motor.aparelho === 'cpu' ? '; aqui ele usa o processador, que é bem mais lento' : ''}. Os trechos já narrados
-        ficam guardados.
+        {gravada ? (
+          <>
+            Num Mac com chip Apple, narrar leva de 1,5 a 2 vezes a duração da fala, mais uns segundos para o motor
+            carregar{motor.aparelho === 'cpu' ? '; aqui ele usa o processador, que é bem mais lento' : ''}. Os trechos
+            já narrados ficam guardados.
+          </>
+        ) : pronta?.motor === 'gemini' ? (
+          <>
+            O roteiro vai para o Google, que devolve a narração. O roteiro inteiro vai num pedido só (1 das{' '}
+            {gemini.por_dia} narrações do dia), e a mesma narração pedida de novo sai guardada, sem gastar.
+          </>
+        ) : (
+          <>Narra no seu computador, frase a frase, sem internet e sem cota. As frases já narradas ficam guardadas.</>
+        )}
       </small>
     </div>
   );

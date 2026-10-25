@@ -69,6 +69,37 @@ item acima), instale a versão x64
 </details>
 
 <details>
+<summary><b>A voz do Gemini avisou que a cota acabou</b></summary>
+
+Na chave grátis, a voz do Gemini narra 10 roteiros por dia, e a cota volta à meia-noite em
+UTC (às 21h em Brasília). Até lá, escolha a voz local (Faber) ou a sua. A mesma narração
+pedida de novo, com o mesmo texto e a mesma voz, sai guardada e não gasta.
+
+</details>
+
+<details>
+<summary><b>"Achar as fotos" deixou um trecho sem foto, ou pôs uma foto ruim</b></summary>
+
+O trecho sem foto fica com as fotos dos vizinhos. Para ele ter as suas:
+
+- escreva o trecho de um jeito mais concreto, com o que se vê ("um foguete subindo", e não
+  "a ambição humana"), e clique em **Achar de novo**;
+- ou cole a chave grátis do Pexels em **Antes de começar**: ele tem mais fotos.
+
+Para tirar uma foto ruim, clique em **Revisar as fotos** e marque **Evitar** na linha dela.
+
+</details>
+
+<details>
+<summary><b>O Openverse pediu para esperar</b></summary>
+
+Sem chave, o Openverse limita as buscas seguidas. Espere alguns minutos e clique em
+**Achar de novo**. Com a chave do Pexels, as fotos dele vêm primeiro, e o Openverse só
+completa.
+
+</details>
+
+<details>
 <summary><b>A thumbnail com IA avisou que a cota acabou</b></summary>
 
 A cota gratuita do Gemini conta pedidos por modelo e por dia. O editor tenta três

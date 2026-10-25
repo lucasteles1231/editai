@@ -10,9 +10,12 @@
  * - **Por cima:** o vídeo da pessoa, o personagem ou, quando ninguém fala na tela (a fala é
  *   um áudio ou uma narração), o avatar salvo. A pessoa pode trocar por "ninguém".
  * - **A fala** (de onde saem a legenda e os cortes): o áudio; senão, o som do vídeo de quem
- *   fala; senão, o roteiro narrado. "Narrar o roteiro" troca o som do vídeo pela narração.
- * - **O texto:** o roteiro corrige a grafia da legenda (e é o que a voz lê); o tema vai de
- *   contexto para o Gemini.
+ *   fala; senão, o roteiro narrado (por uma voz pronta ou pela sua). "Narrar o roteiro" troca o
+ *   som do vídeo pela narração.
+ * - **O texto:** o roteiro corrige a grafia da legenda (e é o que a voz lê). Só com o tema, a IA
+ *   escreve o roteiro, e a pessoa revisa antes de narrar (o vídeo só pelo tema, 25/10/2026).
+ * - **Sem vídeo e sem cenas,** a imagem são fotos achadas pelo que é dito: elas viram uma
+ *   biblioteca de cenas, e daí a montagem é a de sempre.
  *
  * Só um vídeo, falando, sem mais nada, continua sendo o modo ``'um'``: o caminho simples.
  */
@@ -37,6 +40,8 @@ export type Fatos = {
   completoTemSom: boolean | null;
   pessoaTemSom: boolean | null;
   temAvatar: boolean;
+  /** Há uma IA para escrever o roteiro pelo tema (hoje, a chave do Gemini). */
+  temIa: boolean;
   /** "Narrar o roteiro" no lugar do som do vídeo. */
   narrar: boolean;
   /** Quem vai por cima quando nenhum vídeo nem personagem veio: a escolha (``null``, a regra). */
@@ -60,23 +65,27 @@ export type Trilha = {
   escolhePorCima: boolean;
   /** Dá para trocar o som do vídeo pela narração do roteiro. */
   podeNarrar: boolean;
+  /** A imagem são fotos achadas pelo que é dito (a biblioteca sai do roteiro). */
+  fotos: boolean;
+  /** O roteiro é escrito pela IA a partir do tema. */
+  escreveRoteiro: boolean;
   etapas: Etapa[];
   /** Por que ainda não dá para editar ("" quando dá). */
   bloqueio: string;
 };
 
-/** O que só chega numa próxima versão (as fases 2 e 3 do plano de 20/10/2026). */
-export const AINDA_NAO = {
-  tema: 'Só com o tema, o Gemini vai escrever o roteiro: isso chega numa próxima versão. Por enquanto, marque '
-    + 'Roteiro e escreva o texto.',
-  imagem: 'Sem vídeo e sem cenas, o Editai vai achar fotos pelo que é dito: isso chega numa próxima versão. Por '
-    + 'enquanto, marque o vídeo completo ou as cenas.',
+/** Por que a trilha ainda não anda, nos caminhos sem vídeo. */
+export const FALTA = {
+  ia: 'Para escrever o roteiro pelo tema, cole a chave do Gemini em "Antes de começar" (ou marque Roteiro e '
+    + 'escreva o texto).',
+  texto: 'Sem vídeo e sem cenas, as fotos são achadas pelo texto: marque também o Roteiro e cole o texto do áudio '
+    + '(ou marque o Tema).',
 };
 
 export function montarTrilha(tem: ReadonlySet<Material>, f: Fatos): Trilha {
   const t: Trilha = {
     modo: 'montagem', fonteDoFundo: 'video', porCima: 'nada', fala: null, completo: null, daPessoa: null,
-    escolhePorCima: false, podeNarrar: false, etapas: [], bloqueio: '',
+    escolhePorCima: false, podeNarrar: false, fotos: false, escreveRoteiro: false, etapas: [], bloqueio: '',
   };
   if (!tem.size) return {...t, modo: 'um', bloqueio: 'Marque o que você tem.'};
   const bloquear = (motivo: string) => {
@@ -107,8 +116,12 @@ export function montarTrilha(tem: ReadonlySet<Material>, f: Fatos): Trilha {
     imagem = 'O vídeo da pessoa é o vídeo inteiro.';
     falante = 'pessoa';
   } else {
-    imagem = 'Fotos achadas pelo que é dito (numa próxima versão).';
-    bloquear(AINDA_NAO.imagem);
+    // sem vídeo e sem cenas: as fotos achadas pelo que é dito viram a biblioteca de cenas
+    t.fonteDoFundo = 'cenas';
+    t.fotos = true;
+    imagem = 'Fotos achadas pelo que é dito: no Pexels (com a chave) e no Openverse, só com licença livre, e os '
+      + 'créditos ao lado do vídeo.';
+    if (!roteiro && !tem.has('tema')) bloquear(FALTA.texto);
   }
   if (porCimaDeVideo) falante = porCimaDeVideo;
   if (personagem && porCimaDeVideo) bloquear('Por cima vai a pessoa ou o personagem, um só: desmarque um dos dois.');
@@ -124,16 +137,16 @@ export function montarTrilha(tem: ReadonlySet<Material>, f: Fatos): Trilha {
   } else if (doVideo && !(t.podeNarrar && f.narrar)) {
     t.fala = porCimaDeVideo ? 'pessoa' : 'fundo';
     fala = `O som do ${falante === 'completo' ? 'vídeo completo' : 'vídeo da pessoa'}: dele saem a legenda e os cortes.`;
-  } else if (roteiro) {
+  } else if (roteiro || tem.has('tema')) {
     t.fala = 'voz';
-    fala = 'A sua voz narra o roteiro: da narração saem a legenda e os cortes.';
-  } else if (tem.has('tema')) {
-    fala = 'O roteiro escrito pelo tema, narrado (numa próxima versão).';
-    bloquear(AINDA_NAO.tema);
+    t.escreveRoteiro = !roteiro;
+    fala = 'Uma voz narra o roteiro: a do Gemini, a do computador ou a sua. Da narração saem a legenda e os '
+      + 'cortes.';
+    if (t.escreveRoteiro && !f.temIa) bloquear(FALTA.ia);
   } else if (falante !== null) {
     t.fala = porCimaDeVideo ? 'pessoa' : 'fundo';
     fala = 'O vídeo não tem som: ele sai sem cortes e sem legenda.';
-  } else if (cenas) {
+  } else if (cenas && !t.fotos) {
     t.fala = 'cenas';
     fala = 'O som dos vídeos da pasta que você marcar, na ordem dos números: dele saem a legenda e os cortes. '
       + 'Sem som nas cenas, marque o áudio ou o roteiro.';
@@ -180,7 +193,9 @@ export function montarTrilha(tem: ReadonlySet<Material>, f: Fatos): Trilha {
     textos.push(t.fala === 'voz' ? 'O roteiro é o que a voz lê, e a legenda sai com a grafia dele.'
       : 'O roteiro corrige a grafia da legenda onde ele bate com o que foi dito: nomes, marcas, termos em inglês.');
   }
-  if (tem.has('tema')) {
+  if (t.escreveRoteiro) {
+    textos.push('A IA escreve o roteiro a partir do tema, e você revisa antes de narrar.');
+  } else if (tem.has('tema')) {
     textos.push('O tema vai de contexto para o Gemini: nos cartões, na escolha das cenas e na descrição delas.');
   }
   if (textos.length) t.etapas.push({id: 'texto', titulo: 'O texto', texto: textos.join(' ')});

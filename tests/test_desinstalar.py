@@ -119,6 +119,14 @@ class TestTudo:
         assert desinstalar.tudo(perguntar=_respostas(), escrever=saida.append) == 0
         assert saida == ["O Editai não guardou nada neste computador."]
 
+    def test_a_voz_local_aparece_na_linha_dela(self, maquina):
+        _arquivo(maquina["dados"] / "voz-local" / "voz" / "pt_BR-faber-medium.onnx", 1200)
+        itens = desinstalar.principais()
+        local = next(i for i in itens if i.caminho == maquina["dados"] / "voz-local")
+        assert local.rotulo == "a voz local (o Piper)" and local.bytes == 1200
+        resto = next(i for i in itens if i.caminho == maquina["dados"])
+        assert resto.bytes < 1200               # a voz local não conta duas vezes
+
     def test_no_windows_o_cache_dentro_dos_dados_aparece_uma_vez(self, tmp_path, monkeypatch):
         dados = tmp_path / "AppData" / "Local" / "editor-de-video"
         _arquivo(dados / "Cache" / "envios" / "v.mp4", 400)

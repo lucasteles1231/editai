@@ -24,6 +24,10 @@ editai eu.mp4 --fundo tela.mp4 --quadro vertical  # você por cima da tela grava
 editai --fundo jogo.mp4 --personagem boneco.gif --audio narracao.m4a
 editai --fundo jogo.mp4 --avatar "Ana" --audio narracao.m4a   # o seu avatar, falando
 editai --gerar-matriz cenas/ --assunto "trailers do GTA 6"   # escreve cenas/cenas.json
+editai --separar-cenas trailer.mp4                # o vídeo longo vira a pasta das cenas
+editai --tema "Por que o céu é azul"              # só pelo tema: roteiro, voz, fotos e vídeo
+editai --tema "Por que o céu é azul" --duracao 60 --narrador local   # a voz do computador
+editai --instalar-voz-local                       # a voz local (o Piper), uns 210 MB
 editai --cenas imovel/ --matriz imovel/cenas.json --audio imovel/tour-1.mp4 imovel/tour-2.mp4 \
        --preset imoveis               # fotos e vídeos de um imóvel, o som de dois vídeos dela
 editai --cenas cenas/ --matriz cenas/cenas.json --audio p1.m4a p2.m4a p3.m4a \
@@ -82,7 +86,13 @@ editai --formatos                                 # o que este computador grava
 | `--cenas PASTA` | a montagem com a biblioteca de cenas: a pasta dos clipes | |
 | `--matriz ARQUIVO` | a matriz da biblioteca (o `cenas.json`) | |
 | `--gerar-matriz PASTA` | escreve o `cenas.json` de uma pasta de clipes (o Gemini descreve; sem ele, um rascunho) | |
-| `--assunto TEXTO` | com `--gerar-matriz`: do que são as cenas, para reconhecer personagens | |
+| `--separar-cenas VIDEO` | separa um vídeo longo em cenas: os clipes e o `cenas.json` numa pasta nova em `Filmes/editor-de-video/cenas` | |
+| `--assunto TEXTO` | com `--gerar-matriz` ou `--separar-cenas`: do que são as cenas, para reconhecer personagens | |
+| `--tema TEXTO` | o assunto do vídeo, em uma frase. Sozinho, o Editai escreve o roteiro (ou usa o `--roteiro`), narra, acha as fotos e monta ([O vídeo só pelo tema](./o-video-so-pelo-tema)); com um vídeo ou as cenas, vai de contexto para a IA | |
+| `--duracao S` | com `--tema`: quanto o vídeo deve durar, em segundos | `45` |
+| `--narrador VOZ` | com `--tema`: quem narra: `gemini:Orus` (ou `gemini:Charon`, `Puck`, `Kore`, `Aoede`, `Leda`), `local` ou o nome de uma voz sua | o Gemini, com a chave; sem ela, a local |
+| `--instalar-voz-local` | instala a voz local (o Piper, uns 210 MB), num ambiente à parte | |
+| `--desinstalar-voz-local` | apaga a voz local | |
 | `--janela`, `--sem-janela` | a cena numa janela 16:9 com câmera | sem |
 | `--pessoa` | o vídeo de você falando, por cima do fundo | o vídeo do argumento |
 | `--personagem` | um GIF, PNG animado ou WebP, em loop por cima | |

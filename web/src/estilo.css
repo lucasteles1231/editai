@@ -1356,6 +1356,13 @@ button.link { padding: 0; border: none; background: none; color: inherit; font: 
 
 .gerar-matriz { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .gerar-matriz .andamento { font-variant-numeric: tabular-nums; }
+.andamento { font-variant-numeric: tabular-nums; }
+.pasta-das-cenas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; }
+.pasta-das-cenas code { word-break: break-all; }
+
+/* O roteiro escrito pela IA a partir do tema, e a instalação da voz local (na escolha da voz). */
+.escrever-roteiro { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.instalar-voz-local { display: flex; flex-direction: column; gap: 8px; }
 
 .revisao {
   margin-top: 14px;

@@ -2,8 +2,8 @@
 O que os testes compartilham.
 
 - **Nenhum teste roda modelo de verdade nem chama a internet:** o transcritor falso, o
-  recorte falso, a IA falsa, o Pexels falso e o motor de voz falso ficam ligados para
-  todos, e os sons que o
+  recorte falso, a IA falsa, o Pexels falso, as fotos falsas e o motor de voz falso ficam
+  ligados para todos, e os sons que o
   editor baixaria (os do Remotion sem licença livre) não vêm: toca a reserva deles.
   Esquecer isso num teste da
   interface rodaria o Whisper (ou gastaria a chave do Gemini) sem ninguém perceber. Os
@@ -28,6 +28,7 @@ import pytest
 
 from editor import (
     chaves,
+    fotos,
     ia,
     imagens,
     motor_de_voz,
@@ -50,6 +51,9 @@ def _isolado(tmp_path, monkeypatch):
     monkeypatch.setenv(pexels.VARIAVEL_FALSA, "falso")
     monkeypatch.setenv(motor_de_voz.VARIAVEL_FALSA, "falsa")
     monkeypatch.setenv(versao.VARIAVEL_FALSA, "falsa")
+    monkeypatch.setenv(fotos.VARIAVEL_FALSA, "falso")
+    # "Abrir a pasta" abriria o Finder (ou o Explorer) de verdade
+    monkeypatch.setattr(servidor, "abrir_pasta", lambda pasta: None)
     monkeypatch.delenv(ia.VARIAVEL_DA_CHAVE, raising=False)
     monkeypatch.delenv(pexels.VARIAVEL_DA_CHAVE, raising=False)
     monkeypatch.setattr(ia, "_geradas", 0)

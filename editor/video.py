@@ -271,7 +271,9 @@ class Gravador:
     """Grava os quadros e o áudio no formato escolhido, intercalados no tempo."""
 
     def __init__(self, caminho: Path, opcoes: saida_mod.OpcoesDeSaida, largura: int,
-                 altura: int, fps: Fraction, *, com_audio: bool):
+                 altura: int, fps: Fraction, *, com_audio: bool, preset: str | None = None):
+        """``preset``: o do x264/x265 no lugar do padrão (as cenas de um vídeo longo saem com
+        "veryfast": são centenas de clipes, e a montagem grava de novo)."""
         self.caminho = Path(caminho)
         self.opcoes = opcoes.resolvidas()
         self.largura, self.altura, self.fps = largura, altura, fps
@@ -288,6 +290,8 @@ class Gravador:
         nome = saida_mod.encoder(self.opcoes.codec)
         ajustes, taxa_de_bits = saida_mod.ajustes_do_encoder(nome, self.opcoes.qualidade,
                                                              largura, altura, fps)
+        if preset and "preset" in ajustes:
+            ajustes["preset"] = preset
         self.v = self.c.add_stream(nome, rate=fps, options=ajustes)
         self.v.width, self.v.height = largura, altura
         self.v.pix_fmt = saida_mod.CODECS[self.opcoes.codec][1]

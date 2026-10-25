@@ -7,7 +7,7 @@ import {
 import {aplicarPreset, presetMarcado} from './presets';
 import {Painel} from './componentes/Painel';
 import {PassoEdicoes, PassoLegenda, PassoSaida} from './componentes/Passos';
-import {type Envio, PassoEnvio, type Revisao} from './componentes/PassoEnvio';
+import {type Envio, type FotosAchadas, PassoEnvio, type Revisao} from './componentes/PassoEnvio';
 import {type Destino, type Material, montarTrilha} from './trilha';
 import {paraJson, paraLinhas} from './matriz';
 import {AntesDeComecar} from './componentes/AntesDeComecar';
@@ -18,7 +18,7 @@ import {PROPORCAO} from './componentes/thumb/AbaFundo';
 import {gerarPng} from './thumb/exportar';
 import {carregarFonte} from './thumb/medida';
 import type {
-  AudioInfo, AvatarSalvo, BibliotecaInfo, Camadas, CenaDaMatriz, Edicao, Estado, EstadoChave, EstadoDasVozes, EstadoIa, Ideia,
+  AndamentoDaMatriz, AudioInfo, AvatarSalvo, BibliotecaInfo, Camadas, CenaDaMatriz, Edicao, Estado, EstadoChave, EstadoDasVozes, EstadoIa, Ideia,
   MontagemConfig,
   PersonagemInfo, Preset, RecorteInfo, Saida, Tarefa, ThumbConfig, VideoInfo,
 } from './tipos';
@@ -27,8 +27,8 @@ import {comecarTour, tourJaVisto} from './tour';
 const MONTAGEM_PADRAO: MontagemConfig = {fonteDoFundo: 'video', porCima: 'pessoa', recorte: 'modnet', formato: 'fundo',
   tirarFundo: true, fala: null, cenasDoAudio: [], avatar: null};
 const NADA_ENVIANDO: Record<Envio, number | null> = {completo: null, pessoa: null, personagem: null, audio: null,
-  biblioteca: null};
-const SEM_ERRO: Record<Envio, string> = {completo: '', pessoa: '', personagem: '', audio: '', biblioteca: ''};
+  biblioteca: null, longo: null};
+const SEM_ERRO: Record<Envio, string> = {completo: '', pessoa: '', personagem: '', audio: '', biblioteca: '', longo: ''};
 
 /** Os vídeos que a biblioteca aceita (``editor/cenas.py``). */
 const CLIPE = /\.(mp4|mov|m4v|webm|mkv|jpe?g|png|webp)$/i;
@@ -133,7 +133,14 @@ export const App: React.FC = () => {
   // A pasta já subiu (e falta a matriz): o id da biblioteca aberta no servidor.
   const [bibliotecaAberta, setBibliotecaAberta] = useState<string | null>(null);
   const [enviandoBiblioteca, setEnviandoBiblioteca] = useState<string | null>(null);
-  const [gerandoMatriz, setGerandoMatriz] = useState<{prontas: number; total: number; pedidos: number} | null>(null);
+  const [gerandoMatriz, setGerandoMatriz] = useState<AndamentoDaMatriz | null>(null);
+  // A pasta onde o vídeo longo virou cenas, ou onde ficaram as fotos achadas (para usar de novo).
+  const [pastaDasCenas, setPastaDasCenas] = useState<string | null>(null);
+  // O roteiro pelo tema (escrevendo, e o erro) e as fotos achadas por ele (com o roteiro de
+  // quando foram achadas: mudou, as fotos ficam para trás).
+  const [escrevendoRoteiro, setEscrevendoRoteiro] = useState(false);
+  const [erroDoRoteiro, setErroDoRoteiro] = useState('');
+  const [fotosAchadas, setFotosAchadas] = useState<FotosAchadas | null>(null);
   const [revisao, setRevisao] = useState<Revisao | null>(null);
   const [salvandoMatriz, setSalvandoMatriz] = useState(false);
   const [montagem, setMontagem] = useState<MontagemConfig>(MONTAGEM_PADRAO);
@@ -165,8 +172,8 @@ export const App: React.FC = () => {
   const [erroThumb, setErroThumb] = useState('');
   const trilha = useMemo(() => montarTrilha(materiais, {
     completoTemSom: completo ? completo.tem_audio : null, pessoaTemSom: daPessoa ? daPessoa.tem_audio : null,
-    temAvatar: Boolean(avatares?.length), narrar, porCima: porCimaEscolhido,
-  }), [materiais, completo, daPessoa, avatares, narrar, porCimaEscolhido]);
+    temAvatar: Boolean(avatares?.length), temIa: Boolean(ia?.configurada), narrar, porCima: porCimaEscolhido,
+  }), [materiais, completo, daPessoa, avatares, ia?.configurada, narrar, porCimaEscolhido]);
   const noLugar = (d: Destino) => (trilha.completo === d ? completo : trilha.daPessoa === d ? daPessoa : null);
   const modo = trilha.modo;
   const unico = noLugar('unico');
@@ -213,10 +220,14 @@ export const App: React.FC = () => {
   // "Das cenas": só as marcadas que ainda estão na biblioteca (trocar a pasta tira as outras)
   const cenasDoAudio = useMemo(() => montagem.cenasDoAudio.filter(
     (a) => biblioteca?.com_som.some((c) => c.arquivo === a)), [montagem.cenasDoAudio, biblioteca]);
-  // A recomendação sai do vídeo principal: o único, ou o fundo da montagem.
+  // A recomendação sai do vídeo principal: o único, ou o fundo da montagem. As fotos achadas não
+  // recomendam nada: elas se ajustam ao formato escolhido.
   const videoPrincipal = naMontagem ? fundoEfetivo : unico;
-  const recomendacao = useMemo(() => recomendadas(videoPrincipal), [videoPrincipal]);
-  const plataformas: Plataforma[] = plataformasEscolhidas ?? (recomendacao.length ? recomendacao : ['youtube']);
+  const recomendacao = useMemo(() => (trilha.fotos ? [] : recomendadas(videoPrincipal)),
+    [trilha.fotos, videoPrincipal]);
+  // Só pelo tema (as fotos achadas), o padrão é o Short em pé.
+  const plataformas: Plataforma[] = plataformasEscolhidas
+    ?? (trilha.fotos ? ['shorts'] : recomendacao.length ? recomendacao : ['youtube']);
   const chaveDasPlataformas = plataformas.join(',');
   const porCimaPronto = montagem.porCima === 'nada'
     || Boolean(comAvatar ? avatarDaMontagem : comPersonagem ? personagem : pessoa);
@@ -353,7 +364,7 @@ export const App: React.FC = () => {
 
   // O roteiro corrige a grafia da legenda (e é o que a voz lê). Só troca o que veio dele: o
   // que a pessoa escreveu à mão no passo 3 fica.
-  const comRoteiro = materiais.has('roteiro');
+  const comRoteiro = materiais.has('roteiro') || trilha.escreveRoteiro;
   const roteiroAplicado = useRef('');
   useEffect(() => {
     // o que veio do roteiro antes: o atualizador roda depois, com a referência já trocada
@@ -456,6 +467,89 @@ export const App: React.FC = () => {
     setSalvandoMatriz(false);
   }, [bibliotecaAberta, enviarMatriz]);
 
+  /** O vídeo longo: sobe inteiro, o editor separa as cenas numa pasta e escreve a matriz (o
+   *  tema, se veio, é o assunto), e no fim a tabela de revisão abre, como na matriz gerada. */
+  const separarVideoLongo = useCallback(async (arquivo: File) => {
+    setErrosDeEnvio((e) => ({...e, biblioteca: '', longo: ''}));
+    setTarefa(null);
+    setBiblioteca(null);
+    setBibliotecaAberta(null);
+    setRevisao(null);
+    setPastaDasCenas(null);
+    try {
+      const {id} = await api.novaBiblioteca(arquivo.name.replace(/\.[^.]+$/, '') || 'cenas');
+      let g = await api.separarVideoLongo(id, arquivo, materiais.has('tema') ? tema : '',
+        (f) => setEnvios((e) => ({...e, longo: f})));
+      setEnvios((e) => ({...e, longo: null}));
+      setBibliotecaAberta(id);
+      setPastaDasCenas(g.pasta ?? null);
+      const andamento = (x: typeof g) => setGerandoMatriz({prontas: x.prontas, total: x.total, pedidos: x.pedidos,
+        etapa: x.etapa, fracao: x.fracao});
+      andamento(g);
+      while (g.rodando) {
+        await new Promise((ok) => setTimeout(ok, 1000));
+        g = await api.andamentoDaMatriz(id);
+        andamento(g);
+      }
+      if (g.erro) throw new Error(g.erro);
+      setRevisao({linhas: paraLinhas(g.cenas ?? []), por: g.por, aviso: g.aviso, pedidos: g.pedidos});
+    } catch (e) {
+      setErrosDeEnvio((x) => ({...x, biblioteca: (e as Error).message}));
+    } finally {
+      setEnvios((e) => ({...e, longo: null}));
+      setGerandoMatriz(null);
+    }
+  }, [materiais, tema]);
+
+  /** O roteiro pelo tema: a IA escreve, e o texto cai no roteiro de sempre, para revisar antes de narrar. */
+  const escreverRoteiro = useCallback(async (segundos: number) => {
+    setErroDoRoteiro('');
+    setEscrevendoRoteiro(true);
+    try {
+      const r = await api.escreverRoteiro(tema, segundos, 'pt');
+      setRoteiro(r.texto);
+      setNarracao(null);
+    } catch (e) {
+      setErroDoRoteiro((e as Error).message);
+    } finally {
+      setEscrevendoRoteiro(false);
+    }
+  }, [tema]);
+
+  /** As fotos achadas pelo roteiro: viram uma biblioteca de cenas, que já vale ao terminar (dá para
+   *  revisar depois, na tabela de sempre). */
+  const acharFotos = useCallback(async () => {
+    setErrosDeEnvio((e) => ({...e, biblioteca: ''}));
+    setTarefa(null);
+    setBiblioteca(null);
+    setBibliotecaAberta(null);
+    setRevisao(null);
+    setPastaDasCenas(null);
+    setFotosAchadas(null);
+    const texto = roteiro;
+    try {
+      const {id} = await api.novaBiblioteca(tema || 'fotos');
+      setBibliotecaAberta(id);
+      let g = await api.acharFotos(id, texto, tema, montagem.formato === 'vertical' ? 'retrato' : 'paisagem');
+      setPastaDasCenas(g.pasta ?? null);
+      const andamento = (x: typeof g) => setGerandoMatriz({prontas: x.prontas, total: x.total, pedidos: x.pedidos,
+        etapa: x.etapa, fracao: x.fracao});
+      andamento(g);
+      while (g.rodando) {
+        await new Promise((ok) => setTimeout(ok, 800));
+        g = await api.andamentoDaMatriz(id);
+        andamento(g);
+      }
+      if (g.erro) throw new Error(g.erro);
+      if (g.biblioteca) setBiblioteca(g.biblioteca);
+      setFotosAchadas({roteiro: texto, fotos: g.fotos ?? 0, aviso: g.aviso});
+    } catch (e) {
+      setErrosDeEnvio((x) => ({...x, biblioteca: (e as Error).message}));
+    } finally {
+      setGerandoMatriz(null);
+    }
+  }, [roteiro, tema, montagem.formato]);
+
   /** A pasta das cenas: os vídeos dela sobem (três de cada vez) e, se a matriz veio junto,
    *  ela também. Sem matriz na pasta, a página pede a matriz em seguida. */
   const escolherPasta = useCallback(async (arquivos: File[]) => {
@@ -464,6 +558,7 @@ export const App: React.FC = () => {
     setBiblioteca(null);
     setBibliotecaAberta(null);
     setRevisao(null);
+    setPastaDasCenas(null);
     const clipes = arquivos.filter((f) => CLIPE.test(f.name) && !f.name.startsWith('.'));
     if (!clipes.length) {
       setErrosDeEnvio((e) => ({...e, biblioteca: 'Nenhum vídeo nesta pasta (MP4, MOV, WebM, MKV).'}));
@@ -761,6 +856,12 @@ export const App: React.FC = () => {
             montagem={montagem} mudarMontagem={mudarMontagem}
             progresso={envios} erro={errosDeEnvio} aoEscolher={escolherArquivo}
             aoEscolherAudios={(a) => void escolherAudios(a)} aoEscolherPasta={(a) => void escolherPasta(a)}
+            aoEscolherVideoLongo={(f) => void separarVideoLongo(f)} pastaDasCenas={pastaDasCenas}
+            aoEscreverRoteiro={(s) => void escreverRoteiro(s)} escrevendoRoteiro={escrevendoRoteiro}
+            erroDoRoteiro={erroDoRoteiro} aoAcharFotos={() => void acharFotos()}
+            fotosAchadas={fotosAchadas}
+            fotosDesatualizadas={Boolean(fotosAchadas && fotosAchadas.roteiro !== roteiro && biblioteca)}
+            aoAbrirPastaDasCenas={() => bibliotecaAberta && void api.abrirPastaDasCenas(bibliotecaAberta)}
             aoEscolherMatriz={(f) => bibliotecaAberta && void enviarMatriz(bibliotecaAberta, f)}
             aoTirarAudio={() => setAudios([])}
             recorte={estado?.recorte ?? {baixado: true, tamanho: ''}}
@@ -795,7 +896,7 @@ export const App: React.FC = () => {
           gerandoThumbs={gerandoThumbs} pastaSaida={estado?.pasta_saida ?? ''} />
       </main>
       <footer className="rodape">
-        Editai {estado?.versao ?? ''} · nasceu da edição de um projeto anterior ·{' '}
+        Editai {estado?.versao ?? ''} · código aberto ·{' '}
         <a href="https://github.com/lucasteles1231/editai" target="_blank" rel="noreferrer">código no GitHub</a>
       </footer>
     </>

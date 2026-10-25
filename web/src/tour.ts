@@ -32,8 +32,9 @@ export function comecarTour(): void {
         title: 'Antes de começar',
         description: 'Tudo aqui é opcional e se configura uma vez: <b>a sua voz</b>, gravada para narrar roteiros, '
           + '<b>o seu avatar</b> em pixel art, feito pela sua foto, e as '
-          + 'chaves grátis do <b>Gemini</b> (ideias de capa, cartões e a matriz das cenas) e do <b>Pexels</b> (fotos '
-          + 'para o fundo da capa). Cada cartão abre o próprio painel.',
+          + 'chaves grátis do <b>Gemini</b> (o roteiro e a voz do vídeo só pelo tema, ideias de capa, cartões e a '
+          + 'matriz das cenas) e do <b>Pexels</b> (fotos para a capa e para o vídeo só pelo tema). Cada cartão abre o '
+          + 'próprio painel.',
       },
     },
     {
