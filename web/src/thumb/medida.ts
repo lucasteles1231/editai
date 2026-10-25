@@ -3,8 +3,8 @@
  * antes de qualquer medida: a Anton na chamada, a DejaVu Sans Bold no resto.
  */
 export const FAMILIA = 'DejaVu Sans';
-/** A fonte da chamada. Condensada: no mesmo espaço cabe uns 40% mais letra que na DejaVu
- *  (medido num projeto anterior), e a chamada é lida num quadro de 120 px de largura. */
+/** A fonte da chamada. Condensada: no mesmo espaço cabe uns 40% mais letra que na DejaVu,
+ *  e a chamada é lida num quadro de 120 px de largura. */
 export const TITULO = 'Anton';
 
 let contexto: CanvasRenderingContext2D | null = null;

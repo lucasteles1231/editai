@@ -1,7 +1,7 @@
 """
-O avatar: um personagem em pixel art montado por partes, no padrão do apresentador do
-um projeto anterior (``recursos/personagem/padrao.json``): as mesmas 12 poses, as 3 bocas da fala, a
-regra da boca pelas sílabas e a pose por frase.
+O avatar: um personagem em pixel art montado por partes, num padrão fixo
+(``recursos/personagem/padrao.json``): 12 poses, 3 bocas da fala, a regra da boca pelas
+sílabas e a pose por frase.
 
 - **As partes** ficam em ``recursos/personagem/partes`` — uma cópia do repositório público
   `editai-personagens <https://github.com/lucasteles1231/editai-personagens>`_, num commit
@@ -16,9 +16,9 @@ regra da boca pelas sílabas e a pose por frase.
 - **No vídeo** (``montagem.CamadaDeAvatar``): a pose muda a cada frase
   (:func:`poses_das_falas`) e a boca abre nas sílabas (:func:`bocas_por_quadro`).
 
-Por que partes, e não uma IA de imagem a cada quadro: num projeto anterior, a IA redesenhava a imagem
-inteira só para abrir a boca, e o personagem tremia; aqui cada quadro é a mesma montagem com
-uma peça trocada, não custa nada e pode ser refeito a qualquer hora.
+Por que partes, e não uma IA de imagem a cada quadro: a IA redesenha a imagem inteira só para
+abrir a boca, e o personagem treme; aqui cada quadro é a mesma montagem com uma peça trocada,
+não custa nada e pode ser refeito a qualquer hora.
 """
 from __future__ import annotations
 
@@ -275,7 +275,7 @@ def _leia_me(info: dict) -> str:
               "- fechada: a boca da expressão da pose;",
               "- meia: abre e fecha cada sílaba, e é a da sílaba fraca;",
               "- aberta: o meio da sílaba forte.",
-              "A boca abre um quadro antes de cada sílaba, sempre pela meia. num projeto anterior, "
+              "A boca abre um quadro antes de cada sílaba, sempre pela meia. Num vídeo real, "
               "ela ficou 57% do tempo fechada, 26% meia e 17% aberta.", "",
               "AS POSES (uma por frase):"]
     for nome, pose in p["poses"].items():
@@ -388,8 +388,8 @@ def escolher_partes(foto: bytes, *, transporte=None) -> dict:
 
 def _picos(env: np.ndarray, altura: float, proeminencia: float, distancia: int
            ) -> np.ndarray:
-    """Os picos de ``env`` como o ``scipy.signal.find_peaks`` de um projeto anterior acha (altura,
-    distância e proeminência, nessa ordem), sem o scipy."""
+    """Os picos de ``env`` como o ``scipy.signal.find_peaks`` acha (altura, distância e
+    proeminência, nessa ordem), sem o scipy."""
     if len(env) < 3:
         return np.zeros(0, int)
     # o máximo local; num platô, o meio dele (como o scipy)
@@ -454,7 +454,7 @@ def silabas(x: np.ndarray, taxa: int) -> tuple[list[float], np.ndarray, float]:
 
 
 def bocas_por_quadro(x: np.ndarray, taxa: int, fps: float, total: int) -> list[str]:
-    """A boca de cada quadro ("fechada", "meia" ou "aberta"), a regra de um projeto anterior: abre um
+    """A boca de cada quadro ("fechada", "meia" ou "aberta"): abre um
     quadro antes do pico de cada sílaba, sempre pela meia, e fica aberta enquanto a vogal se
     sustenta, fechando pelo menos dois quadros antes da sílaba seguinte. A sílaba fraca
     (abaixo de 0,85 da mediana das vizinhas) abre só até a meia."""

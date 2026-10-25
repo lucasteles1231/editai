@@ -1,8 +1,7 @@
 """
 O plano de edição: tudo o que o editor decide, antes de desenhar um quadro.
 
-Nada aqui chama modelo de IA. As decisões são regras — as mesmas que o canal
-um projeto anterior usa nos Shorts dele:
+Nada aqui chama modelo de IA. As decisões são regras, as de um Short bem editado:
 
 - **blocos de legenda**: uma linha curta, que quebra em pontuação e em pausa e
   nunca termina numa palavra que pede a seguinte ("e", "de", "não"...);

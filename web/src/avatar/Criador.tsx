@@ -59,7 +59,7 @@ const Desenho: React.FC<{
     : <span className="desenhando" style={{width: lado, height: lado}} aria-hidden="true" />;
 };
 
-/** A prévia grande, falando (a boca de um projeto anterior: meia, aberta, meia, fechada…). */
+/** A prévia grande, falando (a boca da fala: meia, aberta, meia, fechada…). */
 const Falando: React.FC<{e: Escolhas}> = ({e}) => {
   const [quadros, setQuadros] = useState<Record<string, string>>({});
   const [falando, setFalando] = useState(() => !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);

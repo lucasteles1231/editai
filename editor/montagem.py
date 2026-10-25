@@ -399,7 +399,7 @@ class CamadaDePersonagem(Camada):
         return self.personagem.quadro_em(t_saida)
 
 
-#: O pulinho ao trocar de pose (o de um projeto anterior): cresce de 0,95 a 1 neste tempo.
+#: O pulinho ao trocar de pose: cresce de 0,95 a 1 neste tempo.
 PULINHO_ESCALA = 0.95
 PULINHO_S = 0.16
 #: Com o centro dele além desta fração da largura, o avatar está do lado direito: espelhado,

@@ -1,7 +1,7 @@
 {
   "editai": "padrao-do-personagem",
   "versao": 1,
-  "origem": "O apresentador de um projeto anterior (um projeto anterior), de 12 a 16/10/2026: as mesmas 12 poses, as 3 bocas, as regras da fala e da cena.",
+  "origem": "O padrão do avatar do Editai: as 12 poses, as 3 bocas, as regras da fala e da cena.",
   "quadro": {
     "lado": 900,
     "grade": 150,
@@ -32,7 +32,7 @@
     "centro_x": 75,
     "topo_do_rosto": 32,
     "queixo": 85,
-    "nota": "Toda parte é desenhada nas mesmas coordenadas, com a cabeça no mesmo lugar: trocar de pose não faz o personagem pular (num projeto anterior, o recortar.py alinhava as poses pela cabeça depois)."
+    "nota": "Toda parte é desenhada nas mesmas coordenadas, com a cabeça no mesmo lugar: trocar de pose não faz o personagem pular."
   },
   "camadas": [
     "cabelo-tras",
@@ -199,7 +199,7 @@
     "sustenta": 0.45,
     "fraca": 0.85,
     "vizinhas": 3,
-    "nota": "A boca abre um quadro antes do pico de cada sílaba (o som começa antes da vogal), sempre pela meia, e fica aberta enquanto a vogal se sustenta (acima de 0,45 do pico), fechando pelo menos dois quadros antes da sílaba seguinte. A sílaba fraca (abaixo de 0,85 da mediana das 3 vizinhas de cada lado) abre só até a meia. Medido num projeto anterior: 57% fechada, 26% meia, 17% aberta."
+    "nota": "A boca abre um quadro antes do pico de cada sílaba (o som começa antes da vogal), sempre pela meia, e fica aberta enquanto a vogal se sustenta (acima de 0,45 do pico), fechando pelo menos dois quadros antes da sílaba seguinte. A sílaba fraca (abaixo de 0,85 da mediana das 3 vizinhas de cada lado) abre só até a meia. Medido num vídeo real: 57% fechada, 26% meia, 17% aberta."
   },
   "cena": {
     "pose_por_fala": true,

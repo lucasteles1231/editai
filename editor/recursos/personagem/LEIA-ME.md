@@ -1,7 +1,7 @@
 # O personagem: o padrão e as partes do avatar
 
-O avatar do Editai (`editor/avatar.py` e `web/src/avatar/`) segue o padrão do apresentador do
-projeto anterior (o `um projeto anterior`, de 12 a 16/10/2026).
+O avatar do Editai (`editor/avatar.py` e `web/src/avatar/`) segue um padrão fixo: o quadro, as
+12 poses, as 3 bocas e as regras da fala, todos descritos no `padrao.json`.
 
 | Arquivo | O quê |
 |---|---|
@@ -11,12 +11,12 @@ projeto anterior (o `um projeto anterior`, de 12 a 16/10/2026).
 
 As partes, o padrão e o catálogo são uma cópia do repositório público
 [editai-personagens](https://github.com/lucasteles1231/editai-personagens), do commit
-`6f55947` (23/10/2026), em domínio público (CC0). Lá estão também o manequim e as ferramentas
+`b36303e` (25/10/2026), em domínio público (CC0). Lá estão também o manequim e as ferramentas
 que geram e vetorizam a biblioteca. Para trazer uma versão nova, copie `partes/`, `padrao.json`
 e `catalogo.json` de lá e rode `uv run pytest tests/test_avatar.py`: o primeiro teste confere o
 hash de cada parte contra o catálogo.
 
-**O que não veio de um projeto anterior:**
+**Os ajustes do desenho:**
 
 - **A cabeça em cápsula:** o alto da cabeça com a largura do rosto, como no exemplo que o dono
   mandou em 20/10/2026. O manequim gerado tinha o alto bem mais largo que o resto, como uma
@@ -28,20 +28,20 @@ hash de cada parte contra o catálogo.
 - **O chapéu amassando o cabelo:** o boné e o gorro levam `data-cobre="cabelo"`. O desenhista
   esconde o cabelo debaixo deles e achata o que sai pelos lados, sem cortar reto.
 
-**De onde vem cada regra:**
+**As regras:**
 
-- **As 12 poses e quando usar cada uma:** o `documento.py` de um projeto anterior.
-- **As 3 bocas:** o `meia_boca.py`. Nas poses em que a boca fechada já é aberta (o "o" do
+- **As 12 poses e quando usar cada uma:** no `padrao.json`.
+- **As 3 bocas:** nas poses em que a boca fechada já é aberta (o "o" do
   surpreso e a risada), a meia e a aberta continuam a da pose. Todas as bocas (o sorriso, a
   neutra, o "o", a risada, a meia e a aberta) são desenhadas em código, em mapas de pixel
   simétricos: as da IA, reduzidas à grade de 150, viravam riscos.
-- **A boca pelas sílabas:** o `boca_por_quadro` (`palco/montagem.py`).
+- **A boca pelas sílabas** (`avatar.bocas_por_quadro`):
   - Os picos saem do envelope de 25 ms, a cada 10 ms, com pelo menos 130 ms entre eles.
   - A boca abre um quadro antes de cada pico, sempre pela meia, e fica aberta de 2 a 6 quadros.
   - A sílaba fraca, abaixo de 0,85 da mediana das vizinhas, abre só até a meia.
   - O Editai não tem o scipy, então os picos são feitos em numpy (`avatar._picos`), e foram
     conferidos contra o `find_peaks` numa fala real: 148 de 148 iguais.
-- **A pose de cada frase:** num projeto anterior, ela vinha do roteiro. Aqui, a regra é local (`avatar.pose_da_fala`):
+- **A pose de cada frase** sai da própria fala (`avatar.pose_da_fala`):
   - pergunta → pensando;
   - "você" → apontando para quem assiste;
   - "eu" → a mão no peito;

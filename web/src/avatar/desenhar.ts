@@ -9,11 +9,11 @@
  * borda de uma peça fica preto quando o vizinho é o vazio ou uma peça que está atrás. Por isso
  * as partes são formas chapadas — ninguém desenha o contorno das formas à mão, e ele sai
  * igual em todas; à mão ficam só os traços de dentro (o nariz, as mechas, as dobras). Por
- * fora da silhueta, mais um pixel de contorno (a borda de fora é mais grossa, como no
- * um projeto anterior) e a borda branca de adesivo; por fim, a ampliação para 900 × 900.
+ * fora da silhueta, mais um pixel de contorno (a borda de fora é mais grossa) e a borda
+ * branca de adesivo; por fim, a ampliação para 900 × 900.
  *
- * O volume também sai da pilha, como medido no personagem de um projeto anterior (o rosto dele é quase
- * todo de um tom só): o pixel logo por dentro do contorno escurece (o "aro"), e as peças de
+ * O volume também sai da pilha, sem sombreado pintado (o rosto é quase todo de um tom só): o
+ * pixel logo por dentro do contorno escurece (o "aro"), e as peças de
  * mistura (``data-mistura``: a lente dos óculos, a sombra da barba) tingem o que está embaixo
  * em vez de cobrir.
  */
@@ -457,7 +457,7 @@ export async function desenharNaGrade(e: Escolhas, pose: Pose, boca: Boca): Prom
     cor[k * 4 + 1] = cg;
     cor[k * 4 + 2] = cb;
   }
-  // o aro: o pixel logo por dentro do contorno, um tom mais escuro (o volume de um projeto anterior)
+  // o aro: o pixel logo por dentro do contorno, um tom mais escuro (o volume)
   const aro = padraoJson.estilo.aro;
   for (let y = 1; y < GRADE - 1; y++) {
     for (let x = 1; x < GRADE - 1; x++) {

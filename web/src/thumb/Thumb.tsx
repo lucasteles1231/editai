@@ -7,9 +7,8 @@
  *
  * O que ela desenha é uma ficha (ThumbProps), preenchida pelos controles da página ou pelo
  * Gemini, em camadas: fundo → luz → pessoa → mão → texto, selo e ícone. As regras de arte
- * vêm da pesquisa de um projeto anterior (publish/miniatura.py): no máximo três elementos chamando
- * atenção, o rosto grande, algo apontando, de 2 a 5 palavras grossas com contorno, legível
- * a 120 px.
+ * são as de uma boa capa: no máximo três elementos chamando atenção, o rosto grande, algo
+ * apontando, de 2 a 5 palavras grossas com contorno, legível a 120 px.
  *
  * A geometria fica em ``compor()``, uma função pura: o desenho e o arrastar na prévia
  * usam a mesma conta, e o que a pessoa arrasta é o que sai no PNG.

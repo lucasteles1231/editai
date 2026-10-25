@@ -1,7 +1,7 @@
 # Meu avatar
 
-Opcional. Um personagem seu em pixel art, no estilo do apresentador de um projeto anterior, que
-fala no seu lugar na montagem e aparece na thumbnail. Ele é feito uma vez e não custa nada:
+Opcional. Um personagem seu em pixel art, que fala no seu lugar na montagem e aparece na
+thumbnail. Ele é feito uma vez e não custa nada:
 não há IA de imagem desenhando quadro a quadro. É a lógica dos jogos de montar personagem:
 um cabelo, uma barba, uns óculos, uma roupa e as cores de cada coisa.
 
@@ -36,8 +36,8 @@ um cabelo, uma barba, uns óculos, uma roupa e as cores de cada coisa.
     dedo; em "olha aqui", aponta para o lado. Numa frase comprida, a pose também troca na
     vírgula.
   - **A boca abre nas sílabas** da voz: um quadro antes de cada sílaba, sempre pela meia boca.
-    A sílaba fraca abre só até a meia. A regra é a de um projeto anterior, e num vídeo real a boca
-    ficou 52% do tempo fechada, 29% meia e 19% aberta.
+    A sílaba fraca abre só até a meia. Num vídeo real, a boca ficou 52% do tempo fechada,
+    29% meia e 19% aberta.
   - **Do lado direito da tela, ele vira** para apontar para o meio. Ao trocar de pose, dá um
     pulinho, e o pixel art é ampliado sem borrar.
 - **Na thumbnail:** ele fica no lugar da pessoa. Na aba **Pessoa**, escolha a pose (a
