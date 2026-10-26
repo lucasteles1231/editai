@@ -19,7 +19,9 @@ entra inteira, sobre ela mesma desfocada, em vez de perder metade no corte.
 - ``arquivo`` (obrigatório): o clipe, casado pelo nome do arquivo com o que veio na pasta;
 - ``descricao`` (obrigatória): o que aparece;
 - opcionais, que ajudam a escolha: ``id``, ``categorias``, ``personagens``, ``periodo``,
-  ``energia`` (baixa, media, alta), ``monetizacao`` (ok, cuidado, evitar) e ``obs``.
+  ``energia`` (baixa, media, alta), ``monetizacao`` (ok, cuidado, evitar) e ``obs``;
+- ``trecho``: nas fotos achadas pelo tema (:mod:`editor.fotos`), o trecho do roteiro para
+  o qual a foto foi achada (a partir de 1). Elas entram nele, sem escolha.
 
 Cena marcada "evitar" nunca entra.
 """
@@ -90,6 +92,8 @@ class Cena:
     rotacao: int = 0
     #: "video" ou "imagem".
     tipo: str = "video"
+    #: Nas fotos achadas pelo tema, o trecho do roteiro dela (a partir de 1); 0 nas outras.
+    trecho: int = 0
 
     @property
     def imagem(self) -> bool:
@@ -171,6 +175,15 @@ def _lista(valor) -> list[str]:
     return []
 
 
+def _trecho(valor, obs: str) -> int:
+    """O trecho de uma foto achada pelo tema: o campo ``trecho`` ou, nas pastas de antes
+    dele (e na matriz que volta da tabela de revisão), o "para o trecho N" das observações."""
+    if isinstance(valor, int) and not isinstance(valor, bool) and valor > 0:
+        return valor
+    achado = re.match(r"para o trecho (\d+):", obs)
+    return int(achado.group(1)) if achado else 0
+
+
 def ler_matriz(dados: str | bytes | list | dict, clipes: Sequence[Path]) -> Biblioteca:
     """A biblioteca a partir da matriz (o texto do JSON, ou já lido) e dos clipes que
     vieram. Mede cada clipe (duração e tamanho)."""
@@ -216,6 +229,7 @@ def ler_matriz(dados: str | bytes | list | dict, clipes: Sequence[Path]) -> Bibl
         if duracao <= 0.2:
             continue
         energia = str(item.get("energia", "")).strip().lower()
+        obs = str(item.get("obs", "")).strip()
         cenas.append(Cena(
             id=ident, arquivo=caminho, descricao=str(item["descricao"]).strip(),
             categorias=_lista(item.get("categorias")),
@@ -223,8 +237,9 @@ def ler_matriz(dados: str | bytes | list | dict, clipes: Sequence[Path]) -> Bibl
             periodo=str(item.get("periodo", "")).strip(),
             energia=energia if energia in ENERGIAS else "",
             monetizacao=monetizacao if monetizacao in MONETIZACOES else "ok",
-            obs=str(item.get("obs", "")).strip(), duracao=round(duracao, 3),
-            largura=largura, altura=altura, rotacao=rotacao, tipo=tipo))
+            obs=obs, duracao=round(duracao, 3),
+            largura=largura, altura=altura, rotacao=rotacao, tipo=tipo,
+            trecho=_trecho(item.get("trecho"), obs)))
     sem_descricao = sorted(Path(c).name for n, c in por_nome.items() if n not in usados)
     if not cenas:
         raise MatrizInvalida("nenhuma cena da matriz casou com os clipes da pasta "

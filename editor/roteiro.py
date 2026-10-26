@@ -61,7 +61,8 @@ class Roteiro:
     cartoes: list[Cartao] = field(default_factory=list)
     #: Os destaques da legenda: (primeira palavra, última, "rosa", "ciano" ou "pilula").
     destaques: list[tuple[int, int, str]] = field(default_factory=list)
-    #: Quem escolheu: "gemini", "palavras" ou "falsa" (a dos testes).
+    #: Quem escolheu: "gemini", "palavras", "falsa" (a dos testes) ou "trechos" (as fotos
+    #: achadas pelo tema, cada uma no seu trecho, sem pedido).
     por: str = ""
     #: Por que faltou algo ("sem a chave do Gemini…"), para a página.
     aviso: str = ""
@@ -439,10 +440,24 @@ def _sem_repetir(escolhas: Sequence[Sequence[str]], reserva: Sequence[Sequence[s
 def escrever(palavras: Sequence[Palavra], duracao: float, *,
              biblioteca: cenas_mod.Biblioteca | None, cartoes: bool, idioma: str,
              nomes_de_icones: Sequence[str], proibidas: Sequence[str] = (),
-             destaques: bool = False, tema: str = "", transporte=None) -> Roteiro:
+             destaques: bool = False, tema: str = "", texto_falado: str = "",
+             transporte=None) -> Roteiro:
     """O roteiro do vídeo: as cenas (com a ``biblioteca``), os cartões (com
     ``cartoes``) e os destaques da legenda (com ``destaques``), pelo Gemini ou, sem ele,
-    pelas palavras."""
+    pelas palavras. As fotos achadas pelo tema, com o roteiro delas no ``texto_falado``,
+    entram cada uma no seu trecho, sem pedido (:func:`editor.fotos.pelos_trechos`)."""
+    if biblioteca is not None and texto_falado.strip():
+        from editor import fotos
+
+        blocos = cenas_mod.blocos_da_fala(palavras, duracao)
+        fixas = fotos.pelos_trechos(blocos, biblioteca, palavras, texto_falado)
+        if fixas is not None:
+            r = escrever(palavras, duracao, biblioteca=None, cartoes=cartoes, idioma=idioma,
+                         nomes_de_icones=nomes_de_icones, proibidas=proibidas,
+                         destaques=destaques, tema=tema, transporte=transporte)
+            r.blocos, r.escolhas = blocos, fixas
+            r.por = r.por or "trechos"
+            return r
     blocos = cenas_mod.blocos_da_fala(palavras, duracao) if biblioteca is not None else []
     roteiro = Roteiro(blocos=blocos)
     if biblioteca is None and not cartoes and not destaques:

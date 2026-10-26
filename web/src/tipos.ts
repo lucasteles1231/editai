@@ -107,6 +107,8 @@ export type Estado = {
   gif_max_s: number;
   ia: EstadoIa;
   recorte: {baixado: boolean; tamanho: string};
+  /** O auditor das fotos achadas pelo tema (baixado na primeira busca). */
+  auditor: {baixado: boolean; tamanho: string};
   pexels: EstadoChave;
   geracao: {restantes: number; teto: number};
   presets: Preset[];
@@ -238,7 +240,8 @@ export type GeracaoDaMatriz = {
   fotos?: number; sem_foto?: number[]; biblioteca?: BibliotecaInfo | null;
 };
 
-export type EtapaDaSeparacao = 'analisando' | 'gravando' | 'descrevendo' | 'buscando' | 'baixando';
+export type EtapaDaSeparacao = 'analisando' | 'gravando' | 'descrevendo' | 'buscando' | 'auditor' | 'conferindo'
+  | 'baixando';
 
 /** O andamento da matriz na página (gerada de uma pasta, ou de um vídeo longo separado). */
 export type AndamentoDaMatriz = {prontas: number; total: number; pedidos: number; etapa?: EtapaDaSeparacao;

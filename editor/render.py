@@ -410,13 +410,23 @@ def _escrever_roteiro(f: _Fala, edicao: OpcoesDeEdicao, avisar: Progresso,
     destaques = edicao.estilo_da_legenda == "destaques"
     if biblioteca is None and not edicao.animacoes and not destaques:
         return None
-    avisar("escolhendo", 1.0, "o Gemini está escolhendo as cenas e os cartões"
-           if biblioteca is not None else "o Gemini está escrevendo os cartões"
-           if edicao.animacoes else "o Gemini está marcando os destaques da legenda")
+    # as fotos achadas pelo tema não pedem escolha: cada uma vai no seu trecho
+    pelos_trechos = (biblioteca is not None and bool(edicao.texto_falado.strip())
+                     and all(c.trecho for c in biblioteca.cenas))
+    if biblioteca is not None and not pelos_trechos:
+        texto = "o Gemini está escolhendo as cenas e os cartões"
+    elif edicao.animacoes:
+        texto = "o Gemini está escrevendo os cartões"
+    elif destaques:
+        texto = "o Gemini está marcando os destaques da legenda"
+    else:
+        texto = "as fotos entram nos trechos delas"
+    avisar("escolhendo", 1.0, texto)
     r = roteiro.escrever(f.no_editado, f.linha.duracao, biblioteca=biblioteca,
                          cartoes=edicao.animacoes, idioma=edicao.idioma,
                          nomes_de_icones=icones.nomes(), proibidas=censura.lista(edicao.bipe),
-                         destaques=destaques, tema=edicao.tema)
+                         destaques=destaques, tema=edicao.tema,
+                         texto_falado=edicao.texto_falado)
     f.plano.cartoes = r.cartoes
     f.plano.roteiro = r.para_json()
     if destaques and r.destaques:

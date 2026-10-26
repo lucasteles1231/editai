@@ -145,6 +145,8 @@ export const App: React.FC = () => {
   const [escrevendoRoteiro, setEscrevendoRoteiro] = useState(false);
   const [erroDoRoteiro, setErroDoRoteiro] = useState('');
   const [fotosAchadas, setFotosAchadas] = useState<FotosAchadas | null>(null);
+  /** O auditor escolhe, entre as fotos de cada busca, as que mostram o trecho. */
+  const [conferirFotos, setConferirFotos] = useState(true);
   const [revisao, setRevisao] = useState<Revisao | null>(null);
   const [salvandoMatriz, setSalvandoMatriz] = useState(false);
   const [montagem, setMontagem] = useState<MontagemConfig>(MONTAGEM_PADRAO);
@@ -543,7 +545,8 @@ export const App: React.FC = () => {
     try {
       const {id} = await api.novaBiblioteca(tema || 'fotos');
       setBibliotecaAberta(id);
-      let g = await api.acharFotos(id, texto, tema, montagem.formato === 'vertical' ? 'retrato' : 'paisagem');
+      let g = await api.acharFotos(id, texto, tema, montagem.formato === 'vertical' ? 'retrato' : 'paisagem',
+        conferirFotos);
       setPastaDasCenas(g.pasta ?? null);
       const andamento = (x: typeof g) => setGerandoMatriz({prontas: x.prontas, total: x.total, pedidos: x.pedidos,
         etapa: x.etapa, fracao: x.fracao});
@@ -561,7 +564,7 @@ export const App: React.FC = () => {
     } finally {
       setGerandoMatriz(null);
     }
-  }, [roteiro, tema, montagem.formato]);
+  }, [roteiro, tema, montagem.formato, conferirFotos]);
 
   /** A pasta das cenas: os vídeos dela sobem (três de cada vez) e, se a matriz veio junto,
    *  ela também. Sem matriz na pasta, a página pede a matriz em seguida. */
@@ -881,7 +884,8 @@ export const App: React.FC = () => {
             aoEscreverRoteiro={() => void escreverRoteiro()} escrevendoRoteiro={escrevendoRoteiro}
             duracao={duracaoEscolhida} aoMudarDuracao={setDuracaoEscolhida} limite={limite}
             erroDoRoteiro={erroDoRoteiro} aoAcharFotos={() => void acharFotos()}
-            fotosAchadas={fotosAchadas}
+            fotosAchadas={fotosAchadas} conferirFotos={conferirFotos} aoMudarConferirFotos={setConferirFotos}
+            auditor={estado?.auditor ?? {baixado: true, tamanho: ''}}
             fotosDesatualizadas={Boolean(fotosAchadas && fotosAchadas.roteiro !== roteiro && biblioteca)}
             aoAbrirPastaDasCenas={() => bibliotecaAberta && void api.abrirPastaDasCenas(bibliotecaAberta)}
             aoEscolherMatriz={(f) => bibliotecaAberta && void enviarMatriz(bibliotecaAberta, f)}

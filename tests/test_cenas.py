@@ -110,6 +110,21 @@ class TestAMatriz:
         (tmp_path / "._a.mp4").write_bytes(b"lixo do macOS")
         assert [p.name for p in cenas.clipes_da_pasta(tmp_path)] == ["a.mp4", "b.mov"]
 
+    def test_o_trecho_das_fotos_achadas(self, tmp_path):
+        """O trecho de cada foto achada pelo tema: o campo, ou, nas pastas de antes dele (e na
+        matriz que volta da tabela de revisão), as observações."""
+        from PIL import Image
+
+        fotos = []
+        for nome in ("a.jpg", "b.jpg", "c.jpg"):
+            Image.new("RGB", (64, 36), (90, 160, 235)).save(tmp_path / nome)
+            fotos.append(tmp_path / nome)
+        matriz = [{"arquivo": "a.jpg", "descricao": "céu", "trecho": 2},
+                  {"arquivo": "b.jpg", "descricao": "sol", "obs": "para o trecho 3: A luz do Sol"},
+                  {"arquivo": "c.jpg", "descricao": "mar", "obs": "uma foto qualquer"}]
+        b = cenas.ler_matriz(matriz, fotos)
+        assert [c.trecho for c in b.cenas] == [2, 3, 0]
+
 
 class TestOsBlocos:
     def test_fecham_nas_frases_e_cobrem_o_video(self):

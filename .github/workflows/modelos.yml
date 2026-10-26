@@ -1,10 +1,12 @@
 name: modelos de verdade
 
-# Manual: os dois modelos que rodam no computador de quem usa, de verdade, no Windows e
-# no Mac. É o que os testes comuns não cobrem (eles usam uma transcrição e um recorte
-# falsos):
+# Manual: os três modelos que rodam no computador de quem usa, de verdade, no Windows e
+# no Mac. É o que os testes comuns não cobrem (eles usam uma transcrição, um recorte e um
+# auditor falsos):
 # - o Whisper (modelo tiny) edita um vídeo com fala sintetizada pela voz do sistema;
-# - o MODNet (o recorte da pessoa) carrega no onnxruntime e roda num quadro.
+# - o MODNet (o recorte da pessoa) carrega no onnxruntime e roda num quadro;
+# - o SigLIP 2 (o auditor das fotos) calcula os textos no processo à parte e dá a nota de
+#   duas imagens.
 on: workflow_dispatch
 
 # Só leitura: os testes não escrevem nada no repositório.
@@ -45,3 +47,5 @@ jobs:
       - run: uv run python tests/whisper_de_verdade.py fala.wav
 
       - run: uv run python tests/recorte_de_verdade.py
+
+      - run: uv run python tests/auditor_de_verdade.py

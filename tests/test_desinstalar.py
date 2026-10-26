@@ -74,8 +74,9 @@ class TestTudo:
         assert "os temporários" in texto and "Nada foi apagado." in texto
         # os modelos e os vídeos, perguntados à parte, antes do "sim"
         assert [p.split("(")[0] for p in perguntar.perguntas[:2]] == [
-            "Apagar também os modelos de transcrição e de recorte, na pasta do Hugging Face, que "
-            "outros programas também podem usar ", "Apagar também os vídeos editados "]
+            "Apagar também os modelos de transcrição, de recorte e do auditor, na pasta do "
+            "Hugging Face, que outros programas também podem usar ",
+            "Apagar também os vídeos editados "]
         assert 'Digite "sim"' in perguntar.perguntas[2]
         assert all(p.exists() for p in maquina.values())
 
@@ -200,7 +201,8 @@ def test_os_tamanhos_como_o_finder():
 def test_os_modelos_do_editai_sao_os_que_ele_baixa():
     assert desinstalar.repositorios_dos_modelos() == [
         "Systran/faster-whisper-tiny", "Systran/faster-whisper-base",
-        "Systran/faster-whisper-small", "Systran/faster-whisper-medium", "Xenova/modnet"]
+        "Systran/faster-whisper-small", "Systran/faster-whisper-medium", "Xenova/modnet",
+        "onnx-community/siglip2-base-patch16-224-ONNX"]
 
 
 def test_pela_linha_de_comando(maquina):

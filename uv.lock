@@ -250,7 +250,7 @@ wheels = [
 
 [[package]]
 name = "editai"
-version = "0.4.0"
+version = "0.5.0"
 source = { editable = "." }
 dependencies = [
     { name = "av" },
@@ -264,6 +264,7 @@ dependencies = [
     { name = "platformdirs" },
     { name = "python-multipart" },
     { name = "rough" },
+    { name = "tokenizers" },
     { name = "uvicorn" },
 ]
 
@@ -287,6 +288,7 @@ requires-dist = [
     { name = "platformdirs", specifier = ">=4" },
     { name = "python-multipart", specifier = ">=0.0.9" },
     { name = "rough", specifier = "==1.6" },
+    { name = "tokenizers", specifier = ">=0.20" },
     { name = "uvicorn", specifier = ">=0.30" },
 ]
 

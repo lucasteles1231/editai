@@ -92,6 +92,7 @@ editai --formatos                                 # o que este computador grava
 | `--tema TEXTO` | o assunto do vídeo, em uma frase. Sozinho, o Editai escreve o roteiro (ou usa o `--roteiro`), narra, acha as fotos e monta ([O vídeo só pelo tema](./o-video-so-pelo-tema)); com um vídeo ou as cenas, vai de contexto para a IA | |
 | `--duracao TEMPO` | quanto o vídeo deve durar: `auto` (só sai o que passar do limite da plataforma: 3 min em pé; deitado, nada sai), `tudo` (nada da fala sai) ou os segundos. O que passar, a IA escolhe as frases que ficam ([Quanto tempo](./como-usar#quanto-tempo)); com `--tema`, é o tamanho do roteiro | `auto` |
 | `--narrador VOZ` | com `--tema`: quem narra: `gemini:Orus` (ou `gemini:Charon`, `Puck`, `Kore`, `Aoede`, `Leda`), `local` ou o nome de uma voz sua | o Gemini, com a chave; sem ela, a local |
+| `--sem-auditor` | com `--tema`: fica com as primeiras fotos de cada busca, sem o [auditor](./o-video-so-pelo-tema#o-auditor) conferir se elas mostram o trecho (ele baixa uns 410 MB na primeira vez) | o auditor confere |
 | `--instalar-voz-local` | instala a voz local (o Piper, uns 210 MB), num ambiente à parte | |
 | `--desinstalar-voz-local` | apaga a voz local | |
 | `--janela`, `--sem-janela` | a cena numa janela 16:9 com câmera | sem |
@@ -106,7 +107,7 @@ editai --formatos                                 # o que este computador grava
 | `--desinstalar-voz` | apaga o motor da voz sintetizada (as vozes gravadas ficam) | |
 | `--desinstalar` | tira o Editai do computador: mostra tudo, pergunta à parte pelos modelos e pelos vídeos e pede "sim" ([Desinstalar](./instalacao-em-detalhe#desinstalar)) | |
 | `--sim` | com `--desinstalar` ou `--desinstalar-voz`: não pergunta nada | |
-| `--com-modelos`, `--com-videos` | com `--desinstalar`: apaga também os modelos do Whisper e do MODNet, e os vídeos editados | ficam |
+| `--com-modelos`, `--com-videos` | com `--desinstalar`: apaga também os modelos do Whisper, do MODNet e do auditor, e os vídeos editados | ficam |
 | `--criar-voz NOME` | sem `--gravacao`, mostra o texto a ler; com ela, confere a leitura e salva a voz | |
 | `--gravacao ARQUIVO` | com `--criar-voz`: a leitura inteira, gravada num arquivo | |
 | `--vozes` | mostra as vozes salvas | |

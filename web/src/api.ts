@@ -112,9 +112,9 @@ export const api = {
   abrirPastaDasCenas: (biblioteca: string) => pedir(`/api/bibliotecas/${biblioteca}/abrir`, {method: 'POST'}),
   /** Sem vídeo e sem cenas: o roteiro vira uma biblioteca de fotos achadas (em segundo plano: o mesmo
    *  andamento da matriz), que já vale ao terminar. */
-  acharFotos: (biblioteca: string, roteiro: string, tema: string, orientacao: string) =>
+  acharFotos: (biblioteca: string, roteiro: string, tema: string, orientacao: string, conferir: boolean) =>
     pedir<GeracaoDaMatriz>(`/api/bibliotecas/${biblioteca}/fotos`, {
-      method: 'POST', headers: JSON_, body: JSON.stringify({roteiro, tema, orientacao}),
+      method: 'POST', headers: JSON_, body: JSON.stringify({roteiro, tema, orientacao, conferir}),
     }),
   /** O roteiro escrito pela IA a partir do tema, para revisar antes de narrar. */
   /** Sem ``segundos`` (o Auto), no tamanho que o assunto pede, até o ``teto``. */

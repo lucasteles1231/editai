@@ -39,6 +39,7 @@ from PIL import Image
 
 from editor import (
     __version__,
+    auditor,
     catalogo,
     cenas,
     efeitos_da_voz,
@@ -311,6 +312,7 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
             "gif_max_s": saida_mod.GIF_MAX_S,
             "ia": ia.estado(),
             "recorte": {"baixado": recorte.modelo_baixado(), "tamanho": recorte.TAMANHO},
+            "auditor": {"baixado": auditor.baixado(), "tamanho": auditor.TAMANHO},
             "pexels": pexels.estado(),
             "geracao": {"restantes": ia.geracoes_restantes(), "teto": ia.TETO_DE_IMAGENS},
             "presets": presets.para_json(),
@@ -1182,6 +1184,7 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
             raise HTTPException(422, "Escreva (ou gere) o roteiro antes de achar as fotos.")
         tema = re.sub(r"\s+", " ", str(dados.get("tema") or "")).strip()[:200]
         orientacao = str(dados.get("orientacao") or "paisagem")
+        conferir = dados.get("conferir") is not False
         destino = separar.pasta_nova(saida_base / "fotos", tema or " ".join(roteiro.split()[:6]))
         estado = {"rodando": True, "etapa": "buscando", "fracao": 0.0, "prontas": 0, "total": 0,
                   "pedidos": 0, "por": "", "aviso": "", "erro": "", "cenas": None,
@@ -1195,15 +1198,18 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
         def rodar() -> None:
             try:
                 achado = fotos.achar(roteiro, destino, tema=tema, orientacao=orientacao,
-                                     progresso=andou)
+                                     conferir=conferir, progresso=andou)
                 estado.update(cenas=achado.cenas, fotos=len(achado.cenas),
-                              sem_foto=achado.sem_foto, pedidos=achado.pedidos, por="fotos")
+                              sem_foto=achado.sem_foto, pedidos=achado.pedidos, por="fotos",
+                              conferidas=achado.conferidas)
                 matriz = (destino / "cenas.json").read_bytes()
                 estado["biblioteca"] = _aplicar_matriz(bid, b, matriz)
+                avisos = [achado.resumo()]
                 if achado.sem_foto:
                     n = len(achado.sem_foto)
-                    estado["aviso"] = (f"{n} trecho{'s' if n > 1 else ''} ficou sem foto: as dos "
-                                       "vizinhos cobrem.")
+                    avisos.append(f"{n} trecho{'s' if n > 1 else ''} ficou sem foto: as dos "
+                                  "vizinhos cobrem.")
+                estado["aviso"] = " ".join(x for x in avisos if x)
             except fotos.SemFotos as erro:
                 estado["erro"] = str(erro)
             except HTTPException as erro:

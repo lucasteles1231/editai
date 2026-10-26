@@ -2,13 +2,12 @@
 O que os testes compartilham.
 
 - **Nenhum teste roda modelo de verdade nem chama a internet:** o transcritor falso, o
-  recorte falso, a IA falsa, o Pexels falso, as fotos falsas e o motor de voz falso ficam
-  ligados para todos, e os sons que o
-  editor baixaria (os do Remotion sem licença livre) não vêm: toca a reserva deles.
-  Esquecer isso num teste da
-  interface rodaria o Whisper (ou gastaria a chave do Gemini) sem ninguém perceber. Os
-  testes do recorte e da IA desligam o falso de propósito, com o modelo e a rede
-  trocados por imitações.
+  recorte falso, o auditor falso, a IA falsa, o Pexels falso, as fotos falsas e o motor de
+  voz falso ficam ligados para todos, e os sons que o editor baixaria (os do Remotion sem
+  licença livre) não vêm: toca a reserva deles. Esquecer isso num teste da interface rodaria
+  o Whisper (ou gastaria a chave do Gemini) sem ninguém perceber. Os testes do recorte, do
+  auditor e da IA desligam o falso de propósito, com o modelo e a rede trocados por
+  imitações.
 - **Nenhum teste escreve nas pastas do usuário nem lê as chaves dele:** o cache de
   transcrições, os envios, as imagens de fundo, o registro de gastos e a configuração
   (onde ficam as chaves do Gemini e do Pexels) vão para a pasta temporária do teste, e
@@ -27,6 +26,7 @@ import numpy as np
 import pytest
 
 from editor import (
+    auditor,
     chaves,
     fotos,
     ia,
@@ -47,6 +47,7 @@ from editor import (
 def _isolado(tmp_path, monkeypatch):
     monkeypatch.setenv(transcricao.VARIAVEL_FALSA, "falso")
     monkeypatch.setenv(recorte.VARIAVEL_FALSA, "falso")
+    monkeypatch.setenv(auditor.VARIAVEL_FALSA, "falso")
     monkeypatch.setenv(ia.VARIAVEL_FALSA, "falsa")
     monkeypatch.setenv(pexels.VARIAVEL_FALSA, "falso")
     monkeypatch.setenv(motor_de_voz.VARIAVEL_FALSA, "falsa")

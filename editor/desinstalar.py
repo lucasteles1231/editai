@@ -16,8 +16,8 @@ com o cache dentro), mais o programa, criado pelo ``uv tool``:
 Duas coisas são perguntadas à parte, com "não" de resposta padrão (a escolha do dono,
 23/10/2026):
 
-- **os modelos de transcrição e de recorte** (o Whisper e o MODNet), na pasta do Hugging Face,
-  que outros programas também usam. Saem só as pastas exatas deles;
+- **os modelos de transcrição, de recorte e do auditor** (o Whisper, o MODNet e o SigLIP 2), na
+  pasta do Hugging Face, que outros programas também usam. Saem só as pastas exatas deles;
 - **os vídeos editados**, na pasta padrão (``Filmes/editor-de-video``): são o trabalho da
   pessoa, e podem não ter cópia.
 
@@ -85,10 +85,11 @@ def cache_do_hugging_face() -> Path:
 
 def repositorios_dos_modelos() -> list[str]:
     """Os modelos que o Editai baixa para o cache do Hugging Face: os quatro tamanhos do
-    Whisper e o MODNet. O da voz sintetizada vai para a pasta do motor."""
-    from editor import recorte, transcricao
+    Whisper, o MODNet e o auditor das fotos. O da voz sintetizada vai para a pasta do motor."""
+    from editor import auditor, recorte, transcricao
 
-    return [f"Systran/faster-whisper-{m}" for m in transcricao.MODELOS] + [recorte.REPOSITORIO]
+    return ([f"Systran/faster-whisper-{m}" for m in transcricao.MODELOS]
+            + [recorte.REPOSITORIO, auditor.REPOSITORIO])
 
 
 def achar_uv() -> str | None:
@@ -279,15 +280,17 @@ def tudo(*, sim: bool = False, com_videos: bool = False, com_modelos: bool = Fal
     for i in sempre:
         escrever(f"  {legivel(i.bytes):>8}  {i.rotulo}\n            {_curto(i.caminho)}")
     if dos_modelos:
-        escrever(f"  {legivel(sum(i.bytes for i in dos_modelos)):>8}  os modelos de transcrição "
-                 f"e de recorte (pergunto à parte)\n            {_curto(cache_do_hugging_face())}")
+        escrever(f"  {legivel(sum(i.bytes for i in dos_modelos)):>8}  os modelos de transcrição, "
+                 f"de recorte e do auditor (pergunto à parte)\n"
+                 f"            {_curto(cache_do_hugging_face())}")
     if dos_videos:
         escrever(f"  {legivel(dos_videos.bytes):>8}  os vídeos editados (pergunto à parte)\n"
                  f"            {_curto(dos_videos.caminho)}")
     escrever("")
 
-    if _perguntar_extra("os modelos de transcrição e de recorte, na pasta do Hugging Face, que "
-                        "outros programas também podem usar", dos_modelos, ja=com_modelos, sim=sim,
+    if _perguntar_extra("os modelos de transcrição, de recorte e do auditor, na pasta do Hugging "
+                        "Face, que outros programas também podem usar", dos_modelos,
+                        ja=com_modelos, sim=sim,
                         opcao="--com-modelos", perguntar=perguntar, escrever=escrever):
         sempre[len(itens):len(itens)] = dos_modelos
     if _perguntar_extra("os vídeos editados", [dos_videos] if dos_videos else [], ja=com_videos,

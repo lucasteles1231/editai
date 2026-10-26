@@ -118,9 +118,10 @@
 </table>
 
 A edição do vídeo segue regras fixas, e o mesmo vídeo sai sempre igual. As IAs que rodam
-no seu computador são o Whisper, que transcreve a fala, e o MODNet, que recorta a pessoa
-para a thumbnail e para a montagem em camadas. Se você instalar a Minha voz, entra também
-o Qwen3-TTS, que narra com a sua voz.
+no seu computador são o Whisper, que transcreve a fala, o MODNet, que recorta a pessoa
+para a thumbnail e para a montagem em camadas, e o SigLIP 2, que confere se cada foto
+achada pelo tema mostra o trecho. Se você instalar a Minha voz, entra também o Qwen3-TTS,
+que narra com a sua voz.
 O Gemini só entra se você colar uma chave: nas ideias de thumbnail e, quando ligado, no
 roteiro (as cenas da biblioteca, os cartões animados e os destaques da legenda). O
 roteiro é um pedido de texto da cota grátis por vídeo, mais um quando a resposta precisa

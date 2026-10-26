@@ -51,6 +51,7 @@ export function textoDoRoteiro(r: Resultado['roteiro']): string {
     return `Roteiro do Gemini: ${oQue} (${r.pedidos} ${r.pedidos === 1 ? 'pedido' : 'pedidos'} da cota grátis).`;
   }
   if (r.por === 'falsa') return `Roteiro da IA de teste: ${oQue}.`;
+  if (r.por === 'trechos') return 'As fotos entraram no trecho de cada uma, sem pedido à IA.';
   return r.aviso ? `${r.aviso.charAt(0).toUpperCase()}${r.aviso.slice(1)}.` : '';
 }
 

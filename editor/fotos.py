@@ -5,8 +5,9 @@ uma biblioteca de cenas de fotos, com a licença de cada uma conferida e os cré
 1. **Os blocos:** o roteiro é partido nos trechos em que a imagem muda (os parágrafos dele, e
    os longos nas frases).
 2. **As buscas:** a IA escreve, num pedido só, a busca de cada bloco em inglês (o que mostrar,
-   concreto) e uma descrição curta em português (que o roteiro do vídeo lê para escolher a foto
-   de cada trecho). Sem a IA, a busca é o próprio bloco, sem as palavras vazias.
+   concreto), uma busca de reserva (mais ampla) e uma descrição curta em português (que o
+   roteiro do vídeo lê para escolher a foto de cada trecho). Sem a IA, a busca é o próprio
+   bloco, sem as palavras vazias.
 3. **As fontes:**
    - **o Pexels**, com a chave de quem usa (fotos de uso livre);
    - **o Openverse**, sem chave, só com as licenças que deixam pôr a foto num vídeo sem pedir:
@@ -14,27 +15,37 @@ uma biblioteca de cenas de fotos, com a licença de cada uma conferida e os cré
      licença), a NC e a ND ficam de fora.
 4. **A triagem pelo texto:** saem a foto pequena (menos de ``LADO_MINIMO`` no lado maior), a
    que é texto, logo, diagrama ou captura de tela pelo título e pelas etiquetas, e a repetida.
-5. **A pasta:** ``Filmes/editor-de-video/fotos/<tema>``, com as fotos, o ``cenas.json`` (a
+5. **O auditor** (:mod:`editor.auditor`): as primeiras de cada busca ganham uma nota contra a
+   descrição do trecho, e ficam as que mais combinam, sem repetir uma cena já posta. Antes,
+   ficavam as 2 primeiras da busca, e o banco de fotos devolve de tudo: no vídeo do GPS, uma
+   aranha no lugar de um satélite e ciclistas no lugar de "um satélite em movimento". Nenhuma
+   passando do piso, vem a busca de reserva. Sem o auditor (``conferir=False``, ou sem internet
+   na primeira vez), ficam as primeiras, como antes.
+6. **A pasta:** ``Filmes/editor-de-video/fotos/<tema>``, com as fotos, o ``cenas.json`` (a
    descrição de cada uma) e o ``creditos.txt``, para colar na descrição do vídeo.
-6. **O bloco sem foto** fica sem: as fotos dos vizinhos cobrem o trecho.
+7. **O bloco sem foto** fica sem: as fotos dos vizinhos cobrem o trecho.
 
 Para os testes há as fotos falsas (``EDITOR_FOTOS=falso``): gradientes desenhados aqui, sem
 rede, e uma IA falsa que devolve a busca pelo próprio bloco.
 """
 from __future__ import annotations
 
+import bisect
+import difflib
 import io
 import json
 import logging
 import os
 import re
+import threading
 import time
 import unicodedata
 from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from editor import ia, pexels
+from editor import auditor, ia, pexels
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +66,17 @@ RABO_CURTO = 8
 NAO_SERVE = ("logo", "logotipo", "text", "texto", "diagram", "diagrama", "screenshot",
              "captura", "infographic", "infográfico", "chart", "gráfico", "map of", "poster",
              "cartaz", "meme", "icon", "ícone", "clipart", "vector", "vetor")
-#: O intervalo entre dois pedidos ao Openverse (o anônimo tem limite por minuto).
-ENTRE_PEDIDOS_S = 0.4
+#: O intervalo mínimo entre dois pedidos ao Openverse: o anônimo pode 20 por minuto e 200 por
+#: dia (os cabeçalhos dele, lidos em 25/10/2026).
+ENTRE_PEDIDOS_S = 3.0
+#: Quantas candidatas de cada busca o auditor confere. As do Pexels vão pela prévia (uns
+#: 40 KB); com as 12 da página, a nota média das 2 escolhidas subiu de 0,109 (com 4) para
+#: 0,132. As do Openverse vêm inteiras (a prévia dele falha e tem limite por dia), por isso
+#: menos.
+CONFERIDAS = 12
+CONFERIDAS_INTEIRAS = 6
+#: Quantas baixam ao mesmo tempo.
+DE_UMA_VEZ = 4
 AGENTE = "Editai (https://github.com/lucasteles1231/editai)"
 
 SISTEMA = """Você escolhe fotos de banco de imagens para o fundo de um vídeo de explicação.
@@ -75,6 +95,14 @@ class Busca:
     bloco: str
     termo: str              # em inglês, para as fontes
     descricao: str          # em português, para a matriz
+    #: Outra busca, mais ampla, para quando a primeira não achar uma foto que mostre o trecho.
+    reserva: str = ""
+    #: O que a foto tem de mostrar, para o auditor: a descrição que a IA imaginou ou, sem ela,
+    #: a própria busca (o trecho falado dava nota baixa até para a foto certa).
+    alvo: str = ""
+
+    def __post_init__(self) -> None:
+        self.alvo = self.alvo or self.termo
 
 
 @dataclass
@@ -112,6 +140,24 @@ class Achado:
     #: Os blocos que ficaram sem foto (o índice, a partir de 0).
     sem_foto: list[int] = field(default_factory=list)
     pedidos: int = 0
+    #: Se o auditor escolheu as fotos, quantas candidatas ele olhou e quantas não mostravam o
+    #: trecho (abaixo do piso).
+    conferidas: bool = False
+    olhadas: int = 0
+    recusadas: int = 0
+    #: O que a pessoa precisa saber (o auditor que não carregou, por exemplo).
+    aviso: str = ""
+
+    def resumo(self) -> str:
+        """O que o auditor fez, numa frase, e o aviso, se houver."""
+        partes = []
+        if self.conferidas:
+            fora = f" ({self.recusadas} não mostravam o trecho)" if self.recusadas else ""
+            partes.append(f"O auditor olhou {self.olhadas} fotos{fora} e ficou com as que mais "
+                          "combinam com cada trecho.")
+        if self.aviso:
+            partes.append(self.aviso)
+        return " ".join(partes)
 
 
 def falso() -> bool:
@@ -173,8 +219,8 @@ def termo_pelas_palavras(bloco: str) -> str:
 
 def esquema() -> dict:
     item = {"type": "object", "properties": {
-        "k": {"type": "integer"}, "busca": {"type": "string"},
-        "descricao": {"type": "string"}}, "required": ["k", "busca", "descricao"]}
+        "k": {"type": "integer"}, "busca": {"type": "string"}, "reserva": {"type": "string"},
+        "descricao": {"type": "string"}}, "required": ["k", "busca", "reserva", "descricao"]}
     return {"type": "object", "properties": {"fotos": {"type": "array", "items": item}},
             "required": ["fotos"]}
 
@@ -189,6 +235,8 @@ Para cada trecho ("k" é o número dele), devolva:
 - busca: o que mostrar, em inglês, em 2 a 4 palavras concretas que um banco de fotos acha
   (objetos, lugares, pessoas fazendo algo: "rocket launch", "wifi router on desk"). Nada de
   ideia abstrata, nada de texto, nada de nome de marca.
+- reserva: outra busca em inglês, mais simples e mais ampla (1 ou 2 palavras: "rocket",
+  "router"), para quando a primeira não achar uma foto boa.
 - descricao: a foto que você imaginou, em português, numa frase curta."""
 
 
@@ -212,9 +260,12 @@ def buscas(blocos_: Sequence[str], tema: str = "", *, transporte=None) -> tuple[
         if not isinstance(k, int) or isinstance(k, bool) or not 0 <= k < len(blocos_):
             continue
         termo = re.sub(r"\s+", " ", str(item.get("busca") or "")).strip()[:60]
+        reserva = re.sub(r"\s+", " ", str(item.get("reserva") or "")).strip()[:40]
         descricao = re.sub(r"\s+", " ", str(item.get("descricao") or "")).strip()[:140]
         if termo:
-            saida[k] = Busca(blocos_[k], termo, descricao or saida[k].descricao)
+            saida[k] = Busca(blocos_[k], termo, descricao or saida[k].descricao,
+                             reserva=reserva if reserva.lower() != termo.lower() else "",
+                             alvo=descricao)
     return saida, len(gasto)
 
 
@@ -227,9 +278,24 @@ def _nao_serve(*textos: str) -> bool:
     return any(re.search(rf"(?<!\w){re.escape(_sem_acento(p))}(?!\w)", junto) for p in NAO_SERVE)
 
 
+_vez_do_openverse = threading.Lock()
+_ultimo_openverse = 0.0
+
+
+def _esperar_a_vez() -> None:
+    """Segura o pedido até passar ``ENTRE_PEDIDOS_S`` do anterior (as buscas correm juntas)."""
+    global _ultimo_openverse
+    with _vez_do_openverse:
+        espera = _ultimo_openverse + ENTRE_PEDIDOS_S - time.monotonic()
+        if espera > 0:
+            time.sleep(espera)
+        _ultimo_openverse = time.monotonic()
+
+
 def _openverse(termo: str, orientacao: str, *, transporte=None) -> list[Achada]:
     import httpx
 
+    _esperar_a_vez()
     params = {"q": termo, "license": ",".join(LICENCAS), "page_size": 20, "mature": "false",
               "size": "large"}
     # em pé, de todo formato: as fotos em pé com licença livre são poucas, e o quadro recorta o
@@ -307,6 +373,28 @@ def procurar(termo: str, orientacao: str = "paisagem", *, transporte=None) -> li
     return achadas
 
 
+def _procurar_ou_nada(termo: str, orientacao: str, *, transporte=None) -> list[Achada]:
+    try:
+        return procurar(termo, orientacao, transporte=transporte)
+    except SemFotos as erro:
+        logger.info("a busca %r não trouxe nada: %s", termo, erro)
+        return []
+
+
+def _procurar_todas(lista: Sequence[Busca], orientacao: str, *, transporte=None
+                    ) -> list[tuple[list[Achada], SemFotos | None]]:
+    """As buscas de todos os trechos, algumas ao mesmo tempo: cada uma leva meio segundo no
+    Pexels, e uma depois da outra somavam 14 s num vídeo de 23 trechos (25/10/2026)."""
+    def uma(busca: Busca) -> tuple[list[Achada], SemFotos | None]:
+        try:
+            return procurar(busca.termo, orientacao, transporte=transporte), None
+        except SemFotos as erro:
+            return [], erro
+
+    with ThreadPoolExecutor(DE_UMA_VEZ) as grupo:
+        return list(grupo.map(uma, lista))
+
+
 # ── baixar e guardar ─────────────────────────────────────────────────────
 
 
@@ -322,29 +410,32 @@ def _gradiente(semente: str) -> bytes:
     return buf.getvalue()
 
 
-def baixar(a: Achada, destino: Path, *, transporte=None) -> bool:
-    """A foto em ``destino`` (JPEG, no máximo ``LADO_GUARDADO`` de lado). ``False`` quando não
-    deu (fora do ar, não é imagem, pequena demais)."""
+def _dados(a: Achada, *, previa: bool = False, transporte=None) -> bytes | None:
+    """Os bytes da foto (ou da prévia, que só o Pexels tem). ``None`` quando não deu."""
     import httpx
-    from PIL import Image, ImageOps
 
     if falso() or a.url.startswith("falso://"):
-        dados = _gradiente(a.url)
-    elif a.pexels_id is not None:
+        return _gradiente(a.url)
+    if a.pexels_id is not None:
         try:
-            dados = pexels.baixar(a.pexels_id, "grande", transporte=transporte)
+            return pexels.baixar(a.pexels_id, "previa" if previa else "grande",
+                                 transporte=transporte)
         except pexels.ErroDoPexels:
-            return False
-    else:
-        try:
-            with httpx.Client(transport=transporte, timeout=45.0, follow_redirects=True,
-                              headers={"User-Agent": AGENTE}) as cliente:
-                r = cliente.get(a.url)
-        except httpx.HTTPError:
-            return False
-        if r.status_code >= 400:
-            return False
-        dados = r.content
+            return None
+    try:
+        with httpx.Client(transport=transporte, timeout=45.0, follow_redirects=True,
+                          headers={"User-Agent": AGENTE}) as cliente:
+            r = cliente.get(a.url)
+    except httpx.HTTPError:
+        return None
+    return r.content if r.status_code < 400 else None
+
+
+def _guardar(dados: bytes | None, destino: Path) -> bool:
+    from PIL import Image, ImageOps
+
+    if not dados:
+        return False
     try:
         img = ImageOps.exif_transpose(Image.open(io.BytesIO(dados))).convert("RGB")
     except Exception:
@@ -357,10 +448,100 @@ def baixar(a: Achada, destino: Path, *, transporte=None) -> bool:
     return True
 
 
+def baixar(a: Achada, destino: Path, *, transporte=None) -> bool:
+    """A foto em ``destino`` (JPEG, no máximo ``LADO_GUARDADO`` de lado). ``False`` quando não
+    deu (fora do ar, não é imagem, pequena demais)."""
+    return _guardar(_dados(a, transporte=transporte), destino)
+
+
+# ── o auditor ────────────────────────────────────────────────────────────
+
+
+@dataclass
+class _Prova:
+    """Uma candidata pronta para a nota."""
+
+    achada: Achada
+    imagem: object              # a PIL.Image da prévia (ou da foto inteira)
+    #: A foto inteira, quando foi ela que veio: fica para guardar, sem baixar de novo.
+    inteira: bytes | None
+
+
+def _provas(candidatas: Sequence[Achada], *, transporte=None) -> list[_Prova]:
+    """As imagens que o auditor confere, baixadas ao mesmo tempo: a prévia do Pexels, ou a foto
+    inteira das outras fontes. As que não vieram ficam de fora."""
+    from PIL import Image
+
+    pela_previa = [a for a in candidatas if a.pexels_id is not None][:CONFERIDAS]
+    inteiras = [a for a in candidatas if a.pexels_id is None][:CONFERIDAS_INTEIRAS]
+    lista = [a for a in candidatas if a in pela_previa or a in inteiras][:CONFERIDAS]
+
+    def uma(a: Achada) -> _Prova | None:
+        previa = a.pexels_id is not None
+        dados = _dados(a, previa=previa, transporte=transporte)
+        if not dados:
+            return None
+        try:
+            img = Image.open(io.BytesIO(dados))
+            img.draft("RGB", (auditor.LADO * 2, auditor.LADO * 2))   # o JPEG grande abre menor
+            img = img.convert("RGB")
+        except Exception:
+            return None
+        return _Prova(a, img, None if previa else dados)
+
+    with ThreadPoolExecutor(DE_UMA_VEZ) as grupo:
+        return [p for p in grupo.map(uma, lista) if p is not None]
+
+
+def _pela_nota(busca: Busca, candidatas: list[Achada], ja: list, achado: Achado, *,
+               orientacao: str, usadas: set[str], transporte=None
+               ) -> tuple[list[tuple], tuple | None]:
+    """As candidatas que mostram o trecho, da que mais combina à que menos, como (a foto, os
+    bytes dela se já vieram, o vetor). Com menos de ``POR_BLOCO`` passando do piso, vem a
+    busca de reserva. Nenhuma passando, vai à parte a melhor de todas: é a do trecho se o
+    vídeo inteiro ficar sem foto nenhuma."""
+    provas = _provas(candidatas, transporte=transporte)
+    notas = auditor.avaliar([p.imagem for p in provas], busca.alvo)
+    ordem = auditor.escolher(notas, len(provas), ja=ja)
+    if len(ordem) < POR_BLOCO and busca.reserva:
+        vistas = {a.url for a in candidatas} | usadas
+        mais = [a for a in _procurar_ou_nada(busca.reserva, orientacao, transporte=transporte)
+                if a.url not in vistas]
+        extra = _provas(mais, transporte=transporte)
+        notas = auditor.juntar(notas, auditor.avaliar([p.imagem for p in extra], busca.alvo))
+        provas += extra
+        ordem = auditor.escolher(notas, len(provas), ja=ja)
+    achado.olhadas += len(provas)
+    achado.recusadas += sum(n < auditor.PISO for n in notas.notas)
+    melhor = None
+    if not ordem and provas:
+        i = max(range(len(provas)), key=lambda i: notas.notas[i])
+        melhor = (provas[i].achada, provas[i].inteira)
+    return [(provas[i].achada, provas[i].inteira, notas.vetores[i]) for i in ordem], melhor
+
+
+def _por(achado: Achado, k: int, busca: Busca, a: Achada, inteira: bytes | None, *,
+         transporte=None) -> bool:
+    """Guarda a foto na pasta e a anota na matriz e nos créditos."""
+    n = len(achado.cenas) + 1
+    nome = f"foto-{n:03d}.jpg"
+    if not _guardar(inteira or _dados(a, transporte=transporte), achado.pasta / nome):
+        return False
+    achado.cenas.append({
+        "id": f"foto-{n:03d}", "arquivo": nome, "descricao": busca.descricao,
+        "categorias": [], "personagens": [], "periodo": "n/a", "energia": "media",
+        "monetizacao": "ok", "obs": f"para o trecho {k + 1}: {busca.bloco[:90]}",
+        "trecho": k + 1})
+    achado.creditos.append(f"{nome}: {a.credito()}")
+    return True
+
+
 def achar(roteiro: str, pasta: Path, *, tema: str = "", orientacao: str = "paisagem",
-          progresso: Progresso | None = None, parar: Callable[[], bool] = lambda: False,
-          transporte=None) -> Achado:
-    """As fotos do roteiro, na ``pasta``, com o ``cenas.json`` e o ``creditos.txt``."""
+          conferir: bool = True, progresso: Progresso | None = None,
+          parar: Callable[[], bool] = lambda: False, transporte=None) -> Achado:
+    """As fotos do roteiro, na ``pasta``, com o ``cenas.json`` e o ``creditos.txt``. Com
+    ``conferir``, o auditor escolhe entre as candidatas de cada busca (ele é baixado na
+    primeira vez)."""
     trechos = blocos(roteiro)
     if not trechos:
         raise SemFotos("O roteiro está vazio: escreva (ou gere) o roteiro antes de achar as fotos.")
@@ -370,42 +551,63 @@ def achar(roteiro: str, pasta: Path, *, tema: str = "", orientacao: str = "paisa
     pasta = Path(pasta)
     pasta.mkdir(parents=True, exist_ok=True)
     achado = Achado(pasta, pedidos=pedidos)
+    achadas = _procurar_todas(lista, orientacao, transporte=transporte)
+    if conferir:
+        if progresso and not auditor.baixado():
+            progresso("auditor", 0, len(trechos))
+        achado.conferidas = auditor.preparar([b.alvo for b in lista])
+        if not achado.conferidas:
+            achado.aviso = ("O auditor das fotos não carregou (na primeira vez ele é baixado: "
+                            "confira a internet). Ficaram as primeiras fotos de cada busca.")
+    etapa = "conferindo" if achado.conferidas else "baixando"
     usadas: set[str] = set()
-    for k, busca in enumerate(lista):
-        if parar():
-            break
-        if progresso:
-            progresso("baixando", k, len(trechos))
-        try:
-            candidatas = procurar(busca.termo, orientacao, transporte=transporte)
-        except SemFotos as erro:
-            if not achado.cenas and k == len(lista) - 1:
-                raise
-            logger.info("o trecho %d ficou sem busca: %s", k, erro)
-            candidatas = []
-        postas = 0
-        for a in candidatas:
-            if postas >= POR_BLOCO:
+    ja: list = []                   # os vetores das fotos postas: nenhuma cena se repete
+    melhores: list[tuple] = []      # a melhor de cada trecho em que nenhuma passou do piso
+    try:
+        for k, busca in enumerate(lista):
+            if parar():
                 break
-            if a.url in usadas:
-                continue
-            usadas.add(a.url)
-            n = len(achado.cenas) + 1
-            nome = f"foto-{n:03d}.jpg"
-            if not baixar(a, pasta / nome, transporte=transporte):
-                continue
-            achado.cenas.append({
-                "id": f"foto-{n:03d}", "arquivo": nome, "descricao": busca.descricao,
-                "categorias": [], "personagens": [], "periodo": "n/a", "energia": "media",
-                "monetizacao": "ok", "obs": f"para o trecho {k + 1}: {busca.bloco[:90]}"})
-            achado.creditos.append(f"{nome}: {a.credito()}")
-            postas += 1
-        if not postas:
-            achado.sem_foto.append(k)
-        if not falso():
-            time.sleep(ENTRE_PEDIDOS_S)
+            if progresso:
+                progresso(etapa, k, len(trechos))
+            candidatas, erro = achadas[k]
+            if erro is not None:
+                if not achado.cenas and not melhores and k == len(lista) - 1:
+                    raise erro
+                logger.info("o trecho %d ficou sem busca: %s", k, erro)
+            candidatas = [a for a in candidatas if a.url not in usadas]
+            if achado.conferidas:
+                fila, melhor = _pela_nota(busca, candidatas, ja, achado, orientacao=orientacao,
+                                          usadas=usadas, transporte=transporte)
+                if melhor:
+                    melhores.append((k, busca, *melhor))
+            else:
+                fila = [(a, None, None) for a in candidatas]
+            postas = 0
+            for a, inteira, vetor in fila:
+                if postas >= POR_BLOCO:
+                    break
+                usadas.add(a.url)
+                if _por(achado, k, busca, a, inteira, transporte=transporte):
+                    postas += 1
+                    if vetor is not None:
+                        ja.append(vetor)
+            if not postas:
+                achado.sem_foto.append(k)
+        if not achado.cenas and melhores:
+            # o auditor recusou tudo: a foto que mais se aproxima é melhor que vídeo nenhum (e
+            # a mesma pode ter sido a melhor de dois trechos)
+            for k, busca, a, inteira in melhores:
+                if a.url not in usadas and _por(achado, k, busca, a, inteira,
+                                                transporte=transporte):
+                    achado.sem_foto.remove(k)
+                usadas.add(a.url)
+            achado.aviso = ("Nenhuma foto achada mostrava bem o roteiro: ficaram as que mais se "
+                            "aproximam. Tente outras palavras, ou mande as suas cenas.")
+    finally:
+        if achado.conferidas:
+            auditor.soltar()
     if progresso:
-        progresso("baixando", len(trechos), len(trechos))
+        progresso(etapa, len(trechos), len(trechos))
     if not achado.cenas:
         raise SemFotos("Não achei nenhuma foto para este roteiro. Tente outras palavras, ou "
                        "marque as cenas e mande as suas.")
@@ -418,5 +620,71 @@ def achar(roteiro: str, pasta: Path, *, tema: str = "", orientacao: str = "paisa
     return achado
 
 
+# ── as fotos no vídeo ────────────────────────────────────────────────────
+
+
+def _nua(palavra: str) -> str:
+    return _sem_acento(palavra).strip(".,;:!?\"'()…—–-“”")
+
+
+def _no_roteiro(fala: Sequence[str], roteiro: Sequence[str]) -> tuple[list[int], int]:
+    """A posição de cada palavra da fala no roteiro, pelo alinhamento das duas (a fala pode
+    ter perdido frases no "Quanto tempo?", e o Whisper, trocado uma palavra), e quantas
+    casaram. A que não casa fica com a posição da anterior."""
+    a, b = [_nua(w) for w in fala], [_nua(w) for w in roteiro]
+    posicao: list[int | None] = [None] * len(a)
+    casadas = 0
+    for i, j, n in difflib.SequenceMatcher(None, a, b, autojunk=False).get_matching_blocks():
+        casadas += n
+        for d in range(n):
+            posicao[i + d] = j + d
+    saida, ultima = [], 0
+    for p in posicao:
+        ultima = p if p is not None else ultima
+        saida.append(ultima)
+    return saida, casadas
+
+
+def pelos_trechos(blocos_da_fala: Sequence, biblioteca, palavras: Sequence,
+                  roteiro: str) -> list[list[str]] | None:
+    """As fotos achadas no vídeo: cada bloco da fala toca as fotos do trecho do roteiro em
+    que ele está, na ordem, sem pedir à IA. Com 46 fotos para 25 blocos e a regra de não
+    repetir cena, ela punha a foto do trecho 1 no trecho 18 (o vídeo do GPS, 26/10/2026). O
+    trecho sem foto fica com as do anterior. ``None`` quando a biblioteca não é de fotos
+    achadas, ou a fala não é a do roteiro (menos da metade das palavras casa)."""
+    from editor.cenas import cenas_por_bloco
+
+    por_trecho: dict[int, list[str]] = {}
+    for c in biblioteca.cenas:
+        if c.trecho <= 0:
+            return None
+        por_trecho.setdefault(c.trecho - 1, []).append(c.id)
+    trechos = blocos(roteiro)
+    if not por_trecho or not trechos or not palavras:
+        return None
+    comecos, n = [], 0
+    for t in trechos:
+        comecos.append(n)
+        n += len(t.split())
+    no_roteiro, casadas = _no_roteiro([w.texto for w in palavras], roteiro.split())
+    if casadas * 2 < len(palavras):
+        return None
+    vez: dict[int, int] = {}
+    escolhas: list[list[str]] = []
+    for b in blocos_da_fala:
+        if b.ultima < b.primeira:                   # um bloco sem fala segue o anterior
+            escolhas.append(escolhas[-1] if escolhas else por_trecho[min(por_trecho)][:1])
+            continue
+        meio = sorted(no_roteiro[b.primeira:b.ultima + 1])[(b.ultima - b.primeira) // 2]
+        k = bisect.bisect_right(comecos, meio) - 1
+        k = max([t for t in por_trecho if t <= k] or [min(por_trecho)])
+        ids, comeco = por_trecho[k], vez.get(k, 0)
+        quantas = min(len(ids), cenas_por_bloco(b))
+        escolhas.append([ids[(comeco + i) % len(ids)] for i in range(quantas)])
+        vez[k] = comeco + quantas
+    return escolhas
+
+
 __all__ = ["LICENCAS", "Achada", "Achado", "Busca", "SemFotos", "achar", "baixar", "blocos",
-           "buscas", "esquema", "falso", "montar_pedido", "procurar", "termo_pelas_palavras"]
+           "buscas", "esquema", "falso", "montar_pedido", "pelos_trechos", "procurar",
+           "termo_pelas_palavras"]

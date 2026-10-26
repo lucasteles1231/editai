@@ -93,7 +93,10 @@ pedida de novo, com o mesmo texto e a mesma voz, sai guardada e não gasta.
 <details>
 <summary><b>"Achar as fotos" deixou um trecho sem foto, ou pôs uma foto ruim</b></summary>
 
-O trecho sem foto fica com as fotos dos vizinhos. Para ele ter as suas:
+O trecho sem foto fica com as fotos dos vizinhos. Com **Conferir as fotos** ligado, ele fica
+sem quando nem a busca de reserva trouxe uma foto que mostre o que ele diz: o
+[auditor](./o-video-so-pelo-tema#o-auditor) prefere nenhuma a uma que não tem nada a ver.
+Para ele ter as suas:
 
 - escreva o trecho de um jeito mais concreto, com o que se vê ("um foguete subindo", e não
   "a ambição humana"), e clique em **Achar de novo**;
@@ -109,6 +112,17 @@ Para tirar uma foto ruim, clique em **Revisar as fotos** e marque **Evitar** na 
 Sem chave, o Openverse limita as buscas seguidas. Espere alguns minutos e clique em
 **Achar de novo**. Com a chave do Pexels, as fotos dele vêm primeiro, e o Openverse só
 completa.
+
+</details>
+
+<details>
+<summary><b>O auditor das fotos não carregou</b></summary>
+
+Na primeira vez, o [auditor](./o-video-so-pelo-tema#o-auditor) baixa uns 410 MB do Hugging
+Face. Sem internet, ou com o download interrompido, as fotos saem assim mesmo, as primeiras
+de cada busca, e a página avisa. Com a internet de volta, clique em **Achar de novo**.
+
+Para não usar o auditor, desmarque **Conferir as fotos** (no terminal, `--sem-auditor`).
 
 </details>
 

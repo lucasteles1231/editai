@@ -15,7 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from editor import ia, recorte, render, servidor
+from editor import auditor, ia, recorte, render, servidor
 from tests.conftest import fazer_video
 
 PORTA, TOKEN = 8899, "token-de-teste"
@@ -174,6 +174,7 @@ class TestAThumbnailComIA:
         e = cliente.get("/api/estado", headers=CABECA).json()
         assert e["ia"]["configurada"] and e["ia"]["origem"] == "falsa"
         assert e["recorte"]["baixado"] and e["recorte"]["tamanho"] == recorte.TAMANHO
+        assert e["auditor"] == {"baixado": True, "tamanho": auditor.TAMANHO}
 
     def test_salvar_e_apagar_a_chave(self, cliente, monkeypatch):
         monkeypatch.delenv(ia.VARIAVEL_FALSA)
@@ -790,12 +791,19 @@ class TestOVideoSoPeloTema:
         assert pasta == tmp_path / "saida" / "fotos" / "o-ceu-azul"
         estado = self._esperar(cliente, f"/api/bibliotecas/{bid}/gerar-matriz")
         assert estado["erro"] == "" and estado["fotos"] >= 4
+        assert estado["conferidas"] and estado["aviso"].startswith("O auditor olhou")
         ficha = estado["biblioteca"]
         assert ficha["cenas"] == estado["fotos"] and ficha["fotos"] == estado["fotos"]
         assert ficha["capa"]["id"]                         # a capa, para a thumbnail
         assert (pasta / "creditos.txt").is_file() and (pasta / "cenas.json").is_file()
         assert cliente.post(f"/api/bibliotecas/{bid}/abrir", headers=CABECA).status_code == 200
         assert abertas == [pasta]
+        # sem o auditor, ficam as primeiras de cada busca
+        r = cliente.post(f"/api/bibliotecas/{bid}/fotos", headers=CABECA,
+                         json={"roteiro": roteiro, "tema": "O céu azul", "conferir": False})
+        estado = self._esperar(cliente, f"/api/bibliotecas/{bid}/gerar-matriz")
+        assert estado["erro"] == "" and not estado["conferidas"]
+        assert "auditor" not in estado["aviso"]
 
 
 class TestAMinhaVoz:

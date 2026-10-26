@@ -39,6 +39,7 @@ arquivo marcado como "vindo da internet".
 | O atalho Editai | ~150 KB | macOS: `~/Applications/Editai.app` · Windows: o menu Iniciar e a Área de Trabalho · Linux: `~/.local/share/applications/editai.desktop` |
 | O modelo do Whisper (`small`) | 464 MB | Windows: `%USERPROFILE%\.cache\huggingface` · macOS e Linux: `~/.cache/huggingface` |
 | O modelo do recorte (MODNet), na primeira vez que a pessoa é recortada | 26 MB | a mesma pasta do Hugging Face |
+| O auditor das fotos (SigLIP 2), na primeira vez que as fotos são achadas pelo tema | ~410 MB | a mesma pasta do Hugging Face |
 | A voz sintetizada (Minha voz), só se você instalar: o ambiente e o modelo | ~3,5 GB | `motor-de-voz`, na pasta de dados: `%LOCALAPPDATA%\editor-de-video` (Windows), `~/Library/Application Support/editor-de-video` (macOS) ou `~/.local/share/editor-de-video` (Linux) |
 | As vozes gravadas: a leitura e a referência de cada uma | ~15 MB cada | `vozes`, na mesma pasta de dados |
 | Os avatares | ~1 MB cada | `avatares`, na mesma pasta de dados |
@@ -116,8 +117,9 @@ editai --desinstalar
 Ele mostra o que vai sair, com o tamanho de cada coisa, e só apaga depois de você digitar
 **sim**.
 
-- **Perguntados à parte:** os modelos de transcrição e de recorte (na pasta do Hugging
-  Face, que outros programas também usam) e os vídeos editados. No Enter, eles ficam.
+- **Perguntados à parte:** os modelos de transcrição, de recorte e do auditor (na pasta do
+  Hugging Face, que outros programas também usam) e os vídeos editados. No Enter, eles
+  ficam.
 - **Sem perguntas:** `--sim` não pergunta nada. Aí os modelos e os vídeos só saem com
   `--com-modelos` e `--com-videos`.
 - **No Windows,** o último passo é seu: feche o Editai e rode `uv tool uninstall editai`.

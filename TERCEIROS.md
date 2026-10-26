@@ -58,7 +58,9 @@ não usá-los, escolha outro tema de sons.
 | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) e CTranslate2 | transcrever a fala | MIT |
 | Modelos [Whisper](https://github.com/openai/whisper), convertidos pela [Systran](https://huggingface.co/Systran) | o modelo baixado no primeiro uso | MIT |
 | [MODNet](https://github.com/ZHKKKe/MODNet), em ONNX ([`Xenova/modnet`](https://huggingface.co/Xenova/modnet)) | o recorte da pessoa na thumbnail, baixado no primeiro uso (26 MB) | Apache-2.0, código **e** pesos: [`licencas/MODNet-Apache-2.0.txt`](licencas/MODNet-Apache-2.0.txt) |
-| ONNX Runtime | roda o MODNet | MIT |
+| [SigLIP 2](https://huggingface.co/google/siglip2-base-patch16-224), do Google, em ONNX int8 ([`onnx-community/siglip2-base-patch16-224-ONNX`](https://huggingface.co/onnx-community/siglip2-base-patch16-224-ONNX)) | o auditor das fotos achadas pelo tema, baixado no primeiro uso (~410 MB) | Apache-2.0 (a do modelo do Google; a exportação é o mesmo modelo, em ONNX) |
+| ONNX Runtime | roda o MODNet e o auditor | MIT |
+| [tokenizers](https://github.com/huggingface/tokenizers) | o vocabulário do auditor | Apache-2.0 |
 | [PyAV](https://github.com/PyAV-Org/PyAV) | ler e gravar vídeo | BSD-3-Clause (veja abaixo) |
 | NumPy | as contas do áudio e dos quadros | BSD-3-Clause, entre outras |
 | Pillow | desenhar legenda, adesivos e ícones | MIT-CMU |

@@ -7,6 +7,33 @@ está sempre no [site](https://lucasteles1231.github.io/editai/baixar).
 Os números seguem o [versionamento semântico](https://semver.org/lang/pt-BR/): o último muda
 nas correções, o do meio nas novidades e o primeiro quando algo deixa de funcionar como antes.
 
+## [0.5.0] — 26/10/2026
+
+### Novidades
+
+- **O auditor das fotos.** No vídeo só pelo tema, as fotos de cada busca ganham uma nota
+  pelo que mostram, e ficam as 2 que mais mostram o trecho. Antes, ficavam as 2 primeiras
+  da busca, e entravam fotos sem nada a ver, como uma aranha no lugar de um satélite.
+  - Ele roda no seu computador, com o SigLIP 2 do Google, que baixa uns 410 MB na primeira
+    vez.
+  - Uma foto quase igual a outra já escolhida fica de fora.
+  - Sem 2 fotos boas, vem uma busca de reserva, mais ampla.
+  - Para desligar, desmarque **Conferir as fotos**. No terminal, use `--sem-auditor`.
+
+  [Veja como](https://lucasteles1231.github.io/editai/guia/o-video-so-pelo-tema#o-auditor).
+
+### Correções
+
+- **No vídeo pelo tema, cada foto entra no trecho dela.** Antes, a IA distribuía as fotos
+  pela fala e, sem poder repetir nenhuma, punha a foto do começo no meio do vídeo. Agora a
+  narração é casada com o roteiro, palavra a palavra, e as fotos seguem os trechos, sem
+  pedido à IA.
+
+### Melhorias
+
+- **As fotos chegam mais rápido:** as buscas de todos os trechos correm juntas, e a espera
+  entre os pedidos ficou só para o Openverse, que limita o anônimo a 20 por minuto.
+
 ## [0.4.0] — 25/10/2026
 
 ### Novidades

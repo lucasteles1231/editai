@@ -252,6 +252,10 @@ export type PropsDoEnvio = {
   /** Sem vídeo e sem cenas: as fotos achadas pelo roteiro viram a biblioteca de cenas. */
   aoAcharFotos: () => void;
   fotosAchadas: FotosAchadas | null;
+  /** O auditor confere as fotos (ligado de começo); o tamanho dele, baixado na primeira vez. */
+  conferirFotos: boolean;
+  aoMudarConferirFotos: (v: boolean) => void;
+  auditor: {baixado: boolean; tamanho: string};
   /** O roteiro mudou depois que as fotos foram achadas. */
   fotosDesatualizadas: boolean;
   aoAbrirPastaDasCenas: () => void;
@@ -439,7 +443,9 @@ const CamposDoTexto: React.FC<PropsDoEnvio> = (p) => {
  *  outras: a ficha, a tabela de revisão (para tirar uma foto ruim) e a pasta, com os créditos. */
 const CamposDasFotos: React.FC<PropsDoEnvio> = (p) => {
   const g = p.gerandoMatriz;
-  const achando = g?.etapa === 'buscando' || g?.etapa === 'baixando';
+  const achando = g?.etapa === 'buscando' || g?.etapa === 'auditor' || g?.etapa === 'conferindo'
+    || g?.etapa === 'baixando';
+  const trecho = g ? `trecho ${Math.min(g.prontas + 1, Math.max(1, g.total))} de ${g.total}` : '';
   const semRoteiro = !p.roteiro.trim();
   return (
     <>
@@ -455,6 +461,10 @@ const CamposDasFotos: React.FC<PropsDoEnvio> = (p) => {
         <small>{p.trilha.escreveRoteiro ? 'Primeiro, escreva o roteiro (em “O texto”): as fotos saem dele.'
           : 'Primeiro, cole o roteiro: as fotos saem dele.'}</small>
       ) : null}
+      <Interruptor ligado={p.conferirFotos} aoMudar={p.aoMudarConferirFotos} desabilitado={Boolean(g)}
+        titulo="Conferir as fotos"
+        descricao={'O auditor olha as primeiras fotos de cada busca e fica com as que mostram o trecho. Roda no '
+          + `seu computador${p.auditor.baixado ? '' : ` e, na primeira vez, baixa ${p.auditor.tamanho}`}.`} />
       {achando ? (
         <>
           <div className="barra" role="progressbar" aria-valuemin={0} aria-valuemax={100}
@@ -463,7 +473,8 @@ const CamposDasFotos: React.FC<PropsDoEnvio> = (p) => {
           </div>
           <small className="andamento" aria-live="polite">
             {g.etapa === 'buscando' ? 'Escolhendo o que mostrar em cada trecho…'
-              : `Baixando as fotos: trecho ${Math.min(g.prontas + 1, Math.max(1, g.total))} de ${g.total}…`}
+              : g.etapa === 'auditor' ? `Baixando o auditor das fotos (${p.auditor.tamanho}, só na primeira vez)…`
+                : g.etapa === 'conferindo' ? `Conferindo as fotos: ${trecho}…` : `Baixando as fotos: ${trecho}…`}
           </small>
         </>
       ) : null}

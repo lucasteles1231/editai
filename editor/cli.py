@@ -223,6 +223,9 @@ def argumentos() -> argparse.ArgumentParser:
                    help="com --tema: quem narra: gemini:Orus (ou outra voz do Gemini), local "
                         "(a voz do computador) ou o nome de uma voz sua (padrão: o Gemini com "
                         "a chave; sem ela, a local)")
+    t.add_argument("--sem-auditor", dest="sem_auditor", action="store_true",
+                   help="com --tema: fica com as primeiras fotos de cada busca, sem o auditor "
+                        "conferir se elas mostram o trecho (ele baixa uns 410 MB na 1ª vez)")
     t.add_argument("--instalar-voz-local", action="store_true",
                    help="instala a voz local (o Piper, uns 210 MB, num ambiente à parte)")
     t.add_argument("--desinstalar-voz-local", action="store_true",
@@ -263,8 +266,8 @@ def argumentos() -> argparse.ArgumentParser:
                    help="com --desinstalar ou --desinstalar-voz: não pergunta nada (os modelos e "
                         "os vídeos ficam, a não ser com --com-modelos e --com-videos)")
     d.add_argument("--com-modelos", action="store_true",
-                   help="com --desinstalar: apaga também os modelos do Whisper e do MODNet, na "
-                        "pasta do Hugging Face")
+                   help="com --desinstalar: apaga também os modelos do Whisper, do MODNet e do "
+                        "auditor, na pasta do Hugging Face")
     d.add_argument("--com-videos", action="store_true",
                    help="com --desinstalar: apaga também os vídeos editados, na pasta padrão")
     return p
@@ -447,6 +450,7 @@ def _pelo_tema(a: argparse.Namespace) -> str:
     achadas e, daí, a montagem de sempre com a biblioteca. Preenche as flags da montagem e
     devolve o erro, se houver."""
     from editor import (
+        auditor,
         duracao,
         escrita,
         fotos,
@@ -503,15 +507,23 @@ def _pelo_tema(a: argparse.Namespace) -> str:
     print(f"\nnarração: {n.segundos:.1f} s")
 
     def achando(etapa: str, feitos: int, total: int) -> None:
-        print(f"\r  {'buscando as fotos' if etapa == 'buscando' else 'baixando as fotos'} "
-              f"{feitos} de {total}", end="", flush=True)
+        if etapa == "auditor":
+            print(f"\n  baixando o auditor das fotos ({auditor.TAMANHO}, só na primeira vez)",
+                  flush=True)
+            return
+        nome = {"buscando": "buscando as fotos", "conferindo": "conferindo as fotos"}
+        print(f"\r  {nome.get(etapa, 'baixando as fotos')} {feitos} de {total}", end="",
+              flush=True)
 
     try:
         achado = fotos.achar(roteiro, pasta, tema=a.tema, progresso=achando,
+                             conferir=not a.sem_auditor,
                              orientacao="retrato" if a.quadro == "vertical" else "paisagem")
     except fotos.SemFotos as erro:
         return f"\nerro: {erro}"
     print(f"\n{len(achado.cenas)} fotos em {pasta} (os créditos em creditos.txt)")
+    if achado.resumo():
+        print(achado.resumo())
     a.cenas, a.matriz, a.audio, a.fala = pasta, pasta / "cenas.json", [destino], "audio"
     a.texto_falado = pasta / "roteiro.txt"
     return ""

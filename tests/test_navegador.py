@@ -707,10 +707,12 @@ def test_o_video_so_pelo_tema(navegador, endereco, tmp_path):
         imagem.get_by_role("button", name="Achar as fotos").click()
     corpo = pedido.value.post_data_json
     assert corpo["orientacao"] == "retrato" and "laranja" in corpo["roteiro"]
+    assert corpo["conferir"] is True                   # o auditor, ligado de começo
     ficha = imagem.get_by_label("dados da biblioteca de cenas")
     expect(ficha).to_contain_text("fotos", timeout=60_000)
     pasta = tmp_path / "saida" / "fotos" / "o-ceu-azul"
     expect(imagem.locator(".pasta-das-cenas")).to_contain_text("creditos.txt")
+    expect(imagem).to_contain_text("O auditor olhou")
     assert (pasta / "cenas.json").is_file() and (pasta / "creditos.txt").is_file()
     assert len(list(pasta.glob("foto-*.jpg"))) >= 4
     imagem.get_by_role("button", name="Revisar as fotos").click()

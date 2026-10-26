@@ -8,7 +8,7 @@ protege a página, como o que é baixado é conferido e o que a última verifica
 
 | O quê | Para onde | Quando |
 |---|---|---|
-| nada do vídeo, do áudio nem da sua voz | — | nunca: a transcrição, o recorte, a edição, a Minha voz e a voz local rodam no computador |
+| nada do vídeo, do áudio nem da sua voz | — | nunca: a transcrição, o recorte, a edição, a Minha voz, a voz local e o auditor das fotos rodam no computador |
 | o texto da fala e 8 quadros pequenos (512 px) | Google (Gemini) | só com a sua chave, nas ideias de thumbnail |
 | o texto da fala | Google (Gemini) | só com a sua chave e o roteiro ligado (cenas, cartões e destaques) |
 | 3 quadros pequenos de cada clipe | Google (Gemini) | só quando você clica em **Gerar a matriz** |
@@ -51,6 +51,7 @@ a página, que só mostra os quatro últimos caracteres.
 |---|---|---|
 | os modelos do Whisper | Hugging Face (Systran) | um commit fixo, o que foi testado |
 | o modelo do recorte (MODNet) | Hugging Face (Xenova) | um commit fixo |
+| o modelo do auditor das fotos (SigLIP 2) | Hugging Face (onnx-community) | um commit fixo e o SHA-256 de cada arquivo |
 | os 4 sons do tema Notícia sem licença livre | `remotion.media` | o SHA-256 de cada arquivo: o diferente é descartado, e toca a reserva da Kenney |
 | o modelo da Minha voz | Hugging Face (Qwen) | um commit fixo |
 | o motor da voz local (o Piper) | PyPI | a versão testada (`piper-tts` 1.8.0) |
