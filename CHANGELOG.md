@@ -7,6 +7,16 @@ está sempre no [site](https://lucasteles1231.github.io/editai/baixar).
 Os números seguem o [versionamento semântico](https://semver.org/lang/pt-BR/): o último muda
 nas correções, o do meio nas novidades e o primeiro quando algo deixa de funcionar como antes.
 
+## [0.5.1] — 26/10/2026
+
+### Correções
+
+- **A matriz das cenas não troca mais as descrições.** O Gemini via 12 cenas por pedido e às
+  vezes dava a uma cena a descrição da vizinha: nas 19 fotos de um imóvel, acertou 10. Agora
+  ele vê 4 por pedido e acertou as 19. Uma biblioteca grande gasta uns 3 vezes mais pedidos
+  da cota grátis (128 cenas: uns 32), e o editor passa ao próximo modelo quando a cota de um
+  acaba.
+
 ## [0.5.0] — 26/10/2026
 
 ### Novidades

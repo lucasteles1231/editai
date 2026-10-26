@@ -97,16 +97,17 @@ Você já cortou os clipes e não tem o `cenas.json`? Depois de arrastar a pasta
 
 <img src="../img/interface-matriz.png" alt="A tabela de revisão da matriz: cada cena com a miniatura, a descrição, as categorias, os personagens, a energia, o período, a monetização e a observação, e os botões Usar esta matriz e Baixar o cenas.json" width="420" align="right">
 
-- **O Gemini vê** 3 quadros de cada clipe (começo, meio e fim) e a foto inteira, 12 cenas
+- **O Gemini vê** 3 quadros de cada clipe (começo, meio e fim) e a foto inteira, 4 cenas
   por pedido, e
   escreve a descrição, as categorias, os personagens que ele reconhece, o período, a
   energia (o clima da cena, e não o movimento da câmera), a monetização e o que atrapalha
   usar a cena de fundo (texto na tela, logo, troca de plano no meio).
-- **O custo:** 128 clipes são uns 11 pedidos da cota grátis. Cada pedido levou perto de
-  50 s no teste, então a biblioteca inteira deve levar uns 10 minutos. As 23 cenas de um
-  imóvel (19 fotos e 4 vídeos) levaram 36 s. O que já foi
-  descrito fica guardado: gerar de novo, ou depois que a cota acabou, só pede o que
-  falta.
+- **O custo:** 128 clipes são uns 32 pedidos da cota grátis. A cota conta pedidos por
+  modelo, e o editor passa ao próximo quando um esgota. Com 12 cenas por pedido eram 11, mas
+  o Gemini trocava a descrição de uma cena pela da vizinha: nas 19 fotos de um imóvel, ele
+  acertou 10 com 12 por pedido e as 19 com 4 (26/10/2026). As 23 cenas desse imóvel (19
+  fotos e 4 vídeos) levaram uns 2 min, num dia de Gemini lento. O que já foi descrito fica
+  guardado: gerar de novo, ou depois que a cota acabou, só pede o que falta.
 - **A cena que o Gemini se recusa a descrever** (nudez, por exemplo) fica marcada como
   "evitar", com um aviso, e o resto do lote segue.
 - **Sem a chave**, sai um rascunho: a descrição vem do nome de cada arquivo, e a energia,

@@ -42,8 +42,10 @@ from editor import ia
 
 logger = logging.getLogger(__name__)
 
-#: Quantos clipes vão em cada pedido (3 quadros cada: 36 imagens pequenas, umas 11 para 128 cenas).
-POR_PEDIDO = 12
+#: Quantos clipes vão em cada pedido (3 quadros cada). Com 12, o modelo trocava a descrição
+#: de uma cena pela da vizinha: nas 19 fotos de um imóvel, o Gemini acertou 10 com 12 por
+#: pedido e as 19 com 4 (26/10/2026). São uns 32 pedidos para 128 cenas.
+POR_PEDIDO = 4
 QUADROS_POR_CLIPE = 3
 #: O lado maior de cada quadro enviado (pequeno: a cota conta pedidos, mas o modelo lê
 #: mais rápido, e a descrição não precisa de detalhe).
