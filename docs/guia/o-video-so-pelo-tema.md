@@ -17,8 +17,9 @@ funciona igual, com a voz local ou a sua.
 ## Na página
 
 1. No passo 1, marque só **Tema** e escreva o assunto: "por que o céu é azul".
-2. **A duração.** O padrão sai de onde o vídeo vai: 45 s nos Shorts, no TikTok e nos Reels,
-   e 3 min no YouTube. Dá para escolher de 30 s a 5 min.
+2. **A duração** é a de **Quanto tempo?**, no fim do passo 1 ([veja](./como-usar#quanto-tempo)).
+   No **Auto**, a IA escreve no tamanho que o assunto pede, até o limite da plataforma (3 min
+   no Shorts e no Reels). Com um tempo escolhido (15 s, 30 s, 1 min…), ela escreve para ele.
 3. **Escrever o roteiro.** Ele aparece logo abaixo, para você revisar:
    - a voz lê exatamente esse texto;
    - cada parágrafo (separado por uma linha em branco) vira um trecho do vídeo, com a sua
@@ -93,7 +94,7 @@ qualquer formato (as em pé com licença livre são poucas): o quadro mostra o m
 
 ```bash
 editai --tema "Por que o céu é azul"                     # escreve, narra, acha as fotos e monta
-editai --tema "Por que o céu é azul" --duracao 60 --narrador gemini:Kore
+editai --tema "Por que o céu é azul" --duracao 60 --narrador gemini:Kore   # 1 min
 editai --tema "Por que o céu é azul" --narrador local    # a voz do computador
 editai --tema "Por que o céu é azul" --roteiro roteiro.txt --narrador ana   # o seu roteiro, a sua voz
 editai --instalar-voz-local                              # a voz local, uns 210 MB

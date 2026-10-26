@@ -139,6 +139,11 @@ def argumentos() -> argparse.ArgumentParser:
                    help="tamanho do Whisper (padrão small)")
     g.add_argument("--previa", type=float, metavar="SEGUNDOS",
                    help="edita só os primeiros segundos, para testar rápido")
+    g.add_argument("--duracao", default="auto", metavar="TEMPO",
+                   help="quanto o vídeo deve durar: auto (só sai o que passar do limite da "
+                        "plataforma: 3 min em pé; deitado, nada sai), tudo (nada da fala sai) "
+                        "ou os segundos (30). O que passar, a IA escolhe as frases que ficam. "
+                        "Com --tema, é o tamanho do roteiro (padrão: auto)")
     m = p.add_argument_group("montagem em camadas (um fundo e, por cima, você ou um personagem)")
     m.add_argument("--fundo", type=Path, metavar="VIDEO",
                    help="o vídeo de fundo, sem pessoa (tela gravada, jogo, slides)")
@@ -214,8 +219,6 @@ def argumentos() -> argparse.ArgumentParser:
                    help="o assunto do vídeo, em uma frase. Sozinho, o Editai escreve o roteiro, "
                         "narra, acha as fotos e monta; com um vídeo ou as cenas, vai de "
                         "contexto para a IA")
-    t.add_argument("--duracao", type=float, default=45, metavar="SEGUNDOS",
-                   help="com --tema: quanto o vídeo deve durar, em segundos (padrão: 45)")
     t.add_argument("--narrador", metavar="VOZ",
                    help="com --tema: quem narra: gemini:Orus (ou outra voz do Gemini), local "
                         "(a voz do computador) ou o nome de uma voz sua (padrão: o Gemini com "
@@ -443,17 +446,33 @@ def _pelo_tema(a: argparse.Namespace) -> str:
     """O vídeo só pelo tema, de uma vez: o roteiro (ou o ``--roteiro``), a narração, as fotos
     achadas e, daí, a montagem de sempre com a biblioteca. Preenche as flags da montagem e
     devolve o erro, se houver."""
-    from editor import escrita, fotos, ia, separar, servidor, voz_clonada, voz_local, voz_pronta
+    from editor import (
+        duracao,
+        escrita,
+        fotos,
+        ia,
+        separar,
+        servidor,
+        voz_clonada,
+        voz_local,
+        voz_pronta,
+    )
 
     pasta = separar.pasta_nova(servidor.pasta_de_saida_padrao() / "fotos", a.tema)
+    if a.quadro == "fundo":
+        a.quadro = "vertical"          # sem vídeo de fundo, o padrão é o Short em pé
     if a.roteiro is not None:
         if not a.roteiro.is_file():
             return f"não achei o roteiro: {a.roteiro}"
         roteiro = a.roteiro.read_text(encoding="utf-8", errors="replace")
     else:
-        print(f"escrevendo o roteiro de uns {a.duracao:.0f} s sobre: {a.tema}")
+        escolha = duracao.ler(a.duracao)
+        segundos = escolha if isinstance(escolha, float) else None
+        print(f"escrevendo o roteiro {f'de uns {segundos:.0f} s' if segundos else 'no tamanho '
+              'que o assunto pede'} sobre: {a.tema}")
         try:
-            r = escrita.escrever(a.tema, a.duracao, idioma=a.idioma)
+            r = escrita.escrever(a.tema, segundos, teto=_limite_do_formato(a, None),
+                                 idioma=a.idioma)
         except escrita.SemRoteiro as erro:
             return f"erro: {erro}"
         roteiro = r.texto
@@ -487,8 +506,6 @@ def _pelo_tema(a: argparse.Namespace) -> str:
         print(f"\r  {'buscando as fotos' if etapa == 'buscando' else 'baixando as fotos'} "
               f"{feitos} de {total}", end="", flush=True)
 
-    if a.quadro == "fundo":
-        a.quadro = "vertical"          # sem vídeo de fundo, o padrão é o Short em pé
     try:
         achado = fotos.achar(roteiro, pasta, tema=a.tema, progresso=achando,
                              orientacao="retrato" if a.quadro == "vertical" else "paisagem")
@@ -498,6 +515,25 @@ def _pelo_tema(a: argparse.Namespace) -> str:
     a.cenas, a.matriz, a.audio, a.fala = pasta, pasta / "cenas.json", [destino], "audio"
     a.texto_falado = pasta / "roteiro.txt"
     return ""
+
+
+def _limite_do_formato(a: argparse.Namespace, montagem) -> float | None:
+    """O teto do Auto no terminal, que não sabe a plataforma: em pé (ou quadrado), o dos
+    vídeos curtos (3 min); deitado, nenhum. Com ``--quadro fundo``, vale o vídeo."""
+    from editor import duracao
+    from editor import video as video_mod
+
+    quadro = a.quadro
+    if quadro == "fundo":
+        caminho = a.video if montagem is None else montagem.fundo
+        if caminho is None:
+            return None
+        try:
+            info = video_mod.sondar(Path(caminho))
+        except Exception:
+            return None
+        quadro = "horizontal" if info.largura > info.altura * 1.2 else "vertical"
+    return duracao.limite_das(["shorts", "reels"]) if quadro in ("vertical", "quadrado") else None
 
 
 def _salvar_preset(a: argparse.Namespace) -> int:
@@ -529,6 +565,13 @@ def main(argv: list[str] | None = None) -> int:
     if aviso:
         print(aviso, file=sys.stderr)
         return 1
+    from editor import duracao
+
+    try:
+        duracao.ler(a.duracao)
+    except duracao.DuracaoInvalida as erro:
+        print(f"erro: {erro}", file=sys.stderr)
+        return 2
 
     if a.formatos:
         for formato, d in saida_mod.disponiveis().items():
@@ -652,7 +695,8 @@ def main(argv: list[str] | None = None) -> int:
                               if getattr(a, k) is not None},
                            ancora_x=a.ancora[0], ancora_y=a.ancora[1], idioma=a.idioma,
                            modelo=a.modelo, texto_falado=texto_falado,
-                           tema=(a.tema or "")[:200])
+                           tema=(a.tema or "")[:200], duracao=a.duracao,
+                           limite_da_plataforma=_limite_do_formato(a, montagem))
     # Sem --formato, vale a extensão do -o: "-o final.mov" grava MOV.
     formato = a.formato or _formato_de(a.saida) or "mp4"
     da_saida = {k: getattr(a, k) or preset.saida[k] for k in presets.SAIDA}

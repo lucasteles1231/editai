@@ -750,6 +750,10 @@ class TestOVideoSoPeloTema:
         assert r.json()["titulo"] == "Como o freio ABS funciona" and "\n\n" in r.json()["texto"]
         r = cliente.post("/api/roteiro", headers=CABECA, json={"tema": "  "})
         assert r.status_code == 422 and "tema" in r.json()["detail"]
+        # o Auto: sem tempo, até o teto da plataforma
+        r = cliente.post("/api/roteiro", headers=CABECA,
+                         json={"tema": "O céu azul", "segundos": None, "teto": 180})
+        assert r.status_code == 200, r.text
 
     def test_narra_com_a_voz_pronta(self, cliente):
         vozes = cliente.get("/api/vozes", headers=CABECA).json()["prontas"]

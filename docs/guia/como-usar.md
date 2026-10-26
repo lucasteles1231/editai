@@ -24,6 +24,33 @@ Logo abaixo do título, **Antes de começar** junta o que se configura uma vez e
 todos os vídeos, tudo opcional: a sua voz gravada ([Minha voz](./minha-voz)), o seu avatar em
 pixel art ([Meu avatar](./meu-avatar)) e as chaves grátis do Gemini e do Pexels. Cada cartão diz se já está pronto e abre o próprio painel.
 
+## Quanto tempo
+
+No fim do passo 1, logo abaixo de **Onde você vai postar?**, você escolhe quanto o vídeo deve
+durar. Vale para todo vídeo: o seu, a montagem e o feito pelo tema.
+
+| A escolha | O que acontece |
+|---|---|
+| **Auto** (o padrão) | O vídeo fica com o que você gravou. Só se ele passar do limite da plataforma marcada (3 min no Shorts e no Reels, 10 min no TikTok), a IA escolhe as frases que ficam. No YouTube, nada sai |
+| **15 s, 20 s… 10 min** | O vídeo fica com uns tantos segundos, de 15% a menos a 15% a mais (o corte cai sempre entre frases). Se a fala passar disso, a IA escolhe as frases que ficam e o editor corta o resto |
+| **Tudo** | Nada da fala sai: só os silêncios, como sempre |
+
+**Como a IA escolhe:**
+- as frases ficam inteiras e na ordem;
+- o vídeo pode começar mais adiante, para abrir com uma frase que prende;
+- nenhuma ideia fica pela metade: uma frase que retoma a anterior ("por isso", "ou seja",
+  "esses…") só fica com ela;
+- o fim fecha a ideia.
+
+A legenda, o zoom, as cenas, os cartões e quem vai por cima seguem o corte. Sem a IA, o corte
+é no fim, na última frase que cabe.
+
+**No resultado,** a página diz quantas frases saíram e mostra cada uma em **O que ficou de
+fora**. Se uma frase importante saiu, **Refazer com tudo** edita de novo sem tirar nenhuma.
+
+**Um tempo maior que o limite** de uma plataforma marcada vira aviso. No vídeo pelo tema, a
+escolha também é o tamanho do roteiro.
+
 ## Um vídeo seu falando
 
 1. Digite `editai`. O navegador abre no editor.

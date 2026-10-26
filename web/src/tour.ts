@@ -68,7 +68,9 @@ export function comecarTour(): void {
         align: 'start',
         title: 'Onde você vai postar',
         description: 'Marque uma ou várias: Shorts, TikTok, Reels, YouTube… O editor recomenda pelo formato do '
-          + 'vídeo, a thumbnail sai no tamanho de cada uma e, na montagem, o vídeo sai em pé ou deitado.',
+          + 'vídeo, a thumbnail sai no tamanho de cada uma e, na montagem, o vídeo sai em pé ou deitado.<br><br>'
+          + 'Logo abaixo, <b>Quanto tempo?</b>: no Auto, só sai o que passar do limite delas; com um tempo escolhido, '
+          + 'a IA escolhe as frases que ficam.',
       },
     },
     {

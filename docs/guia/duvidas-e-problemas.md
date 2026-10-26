@@ -69,6 +69,19 @@ item acima), instale a versão x64
 </details>
 
 <details>
+<summary><b>Uma frase que eu queria saiu do vídeo</b></summary>
+
+Ela saiu porque o vídeo passou do tempo escolhido em **Quanto tempo?** (ou, no Auto, do
+limite da plataforma), e a IA escolheu as frases que ficam. No resultado, **O que ficou de
+fora** lista cada frase que saiu. Para ficar com tudo:
+- clique em **Refazer com tudo**;
+- ou escolha um tempo maior antes de editar.
+
+No terminal, use `--duracao tudo`.
+
+</details>
+
+<details>
 <summary><b>A voz do Gemini avisou que a cota acabou</b></summary>
 
 Na chave grátis, a voz do Gemini narra 10 roteiros por dia, e a cota volta à meia-noite em

@@ -42,6 +42,10 @@ export type Edicao = {
   texto_falado: string;
   /** O tema do vídeo (passo 1): contexto para o Gemini nos cartões e nas cenas. */
   tema: string;
+  /** Quanto o vídeo deve durar (passo 1): "auto", "tudo" ou os segundos ("30"). */
+  duracao: string;
+  /** O menor limite das plataformas marcadas, em segundos (o teto do Auto); ``null``, sem limite. */
+  limite_da_plataforma: number | null;
 };
 
 export type Voz = 'original' | 'limpa' | 'estudio';
@@ -255,6 +259,14 @@ export type Resultado = {
   largura: number;
   altura: number;
   roteiro?: ResumoDoRoteiro | Record<string, never>;
+  /** O que a duração escolhida fez (editor/duracao.py). */
+  selecao?: ResumoDaSelecao | Record<string, never>;
+};
+
+/** As frases que a duração escolhida tirou, e quem escolheu. */
+export type ResumoDaSelecao = {
+  escolha: string; alvo: number | null; antes: number; depois: number; por: string; aviso: string;
+  pedidos: number; fora: {texto: string; inicio: number; fim: number; segundos: number}[];
 };
 
 export type Tarefa = {

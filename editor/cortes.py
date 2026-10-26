@@ -191,6 +191,14 @@ def _juntar(trechos: list[Trecho]) -> list[Trecho]:
     return saida
 
 
+def cruzar(trechos: Sequence[Trecho], intervalos: Sequence[tuple[float, float]]) -> list[Trecho]:
+    """O que fica nos dois: os trechos sem os silêncios, só dentro dos intervalos (as frases
+    que a duração escolhida deixou, :mod:`editor.duracao`)."""
+    saida = [Trecho(max(t.ini, a), min(t.fim, b)) for t in trechos for a, b in intervalos
+             if min(t.fim, b) > max(t.ini, a)]
+    return _juntar(saida)
+
+
 class Linha:
     """O mapa do tempo original para o tempo do vídeo editado."""
 
@@ -270,4 +278,5 @@ class Linha:
         return saida
 
 
-__all__ = ["PAUSA_MAXIMA_S", "RESPIRO_S", "Linha", "Trecho", "calcular", "pausa_perto"]
+__all__ = ["PAUSA_MAXIMA_S", "RESPIRO_S", "Linha", "Trecho", "calcular", "cruzar",
+           "pausa_perto"]

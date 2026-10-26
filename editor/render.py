@@ -32,6 +32,7 @@ from editor import (
     transcricao,
     voz,
 )
+from editor import duracao as duracao_alvo
 from editor import janela as janela_mod
 from editor import saida as saida_mod
 from editor import video as video_mod
@@ -75,6 +76,8 @@ class Resultado:
     altura: int = 0
     #: O resumo do roteiro: quem escolheu as cenas e os cartões, quantos, e o aviso.
     roteiro: dict = field(default_factory=dict)
+    #: O que a duração escolhida fez, com as frases que ficaram de fora.
+    selecao: dict = field(default_factory=dict)
 
     def para_dict(self) -> dict:
         return {"video": str(self.video), "plano": str(self.plano),
@@ -82,7 +85,7 @@ class Resultado:
                 "duracao_original": round(self.duracao_original, 2),
                 "duracao_final": round(self.duracao_final, 2),
                 "segundos": round(self.segundos, 1), "largura": self.largura,
-                "altura": self.altura, "roteiro": self.roteiro}
+                "altura": self.altura, "roteiro": self.roteiro, "selecao": self.selecao}
 
 
 def pasta_de_cache() -> Path:
@@ -354,6 +357,14 @@ def _planejar(fala: Path, duracao_da_fala: float, tem_audio: bool, edicao: Opcoe
     else:
         trechos = [cortes.Trecho(0.0, duracao)]
     linha = cortes.Linha(trechos)
+    avisar("cortando", 1.0, f"{len(trechos)} trecho(s), {linha.duracao:.1f} s de "
+                            f"{duracao:.1f} s")
+    selecao = _escolher_as_frases(palavras, linha, duracao, edicao, previa_s, avisar)
+    if selecao.manter is not None:
+        trechos = cortes.cruzar(trechos, selecao.manter)
+        linha = cortes.Linha(trechos)
+        selecao.depois = round(linha.duracao, 2)
+    palavras = selecao.sem_as_de_fora(palavras)
     # A legenda mostra as palavras proibidas com a sílaba escondida, como o bipe.
     proibidas = censura.lista(edicao.bipe)
     vistas = ([transcricao.Palavra(censura.censurar_texto(w.texto, proibidas), w.inicio, w.fim)
@@ -362,13 +373,34 @@ def _planejar(fala: Path, duracao_da_fala: float, tem_audio: bool, edicao: Opcoe
     p = plano.montar(no_editado, linha.duracao, vertical=vertical, cortes=linha.cortes,
                      opcoes=edicao, nomes_de_icones=set(icones.nomes()), mover=mover)
     p.trechos = [(round(tr.ini, 3), round(tr.fim, 3)) for tr in linha.trechos]
+    p.selecao = selecao.para_json()
     for a0, b0 in bipes:
         a1, b1 = linha.para_saida(a0), linha.para_saida(b0)
         if a1 is not None and b1 is not None:
             p.bipes.append((round(a1, 3), round(b1, 3)))
-    avisar("cortando", 1.0, f"{len(trechos)} trecho(s), {linha.duracao:.1f} s de "
-                            f"{duracao:.1f} s")
     return _Fala(linha, p, len(palavras), duracao, audio if tem_audio else None, no_editado)
+
+
+def _escolher_as_frases(palavras: list, linha: cortes.Linha, duracao: float,
+                        edicao: OpcoesDeEdicao, previa_s: float | None, avisar: Progresso
+                        ) -> duracao_alvo.Selecao:
+    """A duração escolhida: as frases que ficam (:mod:`editor.duracao`). A prévia mostra o
+    começo do vídeo, sem a escolha."""
+    if previa_s:
+        if duracao_alvo.ler(edicao.duracao) not in ("auto", "tudo"):
+            avisar("escolhendo", 1.0, "a prévia mostra o começo, sem a escolha das frases")
+        return duracao_alvo.Selecao(str(edicao.duracao), antes=linha.duracao,
+                                    depois=linha.duracao)
+    a = duracao_alvo.alvo(edicao.duracao, edicao.limite_da_plataforma, linha.duracao)
+    if a is not None and palavras:
+        avisar("escolhendo", 0.0, f"escolhendo as frases que cabem em uns {a.segundos:.0f} s")
+    sel = duracao_alvo.escolher(palavras, linha, duracao, escolha=edicao.duracao,
+                                limite=edicao.limite_da_plataforma, tema=edicao.tema)
+    if sel.manter is not None:
+        avisar("escolhendo", 1.0, f"{len(sel.fora)} frase(s) de fora")
+    if sel.aviso:
+        avisar("escolhendo", 1.0, sel.aviso)
+    return sel
 
 
 def _escrever_roteiro(f: _Fala, edicao: OpcoesDeEdicao, avisar: Progresso,
@@ -378,7 +410,7 @@ def _escrever_roteiro(f: _Fala, edicao: OpcoesDeEdicao, avisar: Progresso,
     destaques = edicao.estilo_da_legenda == "destaques"
     if biblioteca is None and not edicao.animacoes and not destaques:
         return None
-    avisar("cortando", 1.0, "o Gemini está escolhendo as cenas e os cartões"
+    avisar("escolhendo", 1.0, "o Gemini está escolhendo as cenas e os cartões"
            if biblioteca is not None else "o Gemini está escrevendo os cartões"
            if edicao.animacoes else "o Gemini está marcando os destaques da legenda")
     r = roteiro.escrever(f.no_editado, f.linha.duracao, biblioteca=biblioteca,
@@ -390,7 +422,7 @@ def _escrever_roteiro(f: _Fala, edicao: OpcoesDeEdicao, avisar: Progresso,
     if destaques and r.destaques:
         f.plano.blocos = plano.montar_paginas(f.no_editado, f.linha.duracao, r.destaques)
     if r.aviso:
-        avisar("cortando", 1.0, r.aviso)
+        avisar("escolhendo", 1.0, r.aviso)
     return r
 
 
@@ -528,7 +560,7 @@ def editar(entrada: Path | None, destino: Path, edicao: OpcoesDeEdicao,
 
     plano_json, legendas = _terminar(p, destino, saida_r, avisar)
     return Resultado(destino, plano_json, legendas, f.palavras, duracao, linha.duracao,
-                     time.monotonic() - comeco, largura, altura, _resumo(r))
+                     time.monotonic() - comeco, largura, altura, _resumo(r), p.selecao)
 
 
 def _desenhar_quadro(gravador: video_mod.Gravador, matriz: np.ndarray, p: plano.Plano,
@@ -652,7 +684,7 @@ def _editar_montagem(montagem: Montagem, destino: Path, edicao: OpcoesDeEdicao,
 
     plano_json, legendas = _terminar(p, destino, saida_r, avisar)
     return Resultado(destino, plano_json, legendas, f.palavras, f.duracao, linha.duracao,
-                     time.monotonic() - comeco, largura, altura, _resumo(r))
+                     time.monotonic() - comeco, largura, altura, _resumo(r), p.selecao)
 
 
 __all__ = ["Cancelado", "Resultado", "editar", "empurrao", "janela", "montar_audio",

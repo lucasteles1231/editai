@@ -8,6 +8,10 @@
  *   A capa própria só vale para o Programa de Parcerias, pelo computador (desde 25/07/2026).
  * - TikTok: capa 1080×1920. O perfil mostra o meio em 3:4, com as visualizações embaixo.
  * - Reels: capa 1080×1920. O perfil mostra o meio em 3:4, e o feed, em 4:5.
+ *
+ * O limite de duração (pesquisado em 25/10/2026, o mesmo de ``editor/duracao.py``): o Shorts
+ * vai até 3 min; o Instagram não recomenda a quem não segue o perfil os Reels de mais de 3; o
+ * TikTok grava até 10 min no app; o YouTube não tem limite prático.
  */
 import type {FormatoDoQuadro, VideoInfo} from './tipos';
 
@@ -20,25 +24,33 @@ export type Recorte = {onde: string; proporcao: string; y0: number; y1: number; 
 
 export const PLATAFORMAS: Record<Plataforma, {
   nome: string; curto: string; tamanho: string; emPe: boolean; recortes: Recorte[]; nota?: string;
+  /** O limite de duração, em segundos (``null``: sem limite prático). */
+  limite: number | null;
 }> = {
-  youtube: {nome: 'YouTube', curto: 'YouTube', tamanho: '1280x720', emPe: false, recortes: []},
+  youtube: {nome: 'YouTube', curto: 'YouTube', tamanho: '1280x720', emPe: false, recortes: [], limite: null},
   shorts: {
-    nome: 'YouTube Shorts', curto: 'Shorts', tamanho: '1080x1920', emPe: true,
+    nome: 'YouTube Shorts', curto: 'Shorts', tamanho: '1080x1920', emPe: true, limite: 180,
     recortes: [{onde: 'a busca do YouTube', proporcao: '3:2', y0: 0.3125, y1: 0.6875, soTexto: true}],
     nota: 'A capa própria de um Short só vale para quem está no Programa de Parcerias do YouTube, e só pelo computador.',
   },
   tiktok: {
-    nome: 'TikTok', curto: 'TikTok', tamanho: '1080x1920', emPe: true,
+    nome: 'TikTok', curto: 'TikTok', tamanho: '1080x1920', emPe: true, limite: 600,
     recortes: [{onde: 'o perfil do TikTok', proporcao: '3:4', y0: 0.125, y1: 0.875}],
   },
   reels: {
-    nome: 'Instagram Reels', curto: 'Reels', tamanho: '1080x1920', emPe: true,
+    nome: 'Instagram Reels', curto: 'Reels', tamanho: '1080x1920', emPe: true, limite: 180,
     recortes: [{onde: 'o perfil do Instagram', proporcao: '3:4', y0: 0.125, y1: 0.875},
       {onde: 'o feed do Instagram', proporcao: '4:5', y0: 0.1484, y1: 0.8516}],
   },
 };
 
 export const ORDEM: Plataforma[] = ['youtube', 'shorts', 'tiktok', 'reels'];
+
+/** O menor limite de duração entre as marcadas (``null``: nenhuma tem limite). */
+export function limiteDe(lista: Plataforma[]): number | null {
+  const valores = lista.map((p) => PLATAFORMAS[p].limite).filter((v): v is number => v !== null);
+  return valores.length ? Math.min(...valores) : null;
+}
 
 const deitado = (v: VideoInfo) => v.largura > v.altura * 1.2;
 

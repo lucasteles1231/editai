@@ -267,6 +267,9 @@ class Plano:
     roteiro: dict = field(default_factory=dict)
     #: Onde a voz leva bipe, no tempo do vídeo editado.
     bipes: list[tuple[float, float]] = field(default_factory=list)
+    #: O que a duração escolhida fez: o alvo, o antes e o depois, e as frases que ficaram de
+    #: fora (``editor/duracao.py``).
+    selecao: dict = field(default_factory=dict)
 
     def para_json(self) -> dict:
         dados = asdict(self)

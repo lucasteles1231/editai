@@ -38,8 +38,15 @@ const CUSTO_DO_RECORTE_POR_QUADRO = 0.07;
 /** Quantas palavras por segundo se fala, para estimar a duração do roteiro. */
 const PALAVRAS_POR_SEGUNDO = 2.6;
 
-/** As durações do roteiro escrito pelo tema. O padrão sai de onde o vídeo vai: 45 s em pé, 3 min no YouTube. */
-const DURACOES: [number, string][] = [[30, '30 s'], [45, '45 s'], [60, '1 min'], [180, '3 min'], [300, '5 min']];
+/** Quanto o vídeo deve durar: o Auto (o limite da plataforma), os tempos e o Tudo (nada da fala sai). */
+const DURACOES: [string, string][] = [['auto', 'Auto'], ['15', '15 s'], ['20', '20 s'], ['30', '30 s'],
+  ['45', '45 s'], ['60', '1 min'], ['90', '90 s'], ['120', '2 min'], ['180', '3 min'], ['300', '5 min'],
+  ['600', '10 min'], ['tudo', 'Tudo']];
+/** A folga do tempo escolhido, para mais ou para menos (a mesma de ``editor/duracao.py``). */
+const FOLGA = 0.15;
+const nomeDaDuracao = (d: string) => DURACOES.find(([v]) => v === d)?.[1] ?? `${d} s`;
+/** Um limite redondo em minutos ("3 min"); o resto, como sempre. */
+const tempoRedondo = (s: number) => (s >= 60 && s % 60 === 0 ? `${s / 60} min` : duracao(s));
 
 const contarPalavras = (texto: string) => (texto.trim() ? texto.trim().split(/\s+/).length : 0);
 
@@ -234,8 +241,12 @@ export type PropsDoEnvio = {
   aoEscolherVideoLongo: (arquivo: File) => void;
   /** Onde as cenas do vídeo longo (ou as fotos achadas) ficaram. */
   pastaDasCenas: string | null;
-  /** O roteiro pelo tema: a IA escreve (com a duração em segundos), e ele cai no roteiro de sempre. */
-  aoEscreverRoteiro: (segundos: number) => void;
+  /** O roteiro pelo tema: a IA escreve, no tamanho de "Quanto tempo?", e ele cai no roteiro de sempre. */
+  aoEscreverRoteiro: () => void;
+  /** Quanto o vídeo deve durar ("auto", "tudo" ou os segundos) e o limite das plataformas marcadas. */
+  duracao: string;
+  aoMudarDuracao: (d: string) => void;
+  limite: number | null;
   escrevendoRoteiro: boolean;
   erroDoRoteiro: string;
   /** Sem vídeo e sem cenas: as fotos achadas pelo roteiro viram a biblioteca de cenas. */
@@ -352,27 +363,21 @@ const CampoDoVideo: React.FC<PropsDoEnvio & {qual: 'completo' | 'pessoa'; grande
 /** Só com o tema: a IA escreve o roteiro no tamanho escolhido, e ele aparece aqui para a pessoa revisar
  *  antes de narrar (a voz lê exatamente este texto, e cada parágrafo vira um trecho com a sua imagem). */
 const EscreverRoteiro: React.FC<PropsDoEnvio> = (p) => {
-  const [segundos, setSegundos] = useState<number | null>(null);
-  const emPe = p.plataformas.every((pl) => PLATAFORMAS[pl].emPe);
-  const alvo = segundos ?? (emPe ? 45 : 180);
   const palavras = contarPalavras(p.roteiro);
+  const fixo = Number(p.duracao) > 0;
   const escrever = () => {
     if (p.roteiro.trim() && !window.confirm('Escrever de novo? O roteiro de agora, com as suas mudanças, é trocado.')) {
       return;
     }
-    p.aoEscreverRoteiro(alvo);
+    p.aoEscreverRoteiro();
   };
   return (
     <div className="escrever-roteiro">
-      <div className="campo">
-        <span>A duração</span>
-        <div className="linha-de-opcoes" role="group" aria-label="a duração do vídeo">
-          {DURACOES.map(([s, nome]) => (
-            <button key={s} type="button" className="pilula" aria-pressed={alvo === s} disabled={p.escrevendoRoteiro}
-              onClick={() => setSegundos(s)}>{nome}</button>
-          ))}
-        </div>
-      </div>
+      <small>
+        {fixo ? `Com uns ${nomeDaDuracao(p.duracao)} de fala, como em “Quanto tempo?”, lá embaixo.`
+          : `No tamanho que o assunto pede${p.limite ? `, até ${tempoRedondo(p.limite)}` : ''}: é o Auto, de “Quanto tempo?”, lá `
+            + 'embaixo.'}
+      </small>
       <div className="linha-de-opcoes">
         <button type="button" className="botao pequeno usar" disabled={!p.tema.trim() || p.escrevendoRoteiro}
           title={p.tema.trim() ? undefined : 'escreva o tema primeiro'} onClick={escrever}>
@@ -739,6 +744,39 @@ const AjustarAsCamadas: React.FC<PropsDoEnvio> = (p) => (
   </details>
 );
 
+/** Quanto o vídeo deve durar. O que passar, a IA escolhe as frases que ficam (editor/duracao.py); no Auto, o
+ *  limite é o da plataforma marcada. No vídeo pelo tema, é também o tamanho do roteiro. */
+const QuantoTempo: React.FC<PropsDoEnvio> = (p) => {
+  const segundos = Number(p.duracao);
+  const fixo = segundos > 0;
+  const deQuem = juntar(p.plataformas.filter((pl) => PLATAFORMAS[pl].limite === p.limite)
+    .map((pl) => PLATAFORMAS[pl].nome));
+  const texto = p.duracao === 'tudo' ? 'Nada da fala sai: só os silêncios são cortados.'
+    : fixo ? `O vídeo fica com uns ${nomeDaDuracao(p.duracao)} (de ${duracao(segundos * (1 - FOLGA))} a `
+      + `${duracao(segundos * (1 + FOLGA))}). Se a fala passar disso, a IA escolhe as frases que ficam e o editor corta `
+      + 'o resto. No vídeo pelo tema, é o tamanho do roteiro.'
+    : p.limite ? `Auto: o vídeo fica com o que você gravou. Só se passar de ${tempoRedondo(p.limite)}, o limite do `
+      + `${deQuem}, a IA escolhe as frases que ficam. No vídeo pelo tema, o roteiro sai no tamanho que o assunto pede.`
+    : 'Auto: no YouTube não há limite, então nada da fala sai. No vídeo pelo tema, o roteiro sai no tamanho que o '
+      + 'assunto pede.';
+  return (
+    <div className="quanto-tempo" id="quanto-tempo">
+      <strong>Quanto tempo?</strong>
+      <div className="linha-de-opcoes" role="group" aria-label="quanto tempo o vídeo deve ter">
+        {DURACOES.map(([v, nome]) => (
+          <button key={v} type="button" className="pilula" aria-pressed={p.duracao === v}
+            onClick={() => p.aoMudarDuracao(v)}>{nome}</button>
+        ))}
+      </div>
+      <small>{texto}</small>
+      {fixo && p.limite !== null && segundos > p.limite ? (
+        <div className="aviso">{deQuem} aceita até {tempoRedondo(p.limite)}: com {nomeDaDuracao(p.duracao)}, o vídeo passa
+          disso.</div>
+      ) : null}
+    </div>
+  );
+};
+
 /** Onde o vídeo vai ser postado: decide o formato da thumbnail e, na montagem, o do vídeo. */
 const OndePostar: React.FC<PropsDoEnvio> = (p) => {
   const emPe = p.recomendadas.length > 0 && !p.recomendadas.includes('youtube');
@@ -797,6 +835,7 @@ export const PassoEnvio: React.FC<PropsDoEnvio> = (p) => {
       {t.bloqueio ? <div className="aviso" role="status">{t.bloqueio}</div> : null}
       {t.modo === 'montagem' ? <AjustarAsCamadas {...p} /> : null}
       <OndePostar {...p} />
+      <QuantoTempo {...p} />
     </section>
   );
 };

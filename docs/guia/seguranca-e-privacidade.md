@@ -15,6 +15,7 @@ protege a página, como o que é baixado é conferido e o que a última verifica
 | a descrição de uma cena | Google (Gemini) | só quando você gera um fundo (pago) |
 | a foto do avatar, reduzida a 1024 px e sem os metadados (o lugar e o aparelho) | Google (Gemini) | só quando você clica em **Montar pela foto com o Gemini**; o Editai não guarda a foto |
 | o tema | Google (Gemini) | só com a sua chave, quando você clica em **Escrever o roteiro** |
+| o texto da fala, frase a frase | Google (Gemini) | só com a sua chave, quando o vídeo passa do tempo escolhido em **Quanto tempo?** |
 | o roteiro | Google (Gemini) | quando uma voz do Gemini narra, e ao achar as fotos (o Gemini diz o que buscar em cada trecho) |
 | o texto da busca | Pexels | só com a chave do Pexels, quando você busca uma foto ou acha as fotos do roteiro |
 | o texto da busca, em inglês | Openverse | só quando você clica em **Achar as fotos** |

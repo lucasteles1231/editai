@@ -13,6 +13,7 @@ O resultado sai ao lado do original, como `meu-video-editado.mp4`, junto com o
 ```bash
 editai aula.mov --srt --vtt                       # também grava as legendas à parte
 editai video.mp4 --previa 15                      # só os primeiros 15 s, para testar
+editai palestra.mp4 --duracao 60                  # um vídeo de 1 min: a IA escolhe as frases
 editai video.mp4 --formato webm --resolucao 720p  # WebM (VP9) em 720p
 editai jogo.mp4 --preset gameplay                 # o preset de gameplay (veja --presets)
 editai jogo.mp4 --preset gameplay --ritmo 1.2     # o preset, com o ritmo um pouco menor
@@ -89,7 +90,7 @@ editai --formatos                                 # o que este computador grava
 | `--separar-cenas VIDEO` | separa um vídeo longo em cenas: os clipes e o `cenas.json` numa pasta nova em `Filmes/editor-de-video/cenas` | |
 | `--assunto TEXTO` | com `--gerar-matriz` ou `--separar-cenas`: do que são as cenas, para reconhecer personagens | |
 | `--tema TEXTO` | o assunto do vídeo, em uma frase. Sozinho, o Editai escreve o roteiro (ou usa o `--roteiro`), narra, acha as fotos e monta ([O vídeo só pelo tema](./o-video-so-pelo-tema)); com um vídeo ou as cenas, vai de contexto para a IA | |
-| `--duracao S` | com `--tema`: quanto o vídeo deve durar, em segundos | `45` |
+| `--duracao TEMPO` | quanto o vídeo deve durar: `auto` (só sai o que passar do limite da plataforma: 3 min em pé; deitado, nada sai), `tudo` (nada da fala sai) ou os segundos. O que passar, a IA escolhe as frases que ficam ([Quanto tempo](./como-usar#quanto-tempo)); com `--tema`, é o tamanho do roteiro | `auto` |
 | `--narrador VOZ` | com `--tema`: quem narra: `gemini:Orus` (ou `gemini:Charon`, `Puck`, `Kore`, `Aoede`, `Leda`), `local` ou o nome de uma voz sua | o Gemini, com a chave; sem ela, a local |
 | `--instalar-voz-local` | instala a voz local (o Piper, uns 210 MB), num ambiente à parte | |
 | `--desinstalar-voz-local` | apaga a voz local | |

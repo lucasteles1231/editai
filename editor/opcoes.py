@@ -71,6 +71,13 @@ class OpcoesDeEdicao:
     #: O tema do vídeo, marcado no passo 1: vai de contexto para o Gemini nos cartões e na
     #: escolha das cenas. Também é de um vídeo só, e fica fora dos presets.
     tema: str = ""
+    #: Quanto o vídeo deve durar (o passo 1): "auto" (só sai o que passar do limite da
+    #: plataforma), "tudo" (nada da fala sai) ou os segundos ("30"). O que passar, a IA escolhe
+    #: as frases que ficam (:mod:`editor.duracao`). É de um vídeo só, e fica fora dos presets.
+    duracao: str = "auto"
+    #: O limite da plataforma onde o vídeo vai (o menor das marcadas), em segundos: o teto do
+    #: Auto. ``None``, sem limite.
+    limite_da_plataforma: float | None = None
 
     def problemas(self) -> list[str]:
         erros = []
@@ -114,6 +121,14 @@ class OpcoesDeEdicao:
             erros.append("o texto falado passa de 20.000 letras")
         if len(self.tema) > TEMA_MAXIMO:
             erros.append(f"o tema passa de {TEMA_MAXIMO} letras")
+        from editor import duracao
+
+        try:
+            duracao.ler(self.duracao)
+        except duracao.DuracaoInvalida as erro:
+            erros.append(str(erro))
+        if self.limite_da_plataforma is not None and not 5 <= self.limite_da_plataforma <= 86_400:
+            erros.append("o limite da plataforma vai de 5 s a 24 h")
         if self.tema_dos_sons not in sons.temas():
             erros.append(f"tema de sons desconhecido: {self.tema_dos_sons} "
                          f"(use {', '.join(sons.temas())})")

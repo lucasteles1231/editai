@@ -7,6 +7,22 @@ está sempre no [site](https://lucasteles1231.github.io/editai/baixar).
 Os números seguem o [versionamento semântico](https://semver.org/lang/pt-BR/): o último muda
 nas correções, o do meio nas novidades e o primeiro quando algo deixa de funcionar como antes.
 
+## [0.4.0] — 25/10/2026
+
+### Novidades
+
+- **Quanto tempo?** No fim do passo 1, escolha quanto o vídeo deve durar: Auto, 15 s, 20 s…
+  10 min, ou Tudo.
+  - Se a fala passar do tempo, a IA escolhe as frases que ficam, inteiras e na ordem, e o
+    editor corta o resto.
+  - No Auto, só sai o que passar do limite da plataforma marcada (3 min no Shorts e no Reels,
+    10 min no TikTok).
+  - O resultado mostra o que ficou de fora, e **Refazer com tudo** edita sem tirar nada.
+  - No vídeo pelo tema, a escolha é o tamanho do roteiro, e no Auto ele sai no tamanho que o
+    assunto pede.
+
+  No terminal: `--duracao auto|tudo|SEGUNDOS`. [Veja como](https://lucasteles1231.github.io/editai/guia/como-usar#quanto-tempo).
+
 ## [0.3.0] — 25/10/2026
 
 ### Novidades

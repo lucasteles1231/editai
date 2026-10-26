@@ -686,15 +686,17 @@ def test_o_video_so_pelo_tema(navegador, endereco, tmp_path):
     expect(imagem.get_by_role("button", name="Achar as fotos")).to_be_disabled()
     expect(editar).to_be_disabled()
 
-    # o roteiro: 45 s porque o padrão, só pelo tema, é o Short em pé
+    # o roteiro: no Auto, o tamanho que o assunto pede, até o limite do Short em pé (3 min)
     escrever = texto.get_by_role("button", name="Escrever o roteiro")
     expect(escrever).to_be_disabled()               # sem o tema, ainda não
     pagina.get_by_label("o tema").fill("O céu azul")
-    duracao = texto.get_by_role("group", name="a duração do vídeo")
-    expect(duracao.get_by_role("button", name="45 s")).to_have_attribute("aria-pressed", "true")
+    quanto = pagina.get_by_role("group", name="quanto tempo o vídeo deve ter")
+    expect(quanto.get_by_role("button", name="Auto")).to_have_attribute("aria-pressed", "true")
+    expect(texto).to_contain_text("No tamanho que o assunto pede, até 3 min")
     with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/roteiro")) as pedido:
         escrever.click()
-    assert pedido.value.post_data_json == {"tema": "O céu azul", "segundos": 45, "idioma": "pt"}
+    assert pedido.value.post_data_json == {"tema": "O céu azul", "segundos": None, "teto": 180,
+                                           "idioma": "pt"}
     roteiro = texto.get_by_label("o roteiro", exact=True)
     expect(roteiro).to_have_value(re.compile(r"^Por que o céu azul funciona"))
     expect(texto.get_by_role("button", name="Escrever de novo")).to_be_visible()
@@ -745,8 +747,56 @@ def test_o_video_so_pelo_tema(navegador, endereco, tmp_path):
     assert len(montagem["audio_ids"]) == 1 and montagem["formato"] == "vertical"
     assert "laranja" in dados["edicao"]["texto_falado"]
     assert dados["edicao"]["tema"] == "O céu azul"
+    assert dados["edicao"]["duracao"] == "auto" and dados["edicao"]["limite_da_plataforma"] == 180
     pagina.locator(".miniaturas img").first.wait_for(timeout=180_000)
     assert list((tmp_path / "saida").glob("*-editado.mp4"))
+    assert not _barrados(pagina), _barrados(pagina)
+    assert not erros, erros
+
+
+def test_a_duracao_tira_o_que_passa(navegador, endereco, tmp_path):
+    """Quanto tempo (o dono, 25/10/2026): a escolha vai na edição com o limite das plataformas,
+    o que passa sai pela IA (a falsa, aqui), o resultado diz o que ficou de fora, e "Refazer com
+    tudo" edita de novo sem tirar frase nenhuma."""
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 1100})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
+    pagina.add_init_script(VIGIAR_A_CSP)
+    pagina.goto(endereco)
+    pagina.set_input_files('[data-envio="completo"] input',
+                           str(fazer_video(tmp_path / "fala.mp4", segundos=30.0)))
+    expect(pagina.get_by_label("dados do vídeo")).to_contain_text("320×568")
+
+    quanto = pagina.get_by_role("group", name="quanto tempo o vídeo deve ter")
+    caixa = pagina.locator("#quanto-tempo")
+    expect(quanto.get_by_role("button", name="Auto")).to_have_attribute("aria-pressed", "true")
+    expect(caixa).to_contain_text("Só se passar de 3 min")          # em pé: Shorts e Reels
+    quanto.get_by_role("button", name="10 min").click()
+    expect(caixa.locator(".aviso")).to_contain_text("aceita até 3 min")
+    quanto.get_by_role("button", name="15 s").click()
+    expect(caixa).to_contain_text("de 13 s a 17 s")
+    expect(caixa.locator(".aviso")).to_have_count(0)
+
+    editar = pagina.get_by_role("button", name="Editar vídeo")
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/tarefas")
+                               and r.method == "POST") as pedido:
+        editar.click()
+    edicao = pedido.value.post_data_json["edicao"]
+    assert edicao["duracao"] == "15" and edicao["limite_da_plataforma"] == 180
+    fora = pagina.get_by_label("o que ficou de fora")
+    expect(fora).to_contain_text("frases saíram", timeout=120_000)
+    fora.locator("summary").click()
+    expect(fora.locator("li").first).to_be_visible()
+
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/tarefas")
+                               and r.method == "POST") as pedido:
+        fora.get_by_role("button", name="Refazer com tudo").click()
+    assert pedido.value.post_data_json["edicao"]["duracao"] == "tudo"
+    expect(quanto.get_by_role("button", name="Tudo")).to_have_attribute("aria-pressed", "true")
+    expect(pagina.locator(".painel .numeros")).to_be_visible(timeout=120_000)
+    expect(pagina.get_by_label("o que ficou de fora")).to_have_count(0)
     assert not _barrados(pagina), _barrados(pagina)
     assert not erros, erros
 

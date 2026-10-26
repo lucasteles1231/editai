@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {api} from './api';
 import {emOrdem, falaEfetiva} from './fala';
 import {
-  ORDEM, type Plataforma, avisos, quadroDe, recomendadas, tamanhosDe,
+  ORDEM, type Plataforma, avisos, limiteDe, quadroDe, recomendadas, tamanhosDe,
 } from './plataformas';
 import {aplicarPreset, presetMarcado} from './presets';
 import {Painel} from './componentes/Painel';
@@ -112,6 +112,10 @@ export const App: React.FC = () => {
   // O passo 1: o que a pessoa tem (começa pelo vídeo, o jeito mais comum) e os textos.
   const [materiais, setMateriais] = useState<ReadonlySet<Material>>(() => new Set<Material>(['completo']));
   const [tema, setTema] = useState('');
+  // Quanto o vídeo deve durar: "auto", "tudo" ou os segundos ("30"). O que passar, a IA escolhe as
+  // frases que ficam (editor/duracao.py). "Refazer com tudo" troca para "tudo" e edita de novo.
+  const [duracaoEscolhida, setDuracaoEscolhida] = useState('auto');
+  const [refazerComTudo, setRefazerComTudo] = useState(false);
   const [roteiro, setRoteiro] = useState('');
   const [narrar, setNarrar] = useState(false);
   const [porCimaEscolhido, setPorCimaEscolhido] = useState<'avatar' | 'nada' | null>(null);
@@ -229,6 +233,8 @@ export const App: React.FC = () => {
   const plataformas: Plataforma[] = plataformasEscolhidas
     ?? (trilha.fotos ? ['shorts'] : recomendacao.length ? recomendacao : ['youtube']);
   const chaveDasPlataformas = plataformas.join(',');
+  // O teto do Auto: o menor limite de duração entre as plataformas marcadas.
+  const limite = limiteDe(plataformas);
   const porCimaPronto = montagem.porCima === 'nada'
     || Boolean(comAvatar ? avatarDaMontagem : comPersonagem ? personagem : pessoa);
   const podeEditar = trilha.bloqueio ? false : !naMontagem ? Boolean(unico)
@@ -378,6 +384,10 @@ export const App: React.FC = () => {
   useEffect(() => {
     setEdicao((e) => (e ? {...e, tema: comTema ? tema.trim() : ''} : e));
   }, [comTema, tema]);
+  // A duração escolhida e o limite das plataformas vão para a edição (o corte das frases).
+  useEffect(() => {
+    setEdicao((e) => (e ? {...e, duracao: duracaoEscolhida, limite_da_plataforma: limite} : e));
+  }, [duracaoEscolhida, limite]);
 
   const alternarMaterial = (m: Material) => {
     setMateriais((atual) => {
@@ -501,12 +511,15 @@ export const App: React.FC = () => {
     }
   }, [materiais, tema]);
 
-  /** O roteiro pelo tema: a IA escreve, e o texto cai no roteiro de sempre, para revisar antes de narrar. */
-  const escreverRoteiro = useCallback(async (segundos: number) => {
+  /** O roteiro pelo tema: a IA escreve, e o texto cai no roteiro de sempre, para revisar antes de narrar.
+   *  O tamanho é o de "Quanto tempo?": no Auto (e no Tudo), o que o assunto pede, até o limite. */
+  const escreverRoteiro = useCallback(async () => {
     setErroDoRoteiro('');
     setEscrevendoRoteiro(true);
+    const segundos = Number(duracaoEscolhida);
     try {
-      const r = await api.escreverRoteiro(tema, segundos, 'pt');
+      const r = await api.escreverRoteiro(tema, Number.isFinite(segundos) && segundos > 0 ? segundos : null,
+        limite ?? 600, 'pt');
       setRoteiro(r.texto);
       setNarracao(null);
     } catch (e) {
@@ -514,7 +527,7 @@ export const App: React.FC = () => {
     } finally {
       setEscrevendoRoteiro(false);
     }
-  }, [tema]);
+  }, [tema, duracaoEscolhida, limite]);
 
   /** As fotos achadas pelo roteiro: viram uma biblioteca de cenas, que já vale ao terminar (dá para
    *  revisar depois, na tabela de sempre). */
@@ -699,6 +712,14 @@ export const App: React.FC = () => {
     comPersonagem, personagem, comAvatar, avatarDaMontagem, pessoa, audios, narracao, cenasDoAudio, montagem, camadas,
     fala]);
 
+  // "Refazer com tudo": edita de novo assim que a duração "tudo" chegou à edição.
+  useEffect(() => {
+    if (refazerComTudo && edicao?.duracao === 'tudo') {
+      setRefazerComTudo(false);
+      void editar();
+    }
+  }, [refazerComTudo, edicao, editar]);
+
   const marcado = useMemo(() => (estado && edicao && saida ? presetMarcado(estado.presets, edicao, saida) : null),
     [estado, edicao, saida]);
   // Os presets de quem usa: o servidor devolve a lista inteira, que entra no estado.
@@ -857,7 +878,8 @@ export const App: React.FC = () => {
             progresso={envios} erro={errosDeEnvio} aoEscolher={escolherArquivo}
             aoEscolherAudios={(a) => void escolherAudios(a)} aoEscolherPasta={(a) => void escolherPasta(a)}
             aoEscolherVideoLongo={(f) => void separarVideoLongo(f)} pastaDasCenas={pastaDasCenas}
-            aoEscreverRoteiro={(s) => void escreverRoteiro(s)} escrevendoRoteiro={escrevendoRoteiro}
+            aoEscreverRoteiro={() => void escreverRoteiro()} escrevendoRoteiro={escrevendoRoteiro}
+            duracao={duracaoEscolhida} aoMudarDuracao={setDuracaoEscolhida} limite={limite}
             erroDoRoteiro={erroDoRoteiro} aoAcharFotos={() => void acharFotos()}
             fotosAchadas={fotosAchadas}
             fotosDesatualizadas={Boolean(fotosAchadas && fotosAchadas.roteiro !== roteiro && biblioteca)}
@@ -893,7 +915,8 @@ export const App: React.FC = () => {
         <Painel video={naMontagem ? fundoEfetivo : unico} porCima={porCimaDoPainel} podeEditar={podeEditar}
           tarefa={tarefa} previa={previa} setPrevia={setPrevia} aoEditar={editar}
           aoCancelar={() => tarefa && api.cancelar(tarefa.id)} erro={erroEdicao} thumbs={thumbs}
-          gerandoThumbs={gerandoThumbs} pastaSaida={estado?.pasta_saida ?? ''} />
+          gerandoThumbs={gerandoThumbs} pastaSaida={estado?.pasta_saida ?? ''}
+          aoRefazerComTudo={() => { setDuracaoEscolhida('tudo'); setRefazerComTudo(true); }} />
       </main>
       <footer className="rodape">
         Editai {estado?.versao ?? ''} · código aberto ·{' '}

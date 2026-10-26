@@ -6,9 +6,9 @@ import {api} from '../api';
 import {duracao, numero} from '../formatar';
 import type {Resultado, Tarefa, VideoInfo} from '../tipos';
 
-const ETAPAS = ['transcrevendo', 'cortando', 'desenhando', 'finalizando'];
+const ETAPAS = ['transcrevendo', 'cortando', 'escolhendo', 'desenhando', 'finalizando'];
 const NOMES: Record<string, string> = {
-  transcrevendo: 'Transcrever a fala', cortando: 'Cortar os silêncios',
+  transcrevendo: 'Transcrever a fala', cortando: 'Cortar os silêncios', escolhendo: 'Escolher o que entra',
   desenhando: 'Desenhar legenda, zoom e ícones', finalizando: 'Finalizar o arquivo',
 };
 
@@ -28,7 +28,19 @@ type Props = {
   thumbs: {nome: string; url: string; jpgBytes: number}[];
   gerandoThumbs: boolean;
   pastaSaida: string;
+  /** Edita de novo com a duração "tudo" (nenhuma frase sai). */
+  aoRefazerComTudo: () => void;
 };
+
+/** O que a duração escolhida tirou: quantas frases, o alvo e quem escolheu. */
+export function textoDaSelecao(s: Resultado['selecao']): string {
+  if (!s || !('fora' in s) || !s.fora.length) return '';
+  const quem = s.por === 'gemini' ? 'a IA escolheu' : s.por === 'falsa' ? 'a IA de teste escolheu'
+    : 'o corte foi no fim, sem a IA, e escolheu';
+  const n = s.fora.length;
+  return `Para caber em uns ${duracao(s.alvo ?? 0)}, ${quem} as frases que ficam: ${n} ${n === 1 ? 'frase saiu'
+    : 'frases saíram'} (de ${duracao(s.antes)} para ${duracao(s.depois)}).`;
+}
 
 /** Quem escreveu o roteiro (as cenas, os cartões e os destaques da legenda) e quanto. */
 export function textoDoRoteiro(r: Resultado['roteiro']): string {
@@ -147,6 +159,23 @@ export const Painel: React.FC<Props> = (p) => {
             </div>
             {textoDoRoteiro(t.resultado!.roteiro) ? (
               <p className="roteiro">{textoDoRoteiro(t.resultado!.roteiro)}</p>
+            ) : null}
+            {textoDaSelecao(t.resultado!.selecao) ? (
+              <div className="selecao" aria-label="o que ficou de fora">
+                <p>{textoDaSelecao(t.resultado!.selecao)}</p>
+                <details>
+                  <summary>O que ficou de fora</summary>
+                  <ol>
+                    {('fora' in t.resultado!.selecao! ? t.resultado!.selecao.fora : []).map((f) => (
+                      <li key={f.inicio}><span className="tempo">{duracao(f.inicio)}</span> {f.texto}</li>
+                    ))}
+                  </ol>
+                </details>
+                <button type="button" className="botao pequeno" onClick={p.aoRefazerComTudo}>Refazer com tudo</button>
+              </div>
+            ) : null}
+            {t.resultado!.selecao && 'aviso' in t.resultado!.selecao && t.resultado!.selecao.aviso ? (
+              <div className="aviso">{t.resultado!.selecao.aviso}</div>
             ) : null}
             <div className="downloads">
               <a className="botao pequeno" href={api.arquivoUrl(t.id, 'video')}>Baixar o vídeo</a>

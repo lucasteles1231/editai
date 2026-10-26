@@ -117,9 +117,10 @@ export const api = {
       method: 'POST', headers: JSON_, body: JSON.stringify({roteiro, tema, orientacao}),
     }),
   /** O roteiro escrito pela IA a partir do tema, para revisar antes de narrar. */
-  escreverRoteiro: (tema: string, segundos: number, idioma: string) =>
+  /** Sem ``segundos`` (o Auto), no tamanho que o assunto pede, até o ``teto``. */
+  escreverRoteiro: (tema: string, segundos: number | null, teto: number | null, idioma: string) =>
     pedir<RoteiroEscrito>('/api/roteiro', {
-      method: 'POST', headers: JSON_, body: JSON.stringify({tema, segundos, idioma}),
+      method: 'POST', headers: JSON_, body: JSON.stringify({tema, segundos, teto, idioma}),
     }),
   matrizAtual: (biblioteca: string) =>
     pedir<{cenas: Record<string, unknown>[]}>(`/api/bibliotecas/${biblioteca}/matriz`),

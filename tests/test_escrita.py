@@ -119,6 +119,21 @@ def test_o_erro_do_gemini_vira_mensagem(de_verdade):
         escrita.escrever("céu azul", transporte=gemini.transporte)
 
 
+def test_no_auto_o_tamanho_e_o_que_o_assunto_pede():
+    """Sem tempo pedido (o Auto), o roteiro sai no tamanho do assunto, até o teto da
+    plataforma: passou, volta para o conserto; curto demais também."""
+    pedido = escrita.montar_pedido("Por que o céu é azul", None, teto=180)
+    assert "no tamanho que o assunto pede" in pedido and "de 30 a 60 s" in pedido
+    assert f"Nunca passe de {escrita.palavras_alvo(180)} palavras" in pedido
+    longo = {"titulo": "x", "paragrafos": ["palavra " * 500]}
+    assert "passa do limite" in escrita.conferir(longo, None, teto=60)[1][0]
+    curto = {"titulo": "x", "paragrafos": ["Uma frase só."]}
+    assert "curto demais" in escrita.conferir(curto, None, teto=180)[1][0]
+    assert not escrita.conferir({"titulo": "x", "paragrafos": ["palavra " * 100]}, None,
+                                teto=180)[1]
+    assert escrita.escrever("O céu azul", None, teto=180).por == "falsa"
+
+
 def test_a_ia_falsa_escreve_do_tamanho_pedido():
     r = escrita.escrever("Como o freio ABS funciona", 30)
     assert r.por == "falsa" and r.titulo == "Como o freio ABS funciona"

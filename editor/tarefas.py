@@ -20,9 +20,10 @@ from editor.montagem import Montagem
 from editor.opcoes import OpcoesDeEdicao
 
 #: Quanto cada etapa pesa na barra de progresso (início, fim).
-PESOS = {"transcrevendo": (0.0, 0.35), "cortando": (0.35, 0.38),
-         "desenhando": (0.38, 0.97), "finalizando": (0.97, 1.0), "pronto": (1.0, 1.0)}
+PESOS = {"transcrevendo": (0.0, 0.35), "cortando": (0.35, 0.37), "escolhendo": (0.37, 0.39),
+         "desenhando": (0.39, 0.97), "finalizando": (0.97, 1.0), "pronto": (1.0, 1.0)}
 NOMES = {"transcrevendo": "Transcrevendo a fala", "cortando": "Cortando os silêncios",
+         "escolhendo": "Escolhendo o que entra",
          "desenhando": "Desenhando legenda, zoom e ícones", "finalizando": "Finalizando o arquivo",
          "pronto": "Pronto"}
 

@@ -8,6 +8,9 @@ a voz narra. É o começo do vídeo feito só pelo tema.
 - **O tamanho** sai do tempo pedido: ~2,6 palavras por segundo de fala (a mesma medida da
   página), então 45 s são ~117 palavras. Uma resposta que passa de 25% para mais ou para
   menos volta uma vez para o conserto.
+- **No Auto** (sem tempo pedido), a IA escreve no tamanho que o assunto pede, o mais curto que
+  explica bem, sem passar do ``teto`` (o limite da plataforma). Passou, volta para o
+  conserto.
 - **As regras de um vídeo curto que segura a atenção:**
   - a primeira frase é o gancho (uma pergunta ou um fato que intriga), sem "você sabia" e sem
     "neste vídeo";
@@ -89,14 +92,31 @@ def esquema() -> dict:
         "required": ["titulo", "paragrafos"]}
 
 
-def montar_pedido(tema: str, segundos: float, *, idioma: str = "pt") -> str:
-    alvo = palavras_alvo(segundos)
+def _tamanho(segundos: float | None, teto: float | None) -> tuple[str, bool]:
+    """O tamanho pedido, em palavras, e se o vídeo é curto (o fim é uma pergunta)."""
+    if segundos is not None:
+        fala = round(_segundos(segundos))
+        return (f"com uns {palavras_alvo(segundos)} palavras no total (uns {fala} s de fala)",
+                _segundos(segundos) <= 90)
+    limite = _segundos(teto or SEGUNDOS_MAXIMOS)
+    texto = ("no tamanho que o assunto pede: o mais curto que explica bem, com começo, meio e "
+             "fim")
+    if limite <= 180:
+        texto += (f". Um vídeo curto de explicação costuma dar de 30 a 60 s (de "
+                  f"{palavras_alvo(30)} a {palavras_alvo(60)} palavras)")
+    texto += f". Nunca passe de {palavras_alvo(limite)} palavras ({round(limite)} s de fala)"
+    return texto, limite <= 180
+
+
+def montar_pedido(tema: str, segundos: float | None, *, teto: float | None = None,
+                  idioma: str = "pt") -> str:
+    """O pedido do roteiro. Sem ``segundos`` (o Auto), no tamanho que o assunto pede, até o
+    ``teto``."""
     lingua = {"pt": "português do Brasil", "en": "inglês", "es": "espanhol"}.get(idioma, idioma)
-    curto = _segundos(segundos) <= 90
-    fala = round(_segundos(segundos))
+    tamanho, curto = _tamanho(segundos, teto)
     return f"""O tema do vídeo: {tema}
 
-Escreva a narração em {lingua}, com uns {alvo} palavras no total (uns {fala} s de fala).
+Escreva a narração em {lingua}, {tamanho}.
 
 Regras:
 - A primeira frase é o gancho: uma pergunta ou um fato que intriga e faz a pessoa ficar.
@@ -121,7 +141,8 @@ def _limpo(texto) -> str:
     return re.sub(r"\s+", " ", str(texto or "")).strip()
 
 
-def conferir(resposta: dict, segundos: float) -> tuple[Roteiro, list[str]]:
+def conferir(resposta: dict, segundos: float | None, *, teto: float | None = None
+             ) -> tuple[Roteiro, list[str]]:
     """O roteiro que veio e o que precisa de conserto."""
     titulo = _limpo(resposta.get("titulo")).rstrip(".")[:TITULO_MAXIMO]
     paragrafos = [p for p in (_limpo(p) for p in resposta.get("paragrafos") or []) if p]
@@ -129,9 +150,20 @@ def conferir(resposta: dict, segundos: float) -> tuple[Roteiro, list[str]]:
     problemas = []
     if not paragrafos:
         return roteiro, ["não veio nenhum parágrafo"]
-    alvo = palavras_alvo(segundos)
-    if abs(roteiro.palavras - alvo) > alvo * FOLGA:
-        problemas.append(f"o texto tem {roteiro.palavras} palavras; precisa ter perto de {alvo}")
+    if segundos is None:
+        maximo = palavras_alvo(teto or SEGUNDOS_MAXIMOS)
+        minimo = round(palavras_alvo(SEGUNDOS_MINIMOS) * (1 - FOLGA))
+        if roteiro.palavras > maximo:
+            problemas.append(f"o texto tem {roteiro.palavras} palavras e passa do limite de "
+                             f"{maximo}")
+        elif roteiro.palavras < minimo:
+            problemas.append(f"o texto tem {roteiro.palavras} palavras: curto demais para "
+                             "explicar o assunto")
+    else:
+        alvo = palavras_alvo(segundos)
+        if abs(roteiro.palavras - alvo) > alvo * FOLGA:
+            problemas.append(f"o texto tem {roteiro.palavras} palavras; precisa ter perto de "
+                             f"{alvo}")
     comeco = paragrafos[0].lower()
     gasto = next((g for g in GANCHOS_GASTOS if comeco.startswith(g)), None)
     if gasto:
@@ -141,7 +173,7 @@ def conferir(resposta: dict, segundos: float) -> tuple[Roteiro, list[str]]:
     return roteiro, problemas
 
 
-def _falso(tema: str, segundos: float) -> Roteiro:
+def _falso(tema: str, segundos: float | None) -> Roteiro:
     """O roteiro da IA falsa dos testes: do tamanho pedido, sem rede."""
     frases = [f"Por que {tema.rstrip('?.!').lower()} funciona do jeito que funciona?",
               "A resposta começa num detalhe que quase ninguém repara.",
@@ -150,7 +182,7 @@ def _falso(tema: str, segundos: float) -> Roteiro:
               "Depois, repare no que acontece quando uma delas falha.",
               "No fim, tudo se encaixa numa ideia simples.",
               "E você, já tinha reparado nisso?"]
-    alvo = palavras_alvo(segundos)
+    alvo = palavras_alvo(segundos if segundos is not None else 45)
     paragrafos, total, k = [], 0, 0
     while total < alvo * 0.9:
         frase = frases[k % len(frases)]
@@ -160,9 +192,10 @@ def _falso(tema: str, segundos: float) -> Roteiro:
     return Roteiro(titulo=tema[:TITULO_MAXIMO], paragrafos=paragrafos, por="falsa")
 
 
-def escrever(tema: str, segundos: float = 45, *, idioma: str = "pt",
-             transporte=None) -> Roteiro:
-    """O roteiro do tema, para a pessoa revisar. Levanta :class:`SemRoteiro` sem a IA."""
+def escrever(tema: str, segundos: float | None = 45, *, teto: float | None = None,
+             idioma: str = "pt", transporte=None) -> Roteiro:
+    """O roteiro do tema, para a pessoa revisar. Sem ``segundos`` (o Auto), no tamanho que
+    o assunto pede, até o ``teto``. Levanta :class:`SemRoteiro` sem a IA."""
     tema = _limpo(tema)[:TEMA_MAXIMO]
     if not tema:
         raise SemRoteiro("Escreva o tema do vídeo, em uma frase.")
@@ -171,14 +204,14 @@ def escrever(tema: str, segundos: float = 45, *, idioma: str = "pt",
     if not ia.ligada():
         raise SemRoteiro("Para escrever o roteiro pelo tema, cole a chave do Gemini em \"Antes "
                          "de começar\". Ou marque Roteiro e escreva o texto.")
-    pedido = montar_pedido(tema, segundos, idioma=idioma)
+    pedido = montar_pedido(tema, segundos, teto=teto, idioma=idioma)
     gasto: list[str] = []
     try:
         resposta, modelo = ia.perguntar_json(SISTEMA, pedido, esquema(), temperatura=0.8,
                                              transporte=transporte, gasto=gasto)
     except ia.ErroDaIA as erro:
         raise SemRoteiro(str(erro)) from erro
-    roteiro, problemas = conferir(resposta, segundos)
+    roteiro, problemas = conferir(resposta, segundos, teto=teto)
     if problemas:
         logger.info("conserto do roteiro pelo tema: %s", " | ".join(problemas))
         conserto = (pedido + "\n\nA RESPOSTA ANTERIOR TEVE ESTES PROBLEMAS. Mande o JSON inteiro "
@@ -187,7 +220,7 @@ def escrever(tema: str, segundos: float = 45, *, idioma: str = "pt",
         try:
             resposta2, modelo = ia.perguntar_json(SISTEMA, conserto, esquema(), temperatura=0.5,
                                                   transporte=transporte, gasto=gasto)
-            roteiro2, problemas2 = conferir(resposta2, segundos)
+            roteiro2, problemas2 = conferir(resposta2, segundos, teto=teto)
             if roteiro2.paragrafos and len(problemas2) <= len(problemas):
                 roteiro = roteiro2
         except ia.ErroDaIA:

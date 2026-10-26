@@ -1219,13 +1219,17 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
 
     @app.post("/api/roteiro")
     def escrever_o_roteiro(dados: Annotated[dict, Body()]):
-        """O roteiro pelo tema, para a pessoa revisar antes de narrar."""
+        """O roteiro pelo tema, para a pessoa revisar antes de narrar. Sem ``segundos`` (o
+        Auto), no tamanho que o assunto pede, até o ``teto`` (o limite da plataforma)."""
+        def numero(valor) -> float | None:
+            try:
+                return float(valor) if valor is not None else None
+            except (TypeError, ValueError):
+                return None
+
         try:
-            segundos = float(dados.get("segundos") or 45)
-        except (TypeError, ValueError):
-            segundos = 45.0
-        try:
-            r = escrita.escrever(str(dados.get("tema") or ""), segundos,
+            r = escrita.escrever(str(dados.get("tema") or ""), numero(dados.get("segundos")),
+                                 teto=numero(dados.get("teto")),
                                  idioma=str(dados.get("idioma") or "pt"))
         except escrita.SemRoteiro as erro:
             raise HTTPException(422, str(erro)) from erro
