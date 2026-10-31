@@ -27,7 +27,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 #: Os modelos oferecidos, com o tamanho do download.
-MODELOS = {"tiny": "75 MB", "base": "145 MB", "small": "464 MB", "medium": "1,5 GB"}
+MODELOS = {"tiny": "78 MB", "base": "148 MB", "small": "486 MB", "medium": "1,5 GB"}
 #: ``small`` é o menor que transcreve português sem tropeçar a cada frase.
 MODELO_PADRAO = "small"
 #: A versão de cada modelo (o commit do repositório da Systran no Hugging Face, conferido
@@ -36,10 +36,16 @@ REVISOES = {"tiny": "d90ca5fe260221311c53c58e660288d3deb8d356",
             "base": "ebe41f70d5b6dfa9166e2c581c45c9c0cfc57b66",
             "small": "536b0662742c02347bc0e980a01041f333bce120",
             "medium": "08e178d48790749d25932bbc082711ddcfdfbc4f"}
+#: Os arquivos de um modelo que o faster-whisper usa (os mesmos do ``download_model`` dele).
+ARQUIVOS_DO_MODELO = ("config.json", "model.bin", "tokenizer.json", "vocabulary.txt")
 IDIOMA_PADRAO = "pt"
 
 #: A variável que liga o transcritor falso (só testes).
 VARIAVEL_FALSA = "EDITOR_TRANSCRITOR"
+
+
+def falso() -> bool:
+    return os.environ.get(VARIAVEL_FALSA, "").strip().lower() == "falso"
 
 # O cache do Hugging Face reclama de link simbólico no Windows sem modo de
 # desenvolvedor; ele funciona copiando, e o aviso só assusta quem usa.
@@ -100,14 +106,20 @@ def transcrever(caminho: Path, *, idioma: str = IDIOMA_PADRAO, modelo: str = MOD
 
     ``dica`` são palavras que o Whisper deve esperar ouvir (as do bipe, por exemplo).
     """
-    if os.environ.get(VARIAVEL_FALSA, "").strip().lower() == "falso":
+    if falso():
         if progresso:
             progresso(1.0)
         return _falso(duracao or 10.0)
 
     from faster_whisper import WhisperModel
 
+    from editor import componentes
     from editor.video import ler_audio_mono
+
+    # Nada baixa sem o ok de quem usa: sem o modelo no computador, para aqui com o pedido.
+    baixado = modelo_baixado(modelo)
+    if not baixado and modelo in MODELOS:
+        componentes.exigir(f"whisper-{modelo}")
 
     # O áudio é lido aqui, e não pelo faster-whisper: a leitura dele passa ao PyAV
     # um parâmetro que o PyAV 19 removeu (metadata_errors), e o editor já lê áudio
@@ -121,8 +133,7 @@ def transcrever(caminho: Path, *, idioma: str = IDIOMA_PADRAO, modelo: str = MOD
     # pergunta ao Hugging Face por uma versão nova a cada vídeo (e espera a rede cair
     # para desistir, quando não há internet).
     whisper = WhisperModel(modelo, device="cpu", compute_type="int8", cpu_threads=nucleos,
-                           local_files_only=modelo_baixado(modelo),
-                           revision=REVISOES.get(modelo))
+                           local_files_only=baixado, revision=REVISOES.get(modelo))
     # O VAD descarta trechos sem fala antes de transcrever: sem ele, música e
     # silêncio viram frases inventadas ("Obrigado por assistir!").
     # A dica vai para o começo de cada janela de 30 s ("hotwords"), e não só da
@@ -456,8 +467,8 @@ def grafia_do_texto(palavras: list[Palavra], texto: str) -> list[Palavra]:
     return saida
 
 
-__all__ = ["CASAMENTO_MINIMO", "IDIOMA_PADRAO", "MODELOS", "MODELO_PADRAO", "PARECIDO_MINIMO",
-           "REVISOES", "TRECHO_MAXIMO", "VARIAVEL_FALSA",
-           "Palavra", "ajustar_ao_texto", "carregar", "chaves", "dica_das_palavras",
+__all__ = ["ARQUIVOS_DO_MODELO", "CASAMENTO_MINIMO", "IDIOMA_PADRAO", "MODELOS", "MODELO_PADRAO",
+           "PARECIDO_MINIMO", "REVISOES", "TRECHO_MAXIMO", "VARIAVEL_FALSA",
+           "Palavra", "ajustar_ao_texto", "carregar", "chaves", "dica_das_palavras", "falso",
            "grafia_do_texto", "identidade", "modelo_baixado", "por_extenso", "salvar",
            "texto_ao_lado", "transcrever"]

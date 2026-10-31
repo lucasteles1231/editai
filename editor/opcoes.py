@@ -58,6 +58,9 @@ class OpcoesDeEdicao:
     bipe: str = ""
     #: O tratamento da voz: "original", "limpa" ou "estudio".
     voz: str = "original"
+    #: O ruído do fundo (o DeepFilterNet3, :mod:`editor.ruido`): "auto" (mede e decide),
+    #: "leve", "forte" ou "nao".
+    ruido: str = "auto"
     #: O efeito na voz, como texto: "tom=9,coral=20" (ver :mod:`editor.efeitos_da_voz`).
     #: Vazio, nenhum.
     efeito_da_voz: str = ""
@@ -109,6 +112,10 @@ class OpcoesDeEdicao:
 
         if self.voz not in voz.NIVEIS:
             erros.append(f"voz desconhecida: {self.voz} (use {', '.join(voz.NIVEIS)})")
+        from editor import ruido
+
+        if self.ruido not in ruido.OPCOES:
+            erros.append(f"ruído desconhecido: {self.ruido} (use {', '.join(ruido.OPCOES)})")
         from editor import efeitos_da_voz
 
         try:

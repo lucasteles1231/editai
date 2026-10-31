@@ -197,8 +197,46 @@ o arquivo veio de um app que apagou essa informação, gire o vídeo antes de ed
 <details>
 <summary><b>A primeira edição demorou muito</b></summary>
 
-Na primeira vez, o editor baixa o modelo de transcrição (464 MB no `small`). Das próximas
-vezes, ele já está no computador.
+Na primeira vez, depois do seu ok, o editor baixa o modelo de transcrição (486 MB no
+`small`), numa barra própria. Das próximas vezes, ele já está no computador.
+
+</details>
+
+<details>
+<summary><b>A voz ficou "metálica" ou abafada depois de tirar o ruído</b></summary>
+
+Com muito ruído, o **Forte** (que o Auto escolhe abaixo de 15 dB de folga) pode levar um
+pouco da voz junto. No passo 2, em **Ruído do fundo**, escolha **Leve**: ele tira no máximo
+12 dB do ruído e mistura um pouco da voz original. Se a gravação já era boa, **Não** deixa a
+voz como veio.
+
+</details>
+
+<details>
+<summary><b>"Não consegui sincronizar pelo som"</b></summary>
+
+Com **Gravado junto com o vídeo** ligado, o editor compara o som da câmera com o do
+microfone. Quando os dois não parecem da mesma gravação (a câmera estava muda, ou o áudio é
+de outra tomada), ele para em vez de chutar. Para ajudar, bata uma palma no começo das duas
+gravações: o estalo é fácil de achar nos dois. No terminal, `--atraso SEGUNDOS` ajusta à mão.
+
+</details>
+
+<details>
+<summary><b>O editor pediu para baixar algo antes de seguir</b></summary>
+
+Nada baixa sem o seu ok. Quando uma edição precisa de algo que ainda não está no computador
+(o Whisper na primeira edição, o recorte da pessoa, o auditor das fotos), a janela **Antes de
+seguir** mostra cada coisa com o tamanho, para que serve e a licença.
+
+- **Aprovar e baixar** baixa uma vez só, e a edição segue. Cada download tem a sua barra.
+- **Agora não** cancela, sem baixar nada.
+- **O que é opcional** vem com a caixa marcada e pode ficar de fora: sem os sons do tema
+  Notícia, por exemplo, tocam uns parecidos que já vêm no editor. Quando só falta o
+  opcional, o botão é **Seguir sem baixar**, e a edição segue com a reserva.
+
+No terminal, o editor pergunta `Aprovar e baixar 486 MB? [s/N]`, e `--sim` aprova sem
+perguntar (para rodar sem ninguém olhando).
 
 </details>
 

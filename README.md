@@ -106,7 +106,7 @@ Tudo também funciona [no terminal](https://lucasteles1231.github.io/editai/guia
 - **A Minha voz,** opcional: mais uns 3,5 GB e, de preferência, um Mac com chip Apple ou um
   PC com placa NVIDIA.
 - **A voz local,** opcional: mais uns 210 MB, em qualquer computador.
-- **Internet:** só para instalar e no primeiro uso de cada modelo.
+- **Internet:** só para instalar e, depois do seu ok, no primeiro uso de cada modelo.
 
 O detalhe de cada função, medido, está em
 [O que cada função precisa](https://lucasteles1231.github.io/editai/guia/o-que-cada-funcao-precisa).

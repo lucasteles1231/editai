@@ -4,10 +4,10 @@
 import React from 'react';
 import {api} from '../api';
 import {duracao, numero} from '../formatar';
-import type {Resultado, Tarefa, VideoInfo} from '../tipos';
+import type {ParteDaTarefa, Resultado, Tarefa, VideoInfo} from '../tipos';
 
-const ETAPAS = ['transcrevendo', 'cortando', 'escolhendo', 'desenhando', 'finalizando'];
 const NOMES: Record<string, string> = {
+  sincronizando: 'Sincronizar o som à parte', limpando: 'Tirar o ruído',
   transcrevendo: 'Transcrever a fala', cortando: 'Cortar os silêncios', escolhendo: 'Escolher o que entra',
   desenhando: 'Desenhar legenda, zoom e ícones', finalizando: 'Finalizar o arquivo',
 };
@@ -42,6 +42,27 @@ export function textoDaSelecao(s: Resultado['selecao']): string {
     : 'frases saíram'} (de ${duracao(s.antes)} para ${duracao(s.depois)}).`;
 }
 
+/** O que o redutor de ruído fez: a força e a folga que o Auto mediu. */
+export function textoDoRuido(r: Resultado['ruido']): string {
+  if (!r || !('forca' in r)) return '';
+  if (r.aviso) return 'O fundo tinha ruído, mas o redutor de ruído não foi baixado: a voz ficou como veio.';
+  const quanto = r.forca === 'forte' ? 'todo o ruído' : 'o ruído, de leve,';
+  return r.por === 'auto'
+    ? `O ruído do fundo saiu: o fundo estava ${Math.round(r.folga_db)} dB abaixo da voz, e o Auto tirou ${quanto}.`
+    : `O ruído do fundo saiu: ${r.forca === 'forte' ? 'o forte' : 'o leve'}, como você escolheu.`;
+}
+
+/** O atraso do áudio gravado à parte, medido pelo som (ou ajustado à mão). */
+export function textoDaSincronia(s: Resultado['sincronia']): string {
+  if (!s || !('atraso_s' in s)) return '';
+  const ms = Math.round(Math.abs(s.atraso_s) * 1000);
+  const quando = s.atraso_s >= 0 ? 'depois' : 'antes';
+  const deriva = s.deriva_ppm ? `, e os relógios dos dois andavam ${Math.abs(s.deriva_ppm).toFixed(0)} ppm diferentes` : '';
+  return s.confianca === null
+    ? `O vídeo foi posto ${ms} ms ${quando} do áudio, como você ajustou.`
+    : `Sincronizado pelo som: o vídeo da câmera estava ${ms} ms ${quando} do áudio${deriva}.`;
+}
+
 /** Quem escreveu o roteiro (as cenas, os cartões e os destaques da legenda) e quanto. */
 export function textoDoRoteiro(r: Resultado['roteiro']): string {
   if (!r || !('por' in r) || !r.por) return '';
@@ -56,6 +77,37 @@ export function textoDoRoteiro(r: Resultado['roteiro']): string {
   return r.aviso ? `${r.aviso.charAt(0).toUpperCase()}${r.aviso.slice(1)}.` : '';
 }
 
+const SINAL: Record<ParteDaTarefa['estado'], string> = {
+  esperando: '·', rodando: '▸', pronto: '✓', pulada: '–', erro: '✕', cancelada: '–',
+};
+
+/** Uma parte do processamento com a sua barra e o quanto falta nela. */
+const ParteComBarra: React.FC<{parte: ParteDaTarefa}> = ({parte}) => {
+  const nome = NOMES[parte.id] ?? parte.nome;
+  const valor = parte.estado === 'pronto' ? 'pronto' : parte.estado === 'erro' ? 'erro'
+    : parte.estado === 'cancelada' ? 'cancelada' : parte.estado === 'esperando' ? 'na fila'
+    : `${numero(parte.fracao * 100)}%`;
+  return (
+    <li className={`parte ${parte.estado}`}>
+      <div className="parte-linha">
+        <span aria-hidden="true">{SINAL[parte.estado]}</span>
+        <span className="parte-nome">{nome}</span>
+        <span className="parte-valor">{valor}</span>
+      </div>
+      <div className="barra fina" role="progressbar" aria-label={nome} aria-valuemin={0} aria-valuemax={100}
+        aria-valuenow={Math.round(parte.fracao * 100)}>
+        <div style={{width: `${parte.fracao * 100}%`}} />
+      </div>
+      {parte.estado === 'rodando' && (parte.detalhe || parte.falta_s) ? (
+        <small className="detalhe">
+          {parte.detalhe.split('\n')[0]}
+          {parte.falta_s ? `${parte.detalhe ? ' · ' : ''}faltam uns ${duracao(parte.falta_s)}` : ''}
+        </small>
+      ) : null}
+    </li>
+  );
+};
+
 function mostrar(el: HTMLElement | null, block: ScrollLogicalPosition): void {
   const calmo = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   el?.scrollIntoView({behavior: calmo ? 'auto' : 'smooth', block});
@@ -65,7 +117,6 @@ export const Painel: React.FC<Props> = (p) => {
   const t = p.tarefa;
   const rodando = t?.estado === 'rodando';
   const pronto = t?.estado === 'pronto' && t.resultado;
-  const indiceAtual = t ? ETAPAS.indexOf(t.etapa) : -1;
 
   // A coluna rola sozinha: ao começar, o progresso aparece inteiro; ao terminar, o
   // resultado sobe para o topo dela (as thumbnails ainda chegam e crescem para baixo).
@@ -130,15 +181,11 @@ export const Painel: React.FC<Props> = (p) => {
             </div>
             <strong>{numero(t.fracao * 100)}%</strong>
             {t.falta_s ? <span> · faltam uns {duracao(t.falta_s)}</span> : null}
-            <ul className="etapas">
-              {ETAPAS.map((e, i) => (
-                <li key={e} className={i < indiceAtual ? 'feita' : i === indiceAtual ? 'atual' : ''}>
-                  <span aria-hidden="true">{i < indiceAtual ? '✓' : i === indiceAtual ? '▸' : '·'}</span>
-                  {NOMES[e]}
-                </li>
+            <ul className="partes">
+              {(t.partes ?? []).filter((parte) => parte.estado !== 'pulada').map((parte) => (
+                <ParteComBarra key={parte.id} parte={parte} />
               ))}
             </ul>
-            {t.detalhe && t.estado === 'rodando' ? <small className="detalhe">{t.detalhe.split('\n')[0]}</small> : null}
             {t.estado === 'erro' ? <div className="aviso erro">{t.erro}</div> : null}
             {t.estado === 'cancelado' ? <div className="aviso">Edição cancelada.</div> : null}
             {rodando ? (
@@ -161,6 +208,12 @@ export const Painel: React.FC<Props> = (p) => {
             </div>
             {textoDoRoteiro(t.resultado!.roteiro) ? (
               <p className="roteiro">{textoDoRoteiro(t.resultado!.roteiro)}</p>
+            ) : null}
+            {textoDoRuido(t.resultado!.ruido) ? (
+              <p className="ruido">{textoDoRuido(t.resultado!.ruido)}</p>
+            ) : null}
+            {textoDaSincronia(t.resultado!.sincronia) ? (
+              <p className="sincronia">{textoDaSincronia(t.resultado!.sincronia)}</p>
             ) : null}
             {textoDaSelecao(t.resultado!.selecao) ? (
               <div className="selecao" aria-label="o que ficou de fora">

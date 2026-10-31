@@ -518,7 +518,8 @@ def test_os_meus_presets(navegador, endereco, tmp_path):
     arquivo = tmp_path / "presets-do-outro.json"
     arquivo.write_text(json.dumps(outro), encoding="utf-8")
     pagina.get_by_label("importar presets").set_input_files(str(arquivo))
-    expect(pagina.get_by_role("status")).to_contain_text("Entraram: Aula calma")
+    expect(pagina.get_by_role("status").filter(has_text="Entraram")).to_contain_text(
+        "Entraram: Aula calma")
     expect(grupo.get_by_role("button", name=re.compile("^Aula calma seu"))).to_be_visible()
 
     # e sai pelo ×
@@ -810,6 +811,157 @@ def test_a_duracao_tira_o_que_passa(navegador, endereco, tmp_path):
     expect(quanto.get_by_role("button", name="Tudo")).to_have_attribute("aria-pressed", "true")
     expect(pagina.locator(".painel .numeros")).to_be_visible(timeout=120_000)
     expect(pagina.get_by_label("o que ficou de fora")).to_have_count(0)
+    assert not _barrados(pagina), _barrados(pagina)
+    assert not erros, erros
+
+
+def test_aprovar_e_baixar(navegador, endereco, tmp_path, monkeypatch):
+    """Nada baixa sem o ok de quem usa (o dono, 31/10/2026): sem o Whisper no computador, a
+    edição para no "Antes de seguir" com o tamanho e a licença. "Agora não" não baixa nada; o
+    "Aprovar e baixar" baixa numa barra própria, e cada parte da edição tem a sua."""
+    import time as tempo
+
+    from editor import componentes
+
+    instalados = {"whisper-small": False}      # e nada mais está no computador
+    baixados: list[str] = []
+    monkeypatch.setattr(componentes, "instalado", lambda id_: instalados.get(id_, False))
+    # o tom contínuo do vídeo de teste parece ruído para o Auto: aqui, a fala é limpa
+    from editor import ruido
+
+    monkeypatch.setattr(ruido, "medidas_do_arquivo", lambda caminho: (ruido.FOLGA_DA_LIMPA, 0.0))
+
+    def baixar(id_, andamento=None, cancelar=None):
+        for f in (0.0, 0.25, 0.5, 0.75, 1.0):
+            andamento(f, f"{f * 486:.0f} de 486 MB")
+            tempo.sleep(0.4)
+        baixados.append(id_)
+        instalados[id_] = True
+
+    monkeypatch.setattr(componentes, "baixar", baixar)
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 1100})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    # o 409 do "precisa do ok" é a resposta esperada, e o navegador anota no console
+    pagina.on("console", lambda m: m.type == "error" and "409" not in m.text
+              and erros.append(m.text))
+    pagina.add_init_script(VIGIAR_A_CSP)
+    pagina.goto(endereco)
+    pagina.set_input_files('[data-envio="completo"] input',
+                           str(fazer_video(tmp_path / "fala.mp4", segundos=4.0)))
+    expect(pagina.get_by_label("dados do vídeo")).to_contain_text("320×568")
+
+    editar = pagina.get_by_role("button", name="Editar vídeo")
+    editar.click()
+    janela = pagina.get_by_role("dialog", name="Antes de seguir")
+    expect(janela).to_contain_text("o Whisper small · 486 MB")
+    expect(janela.get_by_role("link", name="MIT", exact=True)).to_have_attribute(
+        "href", "https://huggingface.co/Systran/faster-whisper-small")
+    janela.get_by_role("button", name="Agora não").click()
+    expect(janela).to_have_count(0)
+    expect(pagina.locator(".painel .aviso.erro")).to_contain_text("Sem o seu ok, nada foi baixado")
+    assert baixados == []
+
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/tarefas")
+                               and r.method == "POST"
+                               and r.headers.get("x-editai-aprovados") == "whisper-small"):
+        editar.click()
+        janela.get_by_role("button", name="Aprovar e baixar 486 MB").click()
+    download = pagina.locator(".parte", has_text="Baixando o Whisper small (486 MB)")
+    expect(download.get_by_role("progressbar")).to_be_visible()
+    expect(pagina.locator(".parte", has_text="Transcrever a fala")).to_be_visible()
+    expect(pagina.locator(".painel .numeros")).to_be_visible(timeout=120_000)
+    assert baixados == ["whisper-small"]
+
+    # "No computador": o que baixou, com o tamanho e a licença, e o "Tirar" de cada um
+    tirados: list[str] = []
+
+    def tirar(id_):
+        tirados.append(id_)
+        instalados[id_] = False
+        return 486
+
+    monkeypatch.setattr(componentes, "desinstalar", tirar)
+    cartao = pagina.get_by_role("article", name="No computador")
+    expect(cartao).to_contain_text("1 modelo · 486 MB")
+    cartao.get_by_role("button", name="Ver").click()
+    lista = pagina.get_by_role("dialog", name="No computador")
+    expect(lista).to_contain_text("✓ no computador · 486 MB")
+    pagina.once("dialog", lambda d: d.accept())                 # o "Tirar…?" do navegador
+    lista.get_by_role("button", name="tirar o Whisper small").click()
+    expect(lista.get_by_role("button", name="tirar o Whisper small")).to_have_count(0)
+    assert tirados == ["whisper-small"]
+    assert not _barrados(pagina), _barrados(pagina)
+    assert not erros, erros
+
+
+def test_o_ruido_do_fundo(navegador, endereco, tmp_path):
+    """O ruído (o dono, 31/10/2026): no Auto, o editor mede o fundo e tira o ruído quando ele
+    existe; o resultado diz quanto o fundo estava abaixo da voz. O redutor é o falso dos testes
+    (a voz sai como veio), e a medida é a de verdade."""
+    from tests.test_ruido import _com_ruido
+
+    som = _com_ruido(6.0, snr_db=4.0)
+    video = fazer_video(tmp_path / "barulho.mp4", segundos=6.0, audio=np.stack([som, som], 1))
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 1100})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
+    pagina.add_init_script(VIGIAR_A_CSP)
+    pagina.goto(endereco)
+    pagina.set_input_files('[data-envio="completo"] input', str(video))
+    expect(pagina.get_by_label("dados do vídeo")).to_contain_text("320×568")
+    ruido = pagina.get_by_role("group", name="Ruído do fundo")
+    expect(ruido.get_by_role("button", name="Auto")).to_have_attribute("aria-pressed", "true")
+    ruido.get_by_role("button", name="Leve").click()
+    expect(pagina.get_by_text("Tira até 12 dB de todo ruído, sempre")).to_be_visible()
+    ruido.get_by_role("button", name="Auto").click()
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/tarefas")
+                               and r.method == "POST") as pedido:
+        pagina.get_by_role("button", name="Editar vídeo").click()
+    assert pedido.value.post_data_json["edicao"]["ruido"] == "auto"
+    expect(pagina.locator(".painel .ruido")).to_contain_text(
+        re.compile(r"O ruído do fundo saiu: o fundo estava \d+ dB abaixo da voz, e o Auto tirou "
+                   r"todo o ruído"), timeout=120_000)
+    assert not _barrados(pagina), _barrados(pagina)
+    assert not erros, erros
+
+
+def test_gravado_junto_com_o_video(navegador, endereco, tmp_path):
+    """O áudio gravado à parte (o dono, 30/10/2026): o vídeo da câmera e o microfone, com o
+    "Gravado junto com o vídeo" ligado, saem no tempo do som, e o resultado diz o atraso."""
+    from tests.test_sincronia import _para_48k, _wav, fala, na_camera
+
+    x = fala(10.0, semente=5)
+    som = _para_48k(na_camera(x, 1.25, segundos=12.0))
+    camera = fazer_video(tmp_path / "camera.mp4", segundos=12.0, audio=np.stack([som, som], 1))
+    microfone = tmp_path / "microfone.wav"
+    _wav(microfone, _para_48k(x))
+
+    pagina = navegador.new_page(viewport={"width": 1366, "height": 1100})
+    pagina.add_init_script("localStorage.setItem('editor-tour-visto', '1')")
+    erros: list[str] = []
+    pagina.on("pageerror", lambda e: erros.append(str(e)))
+    pagina.on("console", lambda m: m.type == "error" and erros.append(m.text))
+    pagina.add_init_script(VIGIAR_A_CSP)
+    pagina.goto(endereco)
+    ter(pagina, "Vídeo completo", "Áudio")
+    pagina.set_input_files('[data-envio="completo"] input', str(camera))
+    expect(pagina.get_by_label("dados do fundo")).to_contain_text("320×568")
+    junto = pagina.locator("label.interruptor", has_text="Gravado junto com o vídeo")
+    expect(junto).to_have_count(0)                     # sem o áudio, ainda não
+    pagina.set_input_files('[data-envio="audio"] input', str(microfone))
+    expect(pagina.get_by_label("os áudios separados")).to_contain_text("microfone.wav")
+    junto.click()
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/tarefas")
+                               and r.method == "POST") as pedido:
+        pagina.get_by_role("button", name="Editar vídeo").click()
+    assert pedido.value.post_data_json["montagem"]["sincronizar"] is True
+    expect(pagina.locator(".painel .sincronia")).to_contain_text(
+        "Sincronizado pelo som: o vídeo da câmera estava 1250 ms depois do áudio",
+        timeout=120_000)
     assert not _barrados(pagina), _barrados(pagina)
     assert not erros, erros
 
@@ -1466,13 +1618,17 @@ def test_o_avatar(navegador, endereco, tmp_path):
 
 
 def test_o_aviso_de_versao_nova(navegador, endereco, monkeypatch):
-    """Saiu uma versão nova (o servidor pergunta ao GitHub; aqui, a resposta vem pronta): a
-    faixa amarela mostra o número, o que mudou e o comando, e "Não avisar mais" some com ela e
-    fica guardado."""
+    """Na primeira vez, a faixa pergunta se pode avisar (nada sai do computador sem o ok). Com
+    o "Avisar", saiu uma versão nova (o servidor pergunta ao GitHub; aqui, a resposta vem
+    pronta): a faixa amarela mostra o número, o que mudou e o comando, e "Não avisar mais" some
+    com ela e fica guardado."""
     from editor import versao
 
     silenciado: list[bool] = []
-    monkeypatch.setattr(versao, "aviso", lambda: None if silenciado else {
+    respostas: list[bool] = []
+    monkeypatch.setattr(versao, "perguntar", lambda: not respostas)
+    monkeypatch.setattr(versao, "permitir", lambda sim: respostas.append(sim))
+    monkeypatch.setattr(versao, "aviso", lambda: None if silenciado or not respostas else {
         "atual": "0.2.0", "nova": "0.3.0", "data": "2026-11-01",
         "endereco": "https://github.com/lucasteles1231/editai/releases/tag/v0.3.0",
         "versoes": f"{versao.SITE}/versoes", "comando": "editai --atualizar",
@@ -1485,6 +1641,10 @@ def test_o_aviso_de_versao_nova(navegador, endereco, monkeypatch):
     pagina.add_init_script(VIGIAR_A_CSP)
     pagina.goto(endereco)
 
+    pergunta = pagina.get_by_role("status").filter(has_text="Avisar quando sair versão nova?")
+    expect(pergunta).to_contain_text("sem mandar nada seu")
+    expect(pagina.get_by_text("Saiu o Editai")).to_have_count(0)
+    pergunta.get_by_role("button", name="Avisar").click()
     faixa = pagina.get_by_role("status").filter(has_text="Saiu o Editai 0.3.0")
     expect(faixa).to_contain_text("você tem a 0.2.0")
     expect(faixa.get_by_role("link", name="O que mudou")).to_have_attribute(
@@ -1493,7 +1653,7 @@ def test_o_aviso_de_versao_nova(navegador, endereco, monkeypatch):
     faixa.get_by_role("button", name="Não avisar mais").click()
     expect(faixa).to_have_count(0)
     pagina.wait_for_timeout(300)
-    assert silenciado == [True]
+    assert respostas == [True] and silenciado == [True]
     pagina.reload()
     expect(pagina.locator(".cabecalho")).to_be_visible()
     expect(pagina.get_by_text("Saiu o Editai")).to_have_count(0)

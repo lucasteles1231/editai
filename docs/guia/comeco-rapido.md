@@ -19,8 +19,9 @@ A janela do terminal que abre junto é o Editai rodando: para fechar o editor, f
 janela ou aperte `Ctrl+C` nela.
 
 > [!NOTE]
-> Na **primeira edição**, o editor baixa o modelo de transcrição (o `small` tem 464 MB).
-> Isso só acontece uma vez. O que mais cada função baixa, e quanto pede do computador,
+> Na **primeira edição**, o editor pede o seu ok para baixar o modelo de transcrição (o
+> `small` tem 486 MB): ele mostra o tamanho, para que serve e a licença, e nada baixa antes
+> de você clicar em **Aprovar e baixar**. Isso só acontece uma vez. O que mais cada função baixa, e quanto pede do computador,
 > está em [O que cada função precisa](./o-que-cada-funcao-precisa).
 
 ## 3. Arraste um vídeo

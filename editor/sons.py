@@ -173,37 +173,90 @@ def _confere(dados: bytes, esperado: str) -> bool:
     return hashlib.sha256(dados).hexdigest() == esperado
 
 
-def _baixado(nome: str) -> Path | None:
-    """O arquivo de um som que não vai junto: baixado do endereço do catálogo na primeira
-    vez, conferido pelo SHA-256 do catálogo e guardado. Sem internet, com o endereço fora
-    do ar ou com um arquivo que não é o esperado, ``None`` (e toca a reserva)."""
+def _guardado(nome: str) -> Path | None:
+    """O som que não vai junto, se ele já foi baixado e confere com o catálogo."""
     item = catalogo()["baixados"][nome]
     destino = pasta_dos_baixados() / f"{nome}.wav"
     if destino.is_file():
         if _confere(destino.read_bytes(), item["sha256"]):
             return destino
-        logger.warning("o som guardado %s mudou no disco: baixando de novo", nome)
+        logger.warning("o som guardado %s mudou no disco: vai ser baixado de novo", nome)
         destino.unlink(missing_ok=True)
-    try:
-        import httpx
+    return None
 
-        dados = bytearray()
-        with httpx.Client(timeout=ESPERA_DO_DOWNLOAD_S, transport=_transporte,
-                          follow_redirects=True) as cliente, \
-                cliente.stream("GET", item["url"]) as r:
-            r.raise_for_status()
-            for pedaco in r.iter_bytes():
-                dados += pedaco
-                if len(dados) > TETO_DO_DOWNLOAD:
-                    raise ValueError(f"passou de {TETO_DO_DOWNLOAD} bytes")
-        if not _confere(bytes(dados), item["sha256"]):
-            raise ValueError("o arquivo não é o esperado (o SHA-256 não bate)")
-        destino.parent.mkdir(parents=True, exist_ok=True)
-        parcial = destino.with_suffix(".parcial")
-        parcial.write_bytes(dados)
-        parcial.replace(destino)
-        logger.info("som baixado: %s (%d bytes)", item["url"], len(dados))
-        return destino
+
+def baixados_guardados() -> bool:
+    """Se todos os sons que não vão junto já estão no computador."""
+    return all(_guardado(nome) is not None for nome in catalogo().get("baixados", {}))
+
+
+def baixados_do_tema(tema: str) -> list[str]:
+    """Os sons baixados que um tema usa (os do tema Notícia)."""
+    baixados = set(catalogo().get("baixados", {}))
+    achados: list[str] = []
+
+    def procurar(o) -> None:
+        if isinstance(o, str):
+            if o in baixados and o not in achados:
+                achados.append(o)
+        elif isinstance(o, dict):
+            for v in o.values():
+                procurar(v)
+        elif isinstance(o, list):
+            for v in o:
+                procurar(v)
+
+    procurar(catalogo()["temas"].get(tema) or {})
+    return achados
+
+
+def esquecer_as_reservas() -> None:
+    """Depois do ok de quem usa, o som que tocou a reserva pode vir de verdade."""
+    _amostras.cache_clear()
+
+
+def baixar(nome: str) -> Path:
+    """Baixa um som que não vai junto, do endereço do catálogo, conferido pelo SHA-256 e
+    guardado. Só depois do ok de quem usa (:mod:`editor.componentes`)."""
+    item = catalogo()["baixados"][nome]
+    destino = pasta_dos_baixados() / f"{nome}.wav"
+    guardado = _guardado(nome)
+    if guardado is not None:
+        return guardado
+    import httpx
+
+    dados = bytearray()
+    with httpx.Client(timeout=ESPERA_DO_DOWNLOAD_S, transport=_transporte,
+                      follow_redirects=True) as cliente, \
+            cliente.stream("GET", item["url"]) as r:
+        r.raise_for_status()
+        for pedaco in r.iter_bytes():
+            dados += pedaco
+            if len(dados) > TETO_DO_DOWNLOAD:
+                raise ValueError(f"passou de {TETO_DO_DOWNLOAD} bytes")
+    if not _confere(bytes(dados), item["sha256"]):
+        raise ValueError("o arquivo não é o esperado (o SHA-256 não bate)")
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    parcial = destino.with_suffix(".parcial")
+    parcial.write_bytes(dados)
+    parcial.replace(destino)
+    logger.info("som baixado: %s (%d bytes)", item["url"], len(dados))
+    return destino
+
+
+def _baixado(nome: str) -> Path | None:
+    """O arquivo de um som que não vai junto: o guardado, ou baixado agora, se quem usa
+    deu o ok. Sem o ok, sem internet, com o endereço fora do ar ou com um arquivo que não é
+    o esperado, ``None`` (e toca a reserva)."""
+    from editor import componentes
+
+    guardado = _guardado(nome)
+    if guardado is not None:
+        return guardado
+    if not componentes.pode_baixar("sons-noticia"):
+        return None
+    try:
+        return baixar(nome)
     except ValueError as erro:         # o arquivo trocado ou grande demais: a reserva toca
         logger.warning("o som %s foi recusado (%s); toca a reserva", nome, erro)
         return None
@@ -406,11 +459,15 @@ __all__ = [
     "GANHO",
     "VOZES",
     "amostras",
+    "baixados_do_tema",
+    "baixados_guardados",
+    "baixar",
     "catalogo",
     "cru",
     "demonstracao",
     "do_cartao",
     "do_tema",
+    "esquecer_as_reservas",
     "existe",
     "ganho_do_evento",
     "misturar",

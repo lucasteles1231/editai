@@ -4,6 +4,11 @@ As versões publicadas e o aviso de versão nova (a escolha do dono, 23/10/2026)
 **O aviso:** uma vez por dia, o Editai pergunta ao GitHub qual é a última versão publicada.
 Se for mais nova que a instalada, a página mostra o aviso, com o que mudou e como atualizar.
 
+**Só depois do ok de quem usa** (o dono, 31/10/2026: nada sai do computador sem o ok). Até a
+pessoa responder "Avisar" na faixa da página, o Editai não pergunta nada ao GitHub. "Não"
+(ou "Não avisar mais") fica anotado, e a faixa não volta. ``editai --atualizar`` é um pedido
+de quem usa, e pergunta ao GitHub na hora.
+
 - **O que sai do computador:** só o pedido ``GET`` da última versão ao GitHub
   (``api.github.com/repos/lucasteles1231/editai/releases/latest``), sem nada de quem usa. O
   GitHub vê o IP, como em qualquer acesso.
@@ -95,9 +100,29 @@ def desligado() -> bool:
     return bool(os.environ.get(VARIAVEL_DESLIGA, "").strip()) or bool(_ler().get("silenciado"))
 
 
+def permitido() -> bool:
+    """Se quem usa deixou o Editai perguntar ao GitHub pela versão nova."""
+    return not desligado() and _ler().get("permitido") is True
+
+
+def perguntar() -> bool:
+    """Se a página ainda deve perguntar se pode avisar (ninguém respondeu nem desligou)."""
+    return not desligado() and "permitido" not in _ler()
+
+
+def permitir(sim: bool) -> None:
+    """A resposta de quem usa: "Avisar" ou "Não" (que vale como "Não avisar mais")."""
+    dados = {**_ler(), "permitido": bool(sim)}
+    if sim:
+        dados.pop("silenciado", None)     # mudou de ideia: volta a avisar
+    else:
+        dados["silenciado"] = True
+    _gravar(dados)
+
+
 def silenciar() -> None:
     """"Não avisar mais": fica anotado no ``versao.json``."""
-    _gravar({**_ler(), "silenciado": True})
+    _gravar({**_ler(), "silenciado": True, "permitido": False})
 
 
 def ultima(*, forcar: bool = False, agora: float | None = None) -> dict | None:
@@ -133,8 +158,8 @@ def _mais_nova(versao: str) -> bool:
 
 
 def aviso(**kw) -> dict | None:
-    """O aviso da página, quando há versão mais nova e ninguém desligou."""
-    if desligado():
+    """O aviso da página, quando quem usa deixou, há versão mais nova e ninguém desligou."""
+    if not permitido():
         return None
     u = ultima(**kw)
     if not u or not _mais_nova(u["versao"]):
@@ -183,4 +208,4 @@ def atualizar(*, escrever=print, rodar=subprocess.run) -> int:
 
 __all__ = ["API", "REPOSITORIO", "SITE", "VARIAVEL_DESLIGA", "VARIAVEL_FALSA", "atualizar",
            "aviso", "comando_do_instalador", "desligado", "endereco_do_pacote", "numero",
-           "silenciar", "ultima"]
+           "perguntar", "permitido", "permitir", "silenciar", "ultima"]

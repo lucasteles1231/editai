@@ -26,6 +26,13 @@ pessoa** ou **Personagem**, e o **Áudio**, se a fala veio à parte:
   opções são o fundo e o áudio separado; com a biblioteca de cenas, a pessoa e o áudio
   separado. É desse áudio que saem a legenda e os cortes, e um vídeo sem som fica com a
   opção desligada.
+- **Gravado junto com o vídeo:** quando o microfone gravou à parte, ao mesmo tempo que a
+  câmera, ligue **Gravado junto com o vídeo** (aparece com um áudio só e um vídeo com som).
+  O editor acha o atraso entre os dois pelo próprio som, mesmo com o som da câmera ruim, e
+  lê o vídeo no tempo do áudio: a boca bate com a voz, e os cortes de silêncio valem para os
+  dois. Ele também corrige a deriva, quando os dois aparelhos contam o tempo um pouco
+  diferente (uns 50 ppm separam 30 ms numa gravação de 10 min). O resultado diz o atraso
+  achado. Desligado, o áudio começa junto com o vídeo, como antes.
 - **Vários áudios** (um por parágrafo, por exemplo) tocam na ordem do nome ("Parte 2"
   antes de "Parte 10"), com as pontas aparadas e 0,3 s entre eles. Cada um é transcrito
   à parte, e a transcrição fica guardada por arquivo.

@@ -21,7 +21,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from editor import render, saida, video
+from editor import componentes, render, saida, video
 from editor.opcoes import OpcoesDeEdicao
 from tests.conftest import fazer_video
 
@@ -39,6 +39,7 @@ def main() -> int:
     ap.add_argument("--modelo", default="tiny")
     ap.add_argument("--idioma", default="en")
     a = ap.parse_args()
+    componentes.aprovar([f"whisper-{a.modelo}"])     # quem usa disse "Aprovar e baixar"
 
     fala = video.ler_audio(a.fala)
     pausa = np.zeros((round(PAUSA_S * video.TAXA), 2), np.float32)

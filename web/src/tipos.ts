@@ -35,6 +35,7 @@ export type Edicao = {
   /** As palavras proibidas, separadas por vírgula (bipe na voz, asteriscos na legenda). */
   bipe: string;
   voz: Voz;
+  ruido: Ruido;
   /** O efeito na voz, como texto: "tom=9,coral=20" (vazio, nenhum). */
   efeito_da_voz: string;
   estilo_da_legenda: EstiloDaLegenda;
@@ -49,6 +50,8 @@ export type Edicao = {
 };
 
 export type Voz = 'original' | 'limpa' | 'estudio';
+/** O ruído do fundo (o DeepFilterNet3): o Auto mede e só tira quando há ruído. */
+export type Ruido = 'auto' | 'leve' | 'forte' | 'nao';
 export type EstiloDaLegenda = 'classica' | 'destaques';
 
 /** Um ponto de partida para um tipo de vídeo (editor/presets.py). O formato não é dele:
@@ -109,6 +112,7 @@ export type Estado = {
   recorte: {baixado: boolean; tamanho: string};
   /** O auditor das fotos achadas pelo tema (baixado na primeira busca). */
   auditor: {baixado: boolean; tamanho: string};
+  componentes: Componente[];
   pexels: EstadoChave;
   geracao: {restantes: number; teto: number};
   presets: Preset[];
@@ -155,6 +159,8 @@ export type MontagemConfig = {
   cenasDoAudio: string[];
   /** O avatar escolhido no "Meu avatar" (o apelido dele). */
   avatar: string | null;
+  /** O áudio à parte foi gravado junto com o vídeo da câmera: o editor acha o atraso pelo som. */
+  sincronizar: boolean;
 };
 
 /** Um avatar salvo (``editor/avatar.py``): as escolhas, para reabrir no criador, e a caixa
@@ -267,6 +273,10 @@ export type Resultado = {
   roteiro?: ResumoDoRoteiro | Record<string, never>;
   /** O que a duração escolhida fez (editor/duracao.py). */
   selecao?: ResumoDaSelecao | Record<string, never>;
+  /** O que o redutor de ruído fez (vazio quando não havia ruído para tirar). */
+  ruido?: {forca: 'leve' | 'forte'; folga_db: number; por: 'auto' | 'voce'; aviso?: string} | Record<string, never>;
+  /** O atraso do áudio gravado à parte (vazio sem a sincronia). */
+  sincronia?: {atraso_s: number; deriva_ppm: number; confianca: number | null; ok: boolean} | Record<string, never>;
 };
 
 /** As frases que a duração escolhida tirou, e quem escolheu. */
@@ -286,6 +296,34 @@ export type Tarefa = {
   resultado: Resultado | null;
   erro: string;
   decorrido_s: number;
+  /** Cada parte com a sua barra: os downloads aprovados e as etapas da edição. */
+  partes: ParteDaTarefa[];
+};
+
+/** Uma parte do processamento: um download, a transcrição, os cortes, o desenho… */
+export type ParteDaTarefa = {
+  id: string;
+  nome: string;
+  estado: 'esperando' | 'rodando' | 'pronto' | 'pulada' | 'erro' | 'cancelada';
+  fracao: number;
+  detalhe: string;
+  falta_s: number | null;
+};
+
+/** O que o Editai pode baixar (editor/componentes.py): nada baixa sem o ok de quem usa. */
+export type Componente = {
+  id: string;
+  nome: string;
+  para_que: string;
+  bytes: number;
+  tamanho: string;
+  licenca: string;
+  link: string;
+  /** Sem ele, o pedido não sai; o que não é essencial tem reserva. */
+  essencial: boolean;
+  /** Os motores que se instalam pelo botão deles (a IA local, as vozes). */
+  a_parte: boolean;
+  instalado: boolean;
 };
 
 /** Uma caixa em frações do quadro (de 0 a 1). */
@@ -429,4 +467,5 @@ export type AvisoDeVersao = {
   /** No Windows, o editai.exe aberto não deixa trocar: é preciso fechar antes. */
   fechar_antes: boolean;
 };
-export type EstadoDaVersao = {atual: string; aviso: AvisoDeVersao | null};
+/** ``perguntar``: ninguém respondeu ainda se o editor pode consultar o GitHub. */
+export type EstadoDaVersao = {atual: string; aviso: AvisoDeVersao | null; perguntar: boolean};

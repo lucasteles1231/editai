@@ -1060,6 +1060,17 @@ button.link { padding: 0; border: none; background: none; color: inherit; font: 
 .topo-do-dialogo h2 { margin: 0; font-family: var(--titulo); font-size: 22px; }
 .corpo-do-dialogo { display: grid; gap: 14px; }
 .dialogo .chave-gemini { margin: 0; padding: 0; border: 0; background: none; }
+/* "Aprovar e baixar": o que falta baixar, uma linha por coisa */
+.a-baixar { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.a-baixar .interruptor { margin: 0; }
+.botoes-do-ok { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+/* "No computador": o que o editor baixou, um por linha, com o "Tirar" */
+.no-computador { display: grid; gap: 12px; }
+.no-computador p { margin: 0; }
+.componentes { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.componentes li { display: grid; gap: 4px; padding: 10px 12px; border: 2px solid color-mix(in srgb, var(--linha) 25%, transparent); border-radius: 12px; }
+.componentes li.instalado { border-color: color-mix(in srgb, var(--ok) 55%, transparent); }
+.componentes li .botao { justify-self: start; }
 
 /* ── o criador de avatar ── */
 .pixel { image-rendering: pixelated; }
@@ -1278,10 +1289,19 @@ button.link { padding: 0; border: none; background: none; color: inherit; font: 
 
 @keyframes andar { to { background-position: 40px 0; } }
 
-.etapas { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 4px; font-size: 14px; }
-.etapas li { display: flex; gap: 8px; align-items: center; color: var(--tinta-suave); }
-.etapas li.atual { color: var(--tinta); font-weight: 700; }
-.etapas li.feita { color: var(--ok); }
+/* uma barra para cada parte: os downloads e as etapas da edição */
+.partes { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 10px; font-size: 14px; }
+.parte { color: var(--tinta-suave); }
+.parte-linha { display: flex; gap: 8px; align-items: baseline; }
+.parte-nome { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.parte-valor { font-variant-numeric: tabular-nums; font-size: 13px; }
+.parte.rodando { color: var(--tinta); font-weight: 700; }
+.parte.pronto { color: var(--ok); }
+.parte.erro { color: var(--erro); }
+.barra.fina { height: 10px; border-width: 2px; margin: 4px 0 0; }
+.parte:not(.rodando) .barra.fina > div { animation: none; }
+.parte.esperando .barra.fina > div { border-right: none; }
+.parte .detalhe { margin-top: 4px; font-weight: 400; }
 /* o caminho da pasta quebra em qualquer ponto: ele não tem espaço onde quebrar */
 .salvo-em { font-size: 13px; color: var(--tinta-suave); margin: 10px 0 0; overflow-wrap: anywhere; }
 .detalhe { display: block; margin-top: 6px; color: var(--tinta-suave); font-variant-numeric: tabular-nums; }

@@ -733,6 +733,12 @@ const CamposDaFala: React.FC<PropsDoEnvio> = (p) => {
               </button>
             </div>
           ) : null}
+          {p.audios.length === 1 && [m.porCima === 'pessoa' ? p.pessoa : null, p.fundo].some((v) => v?.tem_audio) ? (
+            <Interruptor ligado={m.sincronizar} aoMudar={(v) => p.mudarMontagem({sincronizar: v})}
+              titulo="Gravado junto com o vídeo"
+              descricao={'O microfone gravou à parte, ao mesmo tempo que a câmera: o editor acha o atraso pelo '
+                + 'próprio som e põe o vídeo no tempo dele. Desligado, o áudio começa junto com o vídeo.'} />
+          ) : null}
           <Soltar nome="audio" rotulo={p.audios.length ? 'Juntar mais áudios' : 'Arraste o áudio (ou vários)'}
             dica="MP3, WAV, M4A… Vários (um por parágrafo) tocam na ordem do nome, 0,3 s entre eles."
             aceita="audio/*,.mp3,.wav,.m4a" progresso={p.progresso.audio}

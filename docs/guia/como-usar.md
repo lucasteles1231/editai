@@ -104,7 +104,7 @@ Algumas dicas:
   [O que você falou](./o-que-voce-falou).
 - **O bipe** pega só as palavras da lista do passo 2, e a lista também ajuda o Whisper a
   ouvir essas palavras.
-- **Na primeira vez sem internet,** os quatro sons do tema Notícia que vêm do Remotion
-  tocam um parecido da Kenney.
+- **Os quatro sons do tema Notícia que vêm do Remotion** baixam na primeira vez, depois do
+  seu ok. Sem o ok, ou sem internet, toca um parecido da Kenney.
 - **No terminal,** o mesmo vídeo sai com
   `editai --cenas cenas/ --matriz cenas/cenas.json --audio p1.m4a p2.m4a --personagem boneco.gif --preset noticia --quadro vertical`.

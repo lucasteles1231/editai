@@ -46,6 +46,7 @@ editai --criar-voz "Ana" --gravacao leitura.m4a   # confere a leitura e salva a 
 editai --cenas cenas/ --matriz cenas/cenas.json --minha-voz ana --roteiro roteiro.txt \
        --preset noticia --quadro vertical         # a notícia, narrada com a sua voz
 editai eu.mp4 --fundo aula.mp4 --fala fundo        # o som vem da aula, e não da câmera
+editai camera.mp4 --audio mic.wav --sincronizar    # o microfone à parte, no tempo da câmera
 editai talk.mp4 --idioma en --modelo medium       # fala em inglês, modelo maior
 editai video.mp4 -o final.mov --codec prores      # ProRes, para levar a outro editor
 editai --formatos                                 # o que este computador grava
@@ -107,12 +108,15 @@ editai --formatos                                 # o que este computador grava
 | `--avatar NOME` | o seu avatar (criado na página), por cima: a pose de cada frase e a boca nas sílabas | |
 | `--audio` | um ou vários áudios separados (a narração gravada à parte), tocados em ordem | |
 | `--fala` | de onde vem o áudio: `fundo`, `pessoa` ou `audio` | o `--audio`; senão a pessoa, se tiver som; senão o fundo |
+| `--ruido` | o ruído do fundo (o DeepFilterNet3, baixado com o seu ok): `auto` mede e só tira quando há ruído, `leve`, `forte` ou `nao` | `auto` |
+| `--sincronizar` | o `--audio` (um só) foi gravado junto com o vídeo da câmera (a pessoa, ou o fundo): o editor acha o atraso pelo som. Com um vídeo só, ele é o fundo | o áudio começa junto com o vídeo |
+| `--atraso SEGUNDOS` | com `--audio`: o atraso ajustado à mão, no lugar do medido (o que toca em `t` no áudio aparece em `t + SEGUNDOS` no vídeo) | o medido |
 | `--instalar-voz` | instala a voz sintetizada (Minha voz), num ambiente à parte | |
 | `--atualizar` | instala a última versão publicada por cima desta ([Atualizar](./instalacao-em-detalhe#atualizar)) | |
 | `--criar-atalho` | cria o atalho "Editai": Aplicativos no macOS, menu Iniciar e Área de Trabalho no Windows, menu de aplicativos no Linux | |
 | `--desinstalar-voz` | apaga o motor da voz sintetizada (as vozes gravadas ficam) | |
 | `--desinstalar` | tira o Editai do computador: mostra tudo, pergunta à parte pelos modelos e pelos vídeos e pede "sim" ([Desinstalar](./instalacao-em-detalhe#desinstalar)) | |
-| `--sim` | com `--desinstalar` ou `--desinstalar-voz`: não pergunta nada | |
+| `--sim` | não pergunta nada: aprova baixar o que a edição precisa (o Whisper, na primeira vez) e, com `--desinstalar` ou `--desinstalar-voz`, apaga sem perguntar | o editor pergunta antes de baixar |
 | `--com-modelos`, `--com-videos` | com `--desinstalar`: apaga também os modelos do Whisper, do MODNet e do auditor, e os vídeos editados | ficam |
 | `--criar-voz NOME` | sem `--gravacao`, mostra o texto a ler; com ela, confere a leitura e salva a voz | |
 | `--gravacao ARQUIVO` | com `--criar-voz`: a leitura inteira, gravada num arquivo | |

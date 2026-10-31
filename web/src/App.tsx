@@ -11,6 +11,7 @@ import {type Envio, type FotosAchadas, PassoEnvio, type Revisao} from './compone
 import {type Destino, type Material, montarTrilha} from './trilha';
 import {paraJson, paraLinhas} from './matriz';
 import {AntesDeComecar} from './componentes/AntesDeComecar';
+import {AprovarDownload} from './componentes/AprovarDownload';
 import {AvisoDeVersao} from './componentes/AvisoDeVersao';
 import type {Configuracao} from './configurar';
 import {ThumbPasso, chaveDoRecorte, propsDaThumb, type Recortes} from './componentes/ThumbPasso';
@@ -25,7 +26,7 @@ import type {
 import {comecarTour, tourJaVisto} from './tour';
 
 const MONTAGEM_PADRAO: MontagemConfig = {fonteDoFundo: 'video', porCima: 'pessoa', recorte: 'modnet', formato: 'fundo',
-  tirarFundo: true, fala: null, cenasDoAudio: [], avatar: null};
+  tirarFundo: true, fala: null, cenasDoAudio: [], avatar: null, sincronizar: false};
 const NADA_ENVIANDO: Record<Envio, number | null> = {completo: null, pessoa: null, personagem: null, audio: null,
   biblioteca: null, longo: null};
 const SEM_ERRO: Record<Envio, string> = {completo: '', pessoa: '', personagem: '', audio: '', biblioteca: '', longo: ''};
@@ -704,13 +705,22 @@ export const App: React.FC = () => {
       recorte: montagem.recorte, formato: montagem.formato, tirar_fundo_do_personagem: montagem.tirarFundo,
       // a narração e o som das cenas são áudios separados como outros quaisquer
       fala: fala === 'voz' || fala === 'cenas' ? 'audio' : fala,
+      // um áudio só, gravado junto com o vídeo: o editor acha o atraso pelo som
+      ...(fala === 'audio' && audios.length === 1 && montagem.sincronizar ? {sincronizar: true} : {}),
     }};
     try {
       const t = await api.criarTarefa(alvo, edicao, saida, previa ? 15 : null);
       setTarefa(t);
       pararDeAcompanhar.current = api.acompanhar(t.id, (nova) => {
         setTarefa(nova);
-        if (nova.estado !== 'rodando') void quandoTerminar(nova, video, camadas);
+        if (nova.estado !== 'rodando') {
+          void quandoTerminar(nova, video, camadas);
+          // o que a edição baixou já aparece em "No computador"
+          if (nova.partes?.some((parte) => parte.id.startsWith('baixar:'))) {
+            api.componentes().then(({componentes}) => setEstado((e) => (e ? {...e, componentes} : e)))
+              .catch(() => undefined);
+          }
+        }
       });
     } catch (e) {
       setErroEdicao((e as Error).message);
@@ -842,6 +852,7 @@ export const App: React.FC = () => {
 
   return (
     <>
+      <AprovarDownload />
       <header className="cabecalho">
         <div className="marca">
           <span className="adesivo">edit</span>
@@ -869,7 +880,8 @@ export const App: React.FC = () => {
             pexels={pexels} aoSalvarChavePexels={async (chave) => setPexels(await api.salvarChavePexels(chave))}
             aoApagarChavePexels={async () => setPexels(await api.apagarChavePexels())}
             vozes={vozes} aoMudarVozes={setVozes} avatares={avatares} aoMudarAvatares={setAvatares}
-            aberto={configurando} abrir={setConfigurando} />
+            aberto={configurando} abrir={setConfigurando} componentes={estado?.componentes ?? null}
+            aoMudarComponentes={(c) => setEstado((e) => (e ? {...e, componentes: c} : e))} />
           <PassoEnvio trilha={trilha} materiais={materiais} aoAlternarMaterial={alternarMaterial}
             tema={tema} aoMudarTema={setTema} roteiro={roteiro} aoMudarRoteiro={setRoteiro}
             narrar={narrar} aoMudarNarrar={setNarrar} aoEscolherPorCima={setPorCimaEscolhido}

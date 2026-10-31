@@ -18,11 +18,12 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from editor import recorte
+from editor import componentes, recorte
 
 
 def main() -> int:
     os.environ.pop(recorte.VARIAVEL_FALSA, None)
+    componentes.aprovar(["recorte"])      # quem usa disse "Aprovar e baixar"
     # Um quadro qualquer, com uma forma clara no meio: o modelo tem de carregar, rodar e
     # devolver um alfa do tamanho do quadro, de 0 a 1.
     quadro = np.full((720, 405, 3), 40, np.uint8)

@@ -130,7 +130,24 @@ def _arquivo(nome: str) -> Path:
         return Path(hf_hub_download(REPOSITORIO, nome, revision=REVISAO, local_files_only=True))
     except Exception:
         pass
+    from editor import componentes
+
+    componentes.exigir("auditor")          # nada baixa sem o ok de quem usa
     caminho = Path(hf_hub_download(REPOSITORIO, nome, revision=REVISAO))
+    _conferir(nome, caminho)
+    return caminho
+
+
+def conferir_baixados() -> None:
+    """Confere o SHA-256 dos arquivos que acabaram de baixar (pelo plano, com o andamento)."""
+    from huggingface_hub import hf_hub_download
+
+    for nome in ARQUIVOS:
+        _conferir(nome, Path(hf_hub_download(REPOSITORIO, nome, revision=REVISAO,
+                                             local_files_only=True)))
+
+
+def _conferir(nome: str, caminho: Path) -> None:
     if _sha256(caminho) != ARQUIVOS[nome]:
         # o arquivo errado sai do cache, para a próxima tentativa baixar de novo
         for lixo in (caminho.resolve(), caminho):
@@ -138,7 +155,6 @@ def _arquivo(nome: str) -> Path:
                 lixo.unlink()
         raise ErroDoAuditor(f"O auditor baixado não confere ({nome}: o SHA-256 é outro). "
                             "Tente de novo.")
-    return caminho
 
 
 _sessoes: dict[str, object] = {}
@@ -222,12 +238,16 @@ def preparar(textos: Sequence[str] = ()) -> bool:
     ``False`` se não deu: sem internet na primeira vez, por exemplo."""
     if falso():
         return True
+    from editor import componentes
+
     try:
         for nome in ARQUIVOS:
             _arquivo(nome)
         lembrar(textos)
         _sessao(IMAGEM)
         return True
+    except componentes.PrecisaDeOk:
+        raise                           # quem usa decide: o pedido do ok sobe até a página
     except Exception as erro:
         logger.warning("o auditor das imagens não carregou: %s", erro)
         return False
@@ -302,5 +322,5 @@ def escolher(n: Notas, quantas: int, *, ja: Sequence[np.ndarray] = (), piso: flo
 
 
 __all__ = ["ARQUIVOS", "PARECIDA", "PISO", "REPOSITORIO", "REVISAO", "TAMANHO", "ErroDoAuditor",
-           "Notas", "avaliar", "baixado", "escolher", "falso", "juntar", "lembrar", "preparar",
-           "soltar"]
+           "Notas", "avaliar", "baixado", "conferir_baixados", "escolher", "falso", "juntar",
+           "lembrar", "preparar", "soltar"]

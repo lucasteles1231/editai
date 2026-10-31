@@ -10,7 +10,7 @@ import httpx
 import numpy as np
 import pytest
 
-from editor import sons
+from editor import componentes, sons
 
 TAXA = 48_000
 
@@ -180,6 +180,7 @@ class TestOTemaDeNoticia:
             assert 0 < item["bytes"] <= sons.TETO_DO_DOWNLOAD, nome
 
     def test_baixa_uma_vez_inteiro_e_guarda(self, monkeypatch):
+        monkeypatch.setenv(componentes.VARIAVEL, "sons-noticia")   # o ok de quem usa
         pedidos: list[str] = []
         conteudo = _wav(1.3)
         self._esperado(monkeypatch, "remotion-ding", conteudo)
@@ -206,6 +207,7 @@ class TestOTemaDeNoticia:
     def test_o_arquivo_trocado_nao_entra(self, monkeypatch):
         """Um arquivo diferente do anotado (o endereço trocou de dono, ou alguém no meio do
         caminho) não é guardado nem aberto: toca a reserva."""
+        monkeypatch.setenv(componentes.VARIAVEL, "sons-noticia")   # o ok de quem usa
         self._esperado(monkeypatch, "remotion-boom", _wav(0.4))
         monkeypatch.setattr(sons, "_transporte", httpx.MockTransport(
             lambda pedido: httpx.Response(200, content=_wav(0.9))))
@@ -218,6 +220,7 @@ class TestOTemaDeNoticia:
             sons._amostras.cache_clear()
 
     def test_grande_demais_nao_entra(self, monkeypatch):
+        monkeypatch.setenv(componentes.VARIAVEL, "sons-noticia")   # o ok de quem usa
         enorme = b"RIFF" + bytes(sons.TETO_DO_DOWNLOAD + 10)
         self._esperado(monkeypatch, "remotion-boom", enorme)
         monkeypatch.setattr(sons, "_transporte", httpx.MockTransport(
@@ -225,7 +228,30 @@ class TestOTemaDeNoticia:
         assert sons._baixado("remotion-boom") is None
         assert not list(sons.pasta_dos_baixados().iterdir())
 
+    def test_sem_o_ok_nem_pergunta_ao_remotion(self, monkeypatch):
+        """Nada baixa sem o ok de quem usa: sem ele, o endereço nem é chamado, e toca a
+        reserva."""
+        pedidos: list[str] = []
+
+        def remotion(pedido: httpx.Request) -> httpx.Response:
+            pedidos.append(str(pedido.url))
+            return httpx.Response(200, content=_wav(0.5))
+
+        monkeypatch.setattr(sons, "_transporte", httpx.MockTransport(remotion))
+        sons._amostras.cache_clear()
+        try:
+            assert np.array_equal(sons.amostras("remotion-boom", TAXA),
+                                  sons.amostras("impactPunch_heavy_000", TAXA))
+            assert pedidos == [] and not list(sons.pasta_dos_baixados().iterdir())
+        finally:
+            sons._amostras.cache_clear()
+
+    def test_os_baixados_do_tema(self):
+        assert set(sons.baixados_do_tema("noticia")) == set(sons.catalogo()["baixados"])
+        assert sons.baixados_do_tema("padrao") == [] and not sons.baixados_guardados()
+
     def test_o_guardado_que_mudou_e_baixado_de_novo(self, monkeypatch):
+        monkeypatch.setenv(componentes.VARIAVEL, "sons-noticia")   # o ok de quem usa
         conteudo = _wav(0.6)
         self._esperado(monkeypatch, "remotion-disco", conteudo)
         guardado = sons.pasta_dos_baixados() / "remotion-disco.wav"

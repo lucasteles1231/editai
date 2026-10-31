@@ -1,3 +1,3 @@
 """Editai: edita vídeos falados no estilo dos Shorts, no seu computador."""
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"

@@ -59,7 +59,8 @@ não usá-los, escolha outro tema de sons.
 | Modelos [Whisper](https://github.com/openai/whisper), convertidos pela [Systran](https://huggingface.co/Systran) | o modelo baixado no primeiro uso | MIT |
 | [MODNet](https://github.com/ZHKKKe/MODNet), em ONNX ([`Xenova/modnet`](https://huggingface.co/Xenova/modnet)) | o recorte da pessoa na thumbnail, baixado no primeiro uso (26 MB) | Apache-2.0, código **e** pesos: [`licencas/MODNet-Apache-2.0.txt`](licencas/MODNet-Apache-2.0.txt) |
 | [SigLIP 2](https://huggingface.co/google/siglip2-base-patch16-224), do Google, em ONNX int8 ([`onnx-community/siglip2-base-patch16-224-ONNX`](https://huggingface.co/onnx-community/siglip2-base-patch16-224-ONNX)) | o auditor das fotos achadas pelo tema, baixado no primeiro uso (~410 MB) | Apache-2.0 (a do modelo do Google; a exportação é o mesmo modelo, em ONNX) |
-| ONNX Runtime | roda o MODNet e o auditor | MIT |
+| [DeepFilterNet3](https://github.com/Rikorose/DeepFilterNet), de Hendrik Schröter, na versão de fluxo "torchDF", em ONNX (o release `model-dfn3-512-v1` do [`deepfilter-stream`](https://github.com/wuxuedaifu/deepfilter-stream)) | o redutor de ruído da fala, baixado no primeiro uso (13 MB) | MIT ou Apache-2.0 (o DeepFilterNet); o modelo em ONNX e o jeito de rodar quadro a quadro vêm do `deepfilter-stream`, MIT. O pacote não vem junto |
+| ONNX Runtime | roda o MODNet, o auditor e o redutor de ruído | MIT |
 | [llama.cpp](https://github.com/ggml-org/llama.cpp) (o `llama-server`, release `b11669`) | roda a IA local; baixado só se você instalar | MIT |
 | [Qwen3.5-4B](https://huggingface.co/Qwen/Qwen3.5-4B), em GGUF ([`unsloth/Qwen3.5-4B-GGUF`](https://huggingface.co/unsloth/Qwen3.5-4B-GGUF)) | o modelo da IA local; baixado só se você instalar (~3,4 GB) | Apache-2.0 |
 | [tokenizers](https://github.com/huggingface/tokenizers) | o vocabulário do auditor | Apache-2.0 |

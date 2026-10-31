@@ -42,6 +42,7 @@ from editor import (
     auditor,
     catalogo,
     cenas,
+    componentes,
     efeitos_da_voz,
     escrita,
     fotos,
@@ -104,6 +105,16 @@ POLITICA = "; ".join([
 CABECALHOS = {"Content-Security-Policy": POLITICA, "Referrer-Policy": "no-referrer",
               "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY",
               "Cross-Origin-Opener-Policy": "same-origin"}
+
+
+def _ok_de_quem_usa(aprovados: str, recusados: str) -> None:
+    """Os cabeçalhos do pedido refeito: o que quem usa aprovou baixar e o que ela recusou (só
+    o que tem reserva). Um id desconhecido é ignorado."""
+    conhecidos = {c.id for c in componentes.catalogo()}
+    sim = [i.strip() for i in aprovados.split(",") if i.strip() in conhecidos]
+    nao = [i.strip() for i in recusados.split(",") if i.strip() in conhecidos]
+    componentes.aprovar(sim)
+    componentes.recusar(nao)
 
 
 def pasta_de_envios() -> Path:
@@ -256,11 +267,20 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
                 resposta = JSONResponse({"erro": "origem não permitida"}, status_code=403)
             elif not dado or not secrets.compare_digest(dado, token):
                 resposta = JSONResponse({"erro": "token ausente ou inválido"}, status_code=401)
+            else:
+                # O pedido refeito depois do "Aprovar e baixar": o ok de quem usa vem junto.
+                _ok_de_quem_usa(request.headers.get("x-editai-aprovados", ""),
+                                request.headers.get("x-editai-recusados", ""))
         if resposta is None:
             resposta = await call_next(request)
         for nome, valor in CABECALHOS.items():
             resposta.headers.setdefault(nome, valor)
         return resposta
+
+    @app.exception_handler(componentes.PrecisaDeOk)
+    async def precisa_de_ok(_request: Request, erro: componentes.PrecisaDeOk):
+        # Nada baixa sem o ok: a página mostra o que falta e manda o pedido de novo com ele.
+        return JSONResponse(erro.para_dict(), status_code=409)
 
     def _video(vid: str) -> dict:
         if vid not in videos:
@@ -314,6 +334,7 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
             "ia": ia.estado(),
             "recorte": {"baixado": recorte.modelo_baixado(), "tamanho": recorte.TAMANHO},
             "auditor": {"baixado": auditor.baixado(), "tamanho": auditor.TAMANHO},
+            "componentes": [c.para_dict() for c in componentes.catalogo()],
             "pexels": pexels.estado(),
             "geracao": {"restantes": ia.geracoes_restantes(), "teto": ia.TETO_DE_IMAGENS},
             "presets": presets.para_json(),
@@ -321,17 +342,44 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
             "temas_dos_sons": sons.temas(),
         }
 
+    # ── o que o Editai baixou ─────────────────────────────────────────────
+    # A lista, com o tamanho e a licença, e o "Tirar" de cada um (a pasta exata dele).
+
+    @app.get("/api/componentes")
+    def os_componentes():
+        return {"componentes": [c.para_dict() for c in componentes.catalogo()]}
+
+    @app.delete("/api/componentes/{cid}")
+    def tirar_componente(cid: str):
+        try:
+            componentes.pegar(cid)
+        except KeyError as erro:
+            raise HTTPException(404, "componente desconhecido") from erro
+        if gerente.ocupado():
+            raise HTTPException(409, "espere a edição terminar para tirar um modelo")
+        try:
+            saiu = componentes.desinstalar(cid)
+        except ValueError as erro:
+            raise HTTPException(400, str(erro)) from erro
+        return {"saiu": saiu, "componentes": [c.para_dict() for c in componentes.catalogo()]}
+
     # ── o aviso de versão nova ────────────────────────────────────────────
     # Uma vez por dia, no máximo (editor/versao.py); sem internet, sem aviso.
 
     @app.get("/api/versao")
     def versao_nova():
-        return {"atual": __version__, "aviso": versao.aviso()}
+        return {"atual": __version__, "aviso": versao.aviso(), "perguntar": versao.perguntar()}
+
+    @app.post("/api/versao/permitir")
+    def permitir_o_aviso(dados: Annotated[dict, Body()]):
+        # nada sai do computador sem o ok: só com o "Avisar" o Editai pergunta ao GitHub
+        versao.permitir(bool(dados.get("sim")))
+        return {"atual": __version__, "aviso": versao.aviso(), "perguntar": False}
 
     @app.post("/api/versao/silenciar")
     def nao_avisar_mais():
         versao.silenciar()
-        return {"atual": __version__, "aviso": None}
+        return {"atual": __version__, "aviso": None, "perguntar": False}
 
     # ── os presets de quem usa ─────────────────────────────────────────────
     # Ficam no presets.json da pasta de dados; a página recebe a lista inteira de volta.
@@ -1387,6 +1435,8 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
             return matriz, r
         try:
             r = recorte.recortar(matriz)
+        except componentes.PrecisaDeOk:
+            raise
         except Exception as erro:
             logger.warning("o recorte falhou: %s", erro)
             raise HTTPException(503, "Não consegui recortar a pessoa. Na primeira vez o "
@@ -1457,7 +1507,9 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
             matriz=biblioteca["matriz"] if biblioteca else None,
             formato=str(pedido.get("formato") or "fundo"),
             tirar_fundo_do_personagem=bool(pedido.get("tirar_fundo_do_personagem", True)),
-            fala=str(pedido["fala"]) if pedido.get("fala") else None)
+            fala=str(pedido["fala"]) if pedido.get("fala") else None,
+            sincronizar=bool(pedido.get("sincronizar")),
+            atraso_s=float(pedido["atraso_s"]) if pedido.get("atraso_s") is not None else None)
         erros = m.problemas()
         if erros:
             raise HTTPException(422, "; ".join(erros))
@@ -1481,11 +1533,16 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
         if erros:
             raise HTTPException(422, "; ".join(erros))
         previa = dados.get("previa_s")
+        # Nada baixa sem o ok: sem o que a edição usa no computador, a página pergunta antes.
+        fala = m.arquivos_da_fala() if m is not None else [Path(video_da_thumb)]
+        usa = componentes.da_edicao(edicao, m, fala)
+        componentes.pedir_ok(usa)
         saida_base.mkdir(parents=True, exist_ok=True)
         destino = _livre(saida_base / f"{Path(nome).stem}-editado.{saida.formato}")
         try:
             t = gerente.iniciar(Tarefa(video_da_thumb, destino, edicao, saida,
-                                       float(previa) if previa else None, montagem=m))
+                                       float(previa) if previa else None, montagem=m,
+                                       baixar=[c.id for c in componentes.a_baixar(usa)]))
         except Ocupado as erro:
             raise HTTPException(409, "já há uma edição rodando") from erro
         return t.para_dict()

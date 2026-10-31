@@ -26,6 +26,8 @@ escolher as edições, escolher a saída e, se quiser, a thumbnail.
 
 - **Antes de começar:** os cartões do que é opcional e se configura uma vez: a sua voz
   (gravar, ouvir e apagar), o seu [avatar](./meu-avatar) e as chaves do Gemini e do Pexels.
+  Em **No computador**, o que o editor baixou, com o tamanho e a licença, e o **Tirar** de
+  cada modelo.
 - **Envio:** um vídeo só, ou a montagem em camadas: o fundo (um vídeo ou a biblioteca de
   cenas), a pessoa, o personagem ou nada por cima, e a escolha de onde vem o áudio (o
   fundo, a pessoa ou arquivos separados). Embaixo, onde você vai postar: o editor

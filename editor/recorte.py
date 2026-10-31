@@ -112,8 +112,13 @@ def _carregar():
             import onnxruntime
             from huggingface_hub import hf_hub_download
 
+            from editor import componentes
+
+            baixado = modelo_baixado()
+            if not baixado:
+                componentes.exigir("recorte")      # nada baixa sem o ok de quem usa
             caminho = hf_hub_download(REPOSITORIO, ARQUIVO, revision=REVISAO,
-                                      local_files_only=modelo_baixado())
+                                      local_files_only=baixado)
             opcoes = onnxruntime.SessionOptions()
             opcoes.log_severity_level = 3
             _sessao = onnxruntime.InferenceSession(caminho, sess_options=opcoes,
@@ -121,14 +126,25 @@ def _carregar():
         return _sessao
 
 
+def soltar() -> None:
+    """Fecha a sessão do modelo (depois de ele sair do computador, por exemplo)."""
+    global _sessao
+    with _trava:
+        _sessao = None
+
+
 def preparar_modelo() -> bool:
     """Carrega o modelo (baixando na primeira vez). False se não deu: sem internet na
     primeira vez, por exemplo."""
     if _falso():
         return True
+    from editor import componentes
+
     try:
         _carregar()
         return True
+    except componentes.PrecisaDeOk:
+        raise                           # quem usa decide: o pedido do ok sobe até a página
     except Exception as erro:
         logger.warning("o modelo de recorte não carregou: %s", erro)
         return False
@@ -292,5 +308,5 @@ def png(matriz: np.ndarray, alfa: np.ndarray, largura: int | None = None) -> byt
 
 __all__ = ["ARQUIVO", "REPOSITORIO", "REVISAO", "TAMANHO", "Caixa", "Recorte", "caixas",
            "mascara", "mascara_pequena", "modelo_baixado", "png", "preparar",
-           "preparar_modelo", "recortar", "regiao_da_pessoa", "so_a_pessoa",
+           "preparar_modelo", "recortar", "regiao_da_pessoa", "so_a_pessoa", "soltar",
            "tamanho_de_entrada"]

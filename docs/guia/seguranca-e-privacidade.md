@@ -8,7 +8,7 @@ protege a página, como o que é baixado é conferido e o que a última verifica
 
 | O quê | Para onde | Quando |
 |---|---|---|
-| nada do vídeo, do áudio nem da sua voz | — | nunca: a transcrição, o recorte, a edição, a Minha voz, a voz local e o auditor das fotos rodam no computador |
+| nada do vídeo, do áudio nem da sua voz | — | nunca: a transcrição, o recorte, a edição, o redutor de ruído, a Minha voz, a voz local e o auditor das fotos rodam no computador |
 | nada do que vai para a IA, com a IA local | — | nunca: com ela, o texto da fala, os quadros, a foto do avatar e o tema ficam no computador (as linhas do Gemini abaixo valem só quando ele responde) |
 | o tema e as buscas que a IA fizer | Bing Notícias, Google Notícias e Wikipédia; e o site de cada página lida | só com **Pesquisar na internet** ligado, ao escrever o roteiro pelo tema |
 | o texto da fala e 8 quadros pequenos (512 px) | Google (Gemini) | só com a sua chave, nas ideias de thumbnail |
@@ -22,8 +22,14 @@ protege a página, como o que é baixado é conferido e o que a última verifica
 | o texto da busca | Pexels | só com a chave do Pexels, quando você busca uma foto ou acha as fotos do roteiro |
 | o texto da busca, em inglês | Openverse | só quando você clica em **Achar as fotos** |
 | o pedido de cada foto achada | o site de onde ela vem (Flickr, Wikimedia Commons…) | ao achar as fotos: o Editai baixa cada uma |
-| os pedidos de download | GitHub, `astral.sh` (o uv), PyPI, Hugging Face e `remotion.media` | na instalação e no primeiro uso de cada modelo ou som |
-| o pedido da última versão publicada, sem nada seu | GitHub (`api.github.com`) | uma vez por dia, ao abrir o editor; desliga com "Não avisar mais", na faixa do aviso, ou com `EDITAI_SEM_AVISO_DE_VERSAO=1` ([Atualizar](./instalacao-em-detalhe#atualizar)) |
+| os pedidos de download | GitHub, `astral.sh` (o uv), PyPI, Hugging Face e `remotion.media` | na instalação e, **depois do seu ok**, no primeiro uso de cada modelo ou som |
+| o pedido da última versão publicada, sem nada seu | GitHub (`api.github.com`) | só se você responder **Avisar** à pergunta da página: aí, uma vez por dia, ao abrir o editor. Desliga com "Não avisar mais", na faixa do aviso, ou com `EDITAI_SEM_AVISO_DE_VERSAO=1` ([Atualizar](./instalacao-em-detalhe#atualizar)) |
+
+**Nada baixa sem o seu ok.** O tamanho de cada modelo vem escrito no editor (medido no commit
+fixado de cada um), e não da internet: o editor mostra o que vai baixar, o tamanho, para que
+serve e a licença, e só depois do **Aprovar e baixar** pede alguma coisa ao Hugging Face ou ao
+`remotion.media`. No terminal, ele pergunta antes, e `--sim` aprova. O ok vale para aquela
+coisa só, e o que já está no computador não é pedido de novo.
 
 **O que protege a página:**
 

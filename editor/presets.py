@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 EDICAO = ("cortes", "zoom", "adesivos", "icones", "sons", "mover", "pausa_maxima",
           "nivel_zoom", "ritmo", "empurrao", "respiro", "tema_dos_sons", "som_nos_cortes",
           "sons_por_palavra", "volume_dos_sons", "tamanho_legenda", "caracteres_por_linha",
-          "janela", "animacoes", "bipe", "voz", "efeito_da_voz", "estilo_da_legenda")
+          "janela", "animacoes", "bipe", "voz", "ruido", "efeito_da_voz", "estilo_da_legenda")
 SAIDA = ("resolucao", "fps", "qualidade")
 THUMB = ("modelo", "cor")
 

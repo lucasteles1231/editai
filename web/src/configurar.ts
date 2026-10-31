@@ -3,7 +3,7 @@
  * sem chave, a aba Fundo sem a chave do Pexels, a montagem sem voz gravada. Um evento da
  * janela, para nenhum componente precisar receber o estado da faixa.
  */
-export type Configuracao = 'voz' | 'avatar' | 'gemini' | 'pexels';
+export type Configuracao = 'voz' | 'avatar' | 'gemini' | 'pexels' | 'componentes';
 
 const EVENTO = 'editai:configurar';
 

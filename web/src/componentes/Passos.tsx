@@ -5,9 +5,7 @@ import React, {useRef, useState} from 'react';
 import {api} from '../api';
 import {apelido} from '../presets';
 import {numero} from '../formatar';
-import type {
-  Edicao, EfeitosDaVoz, EstiloDaLegenda, Estado, FormatoDoQuadro, PorCima, Preset, PresetsImportados, Saida, VideoInfo, Voz,
-} from '../tipos';
+import type {Edicao, EfeitosDaVoz, Estado, EstiloDaLegenda, FormatoDoQuadro, PorCima, Preset, PresetsImportados, Ruido, Saida, VideoInfo, Voz} from '../tipos';
 import {EfeitoNaVoz} from './EfeitoNaVoz';
 import {Interruptor} from './Interruptor';
 
@@ -27,6 +25,16 @@ const VOZES: [Voz, string, string][] = [
   ['original', 'Original', 'A voz como foi gravada.'],
   ['limpa', 'Limpa', 'Tira o grave, o eco do cômodo e o chiado, e deixa cada parte no mesmo volume.'],
   ['estudio', 'Estúdio', 'A limpa, mais o brilho, a compressão e a voz aberta em estéreo (a do preset de notícia).'],
+];
+
+const RUIDOS: [Ruido, string, string][] = [
+  ['auto', 'Auto', 'Mede o fundo e só tira o ruído constante: o ventilador, o ar-condicionado, o chiado. Música, '
+    + 'som de jogo, teclado e vozes ao fundo ficam. Usa o DeepFilterNet3, no seu computador (13 MB, baixados na '
+    + 'primeira vez, com o seu ok).'],
+  ['leve', 'Leve', 'Tira até 12 dB de todo ruído, sempre, inclusive o teclado e as vozes ao fundo: a voz fica mais '
+    + 'natural. Música e som de jogo saem junto.'],
+  ['forte', 'Forte', 'Tira todo o ruído que achar, sempre. Música e som de jogo saem junto.'],
+  ['nao', 'Não', 'A voz fica com o fundo como veio.'],
 ];
 
 export const PassoEdicoes: React.FC<{
@@ -208,6 +216,16 @@ export const PassoEdicoes: React.FC<{
             ))}
           </div>
           <small>{VOZES.find(([v]) => v === edicao.voz)?.[2]}</small>
+        </div>
+        <div className="campo largo">
+          <span id="rotulo-ruido">Ruído do fundo</span>
+          <div className="linha-de-opcoes" role="group" aria-labelledby="rotulo-ruido">
+            {RUIDOS.map(([v, nome]) => (
+              <button key={v} type="button" className="pilula" aria-pressed={(edicao.ruido ?? 'auto') === v}
+                onClick={() => mudar({ruido: v})}>{nome}</button>
+            ))}
+          </div>
+          <small>{RUIDOS.find(([v]) => v === (edicao.ruido ?? 'auto'))?.[2]}</small>
         </div>
         <label className="campo largo">
           <span>Bipe nas palavras</span>

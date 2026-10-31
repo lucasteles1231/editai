@@ -78,6 +78,10 @@ class Resultado:
     roteiro: dict = field(default_factory=dict)
     #: O que a duração escolhida fez, com as frases que ficaram de fora.
     selecao: dict = field(default_factory=dict)
+    #: O atraso do som gravado à parte, medido ou ajustado (vazio sem a sincronia).
+    sincronia: dict = field(default_factory=dict)
+    #: O que o redutor de ruído fez (vazio quando não havia ruído para tirar).
+    ruido: dict = field(default_factory=dict)
 
     def para_dict(self) -> dict:
         return {"video": str(self.video), "plano": str(self.plano),
@@ -85,7 +89,8 @@ class Resultado:
                 "duracao_original": round(self.duracao_original, 2),
                 "duracao_final": round(self.duracao_final, 2),
                 "segundos": round(self.segundos, 1), "largura": self.largura,
-                "altura": self.altura, "roteiro": self.roteiro, "selecao": self.selecao}
+                "altura": self.altura, "roteiro": self.roteiro, "selecao": self.selecao,
+                "sincronia": self.sincronia, "ruido": self.ruido}
 
 
 def pasta_de_cache() -> Path:
@@ -257,6 +262,8 @@ class _Preparada:
     #: foi aparado do começo dele, quanto dura). É o que põe na boca certa um vídeo da
     #: biblioteca que também é a fonte do som.
     fontes: list[tuple[Path, float, float, float]] = field(default_factory=list)
+    #: O que o redutor de ruído fez: a força, a folga medida e o aviso (vazio sem ruído).
+    ruido: dict = field(default_factory=dict)
 
 
 def _duracao_e_audio(caminho: Path) -> tuple[float, bool]:
@@ -289,12 +296,25 @@ def _preparar_fala(arquivos: list[Path], edicao: OpcoesDeEdicao, avisar: Progres
     """A fala como vai para o plano. Um arquivo só, sem tratar e sem bipe, vai como veio;
     senão as partes são transcritas uma a uma (cada transcrição fica guardada), juntadas,
     tratadas e bipadas, num WAV da pasta de cache."""
+    from editor import ruido as ruido_mod
+
     proibidas = censura.lista(edicao.bipe)
     efeito = efeitos_da_voz.ler(edicao.efeito_da_voz)
-    if len(arquivos) == 1 and edicao.voz == "original" and not proibidas and not efeito:
+    # O ruído do fundo (o DeepFilterNet3): só com o modelo no computador. Sem ele (quem usa
+    # não quis baixar), a voz segue como vinha, e o resultado avisa.
+    forca, folga = ruido_mod.forca_dos_arquivos(edicao.ruido, arquivos)
+    sobre_o_ruido: dict = {}
+    if forca != "nada":
+        sobre_o_ruido = {"forca": forca, "folga_db": round(folga, 1),
+                         "por": "auto" if edicao.ruido == "auto" else "voce"}
+        if not ruido_mod.instalado():
+            sobre_o_ruido["aviso"] = "o redutor de ruído não foi baixado"
+            forca = "nada"
+    if (len(arquivos) == 1 and edicao.voz == "original" and not proibidas and not efeito
+            and forca == "nada"):
         duracao, tem_audio = _duracao_e_audio(arquivos[0])
         return _Preparada(arquivos[0], duracao, tem_audio,
-                          fontes=[(Path(arquivos[0]), 0.0, 0.0, duracao)])
+                          fontes=[(Path(arquivos[0]), 0.0, 0.0, duracao)], ruido=sobre_o_ruido)
     por_parte = []
     for k, arquivo in enumerate(arquivos):
         duracao, tem_audio = _duracao_e_audio(arquivo)
@@ -310,25 +330,40 @@ def _preparar_fala(arquivos: list[Path], edicao: OpcoesDeEdicao, avisar: Progres
     avisar("cortando", 0.0, "pondo o efeito na voz" if efeito else "tratando a voz"
            if edicao.voz != "original" else "juntando as partes")
     mono = [video_mod.ler_audio_mono(a, voz.TAXA) for a in arquivos]
-    junto, partes = voz.juntar(mono, edicao.voz)
+    if forca != "nada":
+        texto = (f"o fundo estava {folga:.0f} dB abaixo da voz" if folga < ruido_mod.FOLGA_DA_LIMPA
+                 else f"o {forca}, como você escolheu")
+        avisar("limpando", 0.0, texto)
+        limpos = []
+        for k, x in enumerate(mono):
+            limpos.append(ruido_mod.limpar(
+                x, forca, parar=parar,
+                andamento=lambda f, k=k: avisar("limpando", (k + f) / len(mono), texto)))
+        mono = limpos
+        ruido_mod.soltar()
+        avisar("limpando", 1.0, texto)
+    junto, partes = voz.juntar(mono, edicao.voz, portao=forca == "nada")
     palavras = voz.palavras_nas_partes(por_parte, partes)
     # O efeito vem em duas etapas, sem mudar a duração: o tom e o caráter antes do
     # tratamento; o eco e a sala depois do bipe (a sílaba proibida não volta na cauda) e do
     # tratamento (o expansor do estúdio não corta a sala). As palavras já saíram da voz
     # limpa, então a legenda não sofre com o robô.
-    estereo = voz.tratar(efeitos_da_voz.aplicar_na_voz(junto, efeito), edicao.voz)
+    estereo = voz.tratar(efeitos_da_voz.aplicar_na_voz(junto, efeito), edicao.voz,
+                         portao=forca == "nada")
     bipes = voz.trechos_do_bipe(palavras, junto, proibidas) if proibidas else []
     estereo = efeitos_da_voz.aplicar_no_ambiente(voz.bipar(estereo, bipes), efeito)
     chave = hashlib.sha1(json.dumps(
         [transcricao.identidade(a, idioma=edicao.idioma, modelo=edicao.modelo)
          for a in arquivos] + [edicao.voz, proibidas]
-        + ([efeitos_da_voz.escrever(efeito)] if efeito else []),     # sem efeito, a chave de antes
+        + ([efeitos_da_voz.escrever(efeito)] if efeito else [])     # sem efeito, a chave de antes
+        + ([f"ruido:{forca}"] if forca != "nada" else []),
         sort_keys=True).encode()).hexdigest()
     wav = pasta_de_vozes() / f"{chave[:16]}.wav"
     _gravar_wav(wav, estereo)
     fontes = [(Path(a), p.inicio, p.corte, p.duracao) for a, p in zip(arquivos, partes,
                                                                         strict=True)]
-    return _Preparada(wav, len(junto) / voz.TAXA, True, palavras, bipes, fontes)
+    return _Preparada(wav, len(junto) / voz.TAXA, True, palavras, bipes, fontes,
+                      ruido=sobre_o_ruido)
 
 
 def _planejar(fala: Path, duracao_da_fala: float, tem_audio: bool, edicao: OpcoesDeEdicao,
@@ -570,7 +605,8 @@ def editar(entrada: Path | None, destino: Path, edicao: OpcoesDeEdicao,
 
     plano_json, legendas = _terminar(p, destino, saida_r, avisar)
     return Resultado(destino, plano_json, legendas, f.palavras, duracao, linha.duracao,
-                     time.monotonic() - comeco, largura, altura, _resumo(r), p.selecao)
+                     time.monotonic() - comeco, largura, altura, _resumo(r), p.selecao,
+                     ruido=prep.ruido)
 
 
 def _desenhar_quadro(gravador: video_mod.Gravador, matriz: np.ndarray, p: plano.Plano,
@@ -587,6 +623,28 @@ def _desenhar_quadro(gravador: video_mod.Gravador, matriz: np.ndarray, p: plano.
     gravador.quadro(np.asarray(img))
 
 
+def _sincronizar(montagem: Montagem, avisar: Progresso):
+    """O alinhamento do vídeo da câmera com o áudio gravado à parte: o ajustado à mão, ou o
+    medido no próprio som. Sem confiança na medida, para com o que fazer."""
+    from editor import sincronia
+
+    if not montagem.sincronizar and montagem.atraso_s is None:
+        return None
+    if montagem.atraso_s is not None:
+        avisar("sincronizando", 1.0, f"o atraso ajustado: {montagem.atraso_s:+.3f} s")
+        return sincronia.Alinhamento(float(montagem.atraso_s), confianca=float("inf"))
+    avisar("sincronizando", 0.0, "achando o atraso pelo som")
+    al = sincronia.de_arquivos(montagem.video_da_camera(), montagem.arquivos_de_audio()[0])
+    if not al.ok:
+        raise RuntimeError(
+            "Não consegui sincronizar pelo som: o som do vídeo e o gravado à parte não parecem "
+            f"da mesma gravação (confiança {al.confianca:.1f}). Bata uma palma no começo das "
+            "duas gravações e mande de novo, ou ajuste o atraso à mão.")
+    deriva = f", com {al.deriva_ppm:+.0f} ppm de deriva" if al.deriva else ""
+    avisar("sincronizando", 1.0, f"o som à parte está {al.atraso_s:+.3f} s do vídeo{deriva}")
+    return al
+
+
 def _editar_montagem(montagem: Montagem, destino: Path, edicao: OpcoesDeEdicao,
                      saida_r: saida_mod.OpcoesDeSaida, previa_s: float | None,
                      avisar: Progresso, parar: Callable[[], bool], comeco: float) -> Resultado:
@@ -596,6 +654,9 @@ def _editar_montagem(montagem: Montagem, destino: Path, edicao: OpcoesDeEdicao,
     O laço anda pelos quadros de saída: o fundo de vídeo e a pessoa buscam o quadro do
     instante de origem (os vídeos podem ter fps diferentes); as cenas e o personagem
     andam pelo tempo de saída, para não pular nos cortes."""
+    alinhamento = _sincronizar(montagem, avisar)
+    tempo = alinhamento.no_video if alinhamento is not None else None
+    camera = montagem.video_da_camera() if tempo is not None else None
     biblioteca = None
     if montagem.cenas is not None:
         avisar("transcrevendo", 0.0, "lendo a biblioteca de cenas")
@@ -635,6 +696,8 @@ def _editar_montagem(montagem: Montagem, destino: Path, edicao: OpcoesDeEdicao,
     else:
         fundo = video_mod.Cursor(montagem.fundo, info_do_fundo.rotacao,
                                  duracao=info_do_fundo.duracao)
+        if camera is not None and montagem.pessoa is None:
+            fundo = video_mod.NoTempo(fundo, tempo)        # o fundo é o vídeo da câmera
     na_saida = biblioteca is not None
     fps = saida_mod.fps_de_saida(fps_base, saida_r.fps, saida_r.formato)
     if montagem.avatar is not None:
@@ -646,7 +709,7 @@ def _editar_montagem(montagem: Montagem, destino: Path, edicao: OpcoesDeEdicao,
         camada = CamadaDeAvatar.do_avatar(montagem.avatar, avatar_mod.poses_das_falas(p.blocos),
                                           bocas, float(fps))
     else:
-        camada = camada_da_montagem(montagem)
+        camada = camada_da_montagem(montagem, tempo if montagem.pessoa is not None else None)
     falas = janela_mod.falas(f.no_editado)
     deitado = largura > altura * 1.2
     if edicao.janela:
@@ -694,7 +757,8 @@ def _editar_montagem(montagem: Montagem, destino: Path, edicao: OpcoesDeEdicao,
 
     plano_json, legendas = _terminar(p, destino, saida_r, avisar)
     return Resultado(destino, plano_json, legendas, f.palavras, f.duracao, linha.duracao,
-                     time.monotonic() - comeco, largura, altura, _resumo(r), p.selecao)
+                     time.monotonic() - comeco, largura, altura, _resumo(r), p.selecao,
+                     alinhamento.para_dict() if alinhamento is not None else {}, prep.ruido)
 
 
 __all__ = ["Cancelado", "Resultado", "editar", "empurrao", "janela", "montar_audio",

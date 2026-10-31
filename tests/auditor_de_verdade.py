@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from editor import auditor
+from editor import auditor, componentes
 
 
 def _ceu() -> Image.Image:
@@ -37,6 +37,7 @@ def _vermelho() -> Image.Image:
 
 def main() -> int:
     os.environ.pop(auditor.VARIAVEL_FALSA, None)
+    componentes.aprovar(["auditor"])      # quem usa disse "Aprovar e baixar"
     comeco = time.monotonic()
     if not auditor.preparar(["um céu azul com nuvens", "um círculo vermelho"]):
         print("FALHOU: o auditor não carregou", file=sys.stderr)

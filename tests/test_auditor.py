@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from editor import auditor
+from editor import auditor, componentes
 
 
 @pytest.fixture
@@ -145,6 +145,10 @@ def test_o_arquivo_baixado_e_conferido(de_verdade, monkeypatch, tmp_path):
     certo = hashlib.sha256(b"modelo").hexdigest()
     monkeypatch.setattr(auditor, "ARQUIVOS", {"bom": certo, "ruim": certo})
     assert not auditor.baixado()
+    with pytest.raises(componentes.PrecisaDeOk):          # nada baixa sem o ok de quem usa
+        auditor._arquivo("bom")
+    assert all(local for *_, local in pedidos)
+    componentes.aprovar(["auditor"])
     assert auditor._arquivo("bom") == bom
     assert pedidos[-1] == (auditor.REPOSITORIO, "bom", auditor.REVISAO, False)
     with pytest.raises(auditor.ErroDoAuditor, match="não confere"):

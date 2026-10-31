@@ -16,7 +16,7 @@ alfa pela tag ``alpha_mode``. Conferido com arquivos gerados pelo próprio PyAV.
 from __future__ import annotations
 
 import contextlib
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
@@ -172,6 +172,23 @@ class Cursor:
 
     def fechar(self) -> None:
         self._gerador.close()
+
+
+class NoTempo:
+    """Um :class:`Cursor` lido noutro tempo: o vídeo da câmera no tempo do som gravado à parte
+    (:mod:`editor.sincronia`). Antes de a câmera ligar fica o primeiro quadro, e depois de ela
+    desligar, o último: o vídeo sincronizado não volta ao começo, como o fundo em loop."""
+
+    def __init__(self, cursor: Cursor, tempo: Callable[[float], float]):
+        self.cursor, self.tempo = cursor, tempo
+        self.duracao = cursor.duracao
+
+    def em(self, t: float) -> np.ndarray | None:
+        fim = max(0.0, self.duracao - 1e-3) if self.duracao > 0 else float("inf")
+        return self.cursor.em(min(fim, max(0.0, self.tempo(t))))
+
+    def fechar(self) -> None:
+        self.cursor.fechar()
 
 
 def duracao_do_audio(caminho: Path) -> float:
@@ -363,5 +380,5 @@ class Gravador:
                 self.caminho.unlink(missing_ok=True)
 
 
-__all__ = ["TAXA", "Cursor", "Gravador", "Info", "duracao_do_audio", "ler_audio",
+__all__ = ["TAXA", "Cursor", "Gravador", "Info", "NoTempo", "duracao_do_audio", "ler_audio",
            "ler_audio_mono", "quadro_em", "quadros", "sondar", "tem_alfa"]

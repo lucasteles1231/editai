@@ -7,6 +7,44 @@ está sempre no [site](https://lucasteles1231.github.io/editai/baixar).
 Os números seguem o [versionamento semântico](https://semver.org/lang/pt-BR/): o último muda
 nas correções, o do meio nas novidades e o primeiro quando algo deixa de funcionar como antes.
 
+## [0.7.0] — 31/10/2026
+
+### Novidades
+
+- **Nada baixa sem o seu ok.** Antes, o Whisper, o recorte, o auditor das fotos e os sons do
+  tema Notícia baixavam sozinhos no primeiro uso. Agora a janela **Antes de seguir** mostra
+  cada coisa com o tamanho, para que serve e a licença, e só baixa depois do **Aprovar e
+  baixar**.
+  - O que é opcional (os sons do tema Notícia) pode ficar de fora: toca um parecido.
+  - **Agora não** cancela, sem baixar nada.
+  - O tamanho vem escrito no editor, medido no commit fixado de cada modelo: o editor não vai
+    à internet para mostrar o plano.
+  - No terminal, ele pergunta `[s/N]`, e `--sim` aprova sem perguntar.
+- **No computador**, em "Antes de começar": o que o editor baixou, com o tamanho e a licença,
+  e o **Tirar** de cada modelo (sai só a pasta exata dele).
+- **O ruído do fundo sai.** O DeepFilterNet3, no seu computador, tira o ventilador, a rua, o
+  teclado e o chiado da fala. No **Auto** (o padrão), ele mede o fundo e só limpa o ruído
+  constante (o ventilador, o ar-condicionado, o chiado): música e som de jogo ficam. **Leve** e
+  **Forte** limpam tudo, e **Não** deixa como veio, no passo 2, ao lado da voz. Na prova, ele
+  melhorou a fala de 6 a 18 dB, contra até 3 dB do redutor de antes, e limpa 1 min em uns 5 s
+  num M5. O modelo (13 MB) baixa na primeira vez, com o seu ok. No terminal: `--ruido`.
+- **Gravado junto com o vídeo.** Quando o microfone gravou à parte, o editor acha o atraso
+  entre ele e a câmera pelo próprio som (com menos de 1 ms de erro nos testes, mesmo com o som
+  da câmera abafado e com chiado) e põe o vídeo no tempo do áudio, corrigindo também a deriva
+  dos relógios. Na montagem, em "A fala"; no terminal, `--sincronizar` (e `--atraso` para
+  ajustar à mão). Sem confiança na medida, ele para e pede uma palma no começo das gravações.
+- **Uma barra para cada parte.** Cada download, a transcrição, os cortes, a escolha das frases,
+  o desenho e o fim do arquivo têm a sua barra, com o quanto falta em cada uma.
+
+### Mudanças
+
+- **O aviso de versão nova só depois do seu ok.** Na primeira vez, a página pergunta "Avisar
+  quando sair versão nova?", e o editor só consulta o GitHub depois do **Avisar**.
+- O tamanho dos modelos do Whisper agora é contado como no Finder e no Explorer: o `small`
+  tem 486 MB (era "464 MB", na conta em base 2).
+- No terminal, sem ninguém para responder (num script), a primeira edição para e pede o
+  `--sim`, em vez de baixar o Whisper sozinha.
+
 ## [0.6.0] — 31/10/2026
 
 ### Novidades

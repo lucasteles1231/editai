@@ -25,7 +25,7 @@ um jogo, slides), e não um borrão do mesmo quadro.
 from __future__ import annotations
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -116,6 +116,12 @@ class Montagem:
     tirar_fundo_do_personagem: bool = True
     #: De onde vem o áudio: "fundo", "pessoa" ou "audio" (``None``: a regra automática).
     fala: str | None = None
+    #: O áudio à parte foi gravado junto com o vídeo da câmera (a pessoa, ou o fundo): o vídeo
+    #: é lido no tempo do som, pelo atraso medido no próprio som (:mod:`editor.sincronia`).
+    sincronizar: bool = False
+    #: O atraso ajustado à mão, em segundos (no lugar do medido): um evento em ``t`` no áudio
+    #: à parte acontece em ``t + atraso_s`` no vídeo.
+    atraso_s: float | None = None
 
     def problemas(self) -> list[str]:
         erros = []
@@ -138,6 +144,11 @@ class Montagem:
                          "personagem, ele vem do fundo ou de um áudio separado")
         if self.fala == "audio" and not self.arquivos_de_audio():
             erros.append("o áudio separado foi escolhido, mas nenhum arquivo de áudio veio")
+        if self.sincronizar or self.atraso_s is not None:
+            if self.tipo_da_fala() != "audio" or len(self.arquivos_de_audio()) != 1:
+                erros.append("sincronizar pelo som pede um áudio gravado à parte, um arquivo só")
+            elif self.video_da_camera() is None:
+                erros.append("sincronizar pelo som pede o vídeo da câmera (a pessoa, ou o fundo)")
         if self.recorte not in RECORTES:
             erros.append(f"recorte desconhecido: {self.recorte} (use {' ou '.join(RECORTES)})")
         if self.formato not in FORMATOS:
@@ -154,6 +165,12 @@ class Montagem:
         if self.pessoa is not None and video_mod.sondar(Path(self.pessoa)).tem_audio:
             return "pessoa"
         return "fundo"
+
+    def video_da_camera(self) -> Path | None:
+        """O vídeo que gravou junto com o áudio à parte: a pessoa, ou o fundo."""
+        if self.pessoa is not None:
+            return Path(self.pessoa)
+        return Path(self.fundo) if self.fundo is not None else None
 
     def arquivos_de_audio(self) -> list[Path]:
         """O áudio separado: as partes, ou o arquivo único."""
@@ -551,16 +568,21 @@ def alvo(posicao: str, de_casa: Transformacao, camada: Camada, largura: int, alt
 # ── o quadro composto ────────────────────────────────────────────────────
 
 
-def camada_da_montagem(montagem: Montagem) -> Camada | None:
-    """O que vai por cima: o personagem, a pessoa (sem fundo ou recortada) ou nada."""
+def camada_da_montagem(montagem: Montagem, tempo: Callable[[float], float] | None = None
+                       ) -> Camada | None:
+    """O que vai por cima: o personagem, a pessoa (sem fundo ou recortada) ou nada. Com
+    ``tempo``, o vídeo da pessoa é lido no tempo do som gravado à parte."""
     if montagem.personagem is not None:
         return CamadaDePersonagem(ler_personagem(
             montagem.personagem, tirar_fundo=montagem.tirar_fundo_do_personagem))
     if montagem.pessoa is None:
         return None
     info = video_mod.sondar(montagem.pessoa)
-    return (CamadaComAlfa(montagem.pessoa, info) if montagem.recorte == "transparente"
-            else CamadaRecortada(montagem.pessoa, info))
+    camada = (CamadaComAlfa(montagem.pessoa, info) if montagem.recorte == "transparente"
+              else CamadaRecortada(montagem.pessoa, info))
+    if tempo is not None:
+        camada.cursor = video_mod.NoTempo(camada.cursor, tempo)
+    return camada
 
 
 def falando(falas: Sequence[tuple[float, float]], t: float) -> bool:

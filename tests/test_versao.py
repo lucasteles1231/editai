@@ -39,6 +39,7 @@ def github(monkeypatch):
 
     monkeypatch.delenv(versao.VARIAVEL_FALSA)
     monkeypatch.setattr(versao, "_transporte", httpx.MockTransport(responder))
+    versao.permitir(True)                  # quem usa disse "Avisar"
     return estado
 
 
@@ -79,13 +80,25 @@ class TestOAviso:
     def test_os_testes_nunca_vao_ao_github(self):
         assert versao.ultima(forcar=True) is None
 
+    def test_sem_o_ok_nao_pergunta_nada(self, github, monkeypatch):
+        (versao._arquivo()).unlink()                          # ninguém respondeu ainda
+        assert versao.perguntar() and not versao.permitido()
+        assert versao.aviso() is None and github["pedidos"] == 0
+        versao.permitir(False)
+        assert not versao.perguntar() and versao.aviso() is None and github["pedidos"] == 0
+        versao.permitir(True)
+        assert versao.aviso()["nova"] == "9.0.0" and github["pedidos"] == 1
+
     def test_pela_pagina(self, github, tmp_path):
         from fastapi.testclient import TestClient
 
         app = servidor.criar_app("t", porta=8898, pasta_saida=tmp_path / "saida")
         cabeca = {"X-Editor-Token": "t"}
         with TestClient(app, base_url="http://127.0.0.1:8898") as cliente:
+            (versao._arquivo()).unlink()                      # a primeira vez: pergunta
             r = cliente.get("/api/versao", headers=cabeca).json()
+            assert r["perguntar"] and r["aviso"] is None and github["pedidos"] == 0
+            r = cliente.post("/api/versao/permitir", headers=cabeca, json={"sim": True}).json()
             assert r["atual"] == __version__ and r["aviso"]["nova"] == "9.0.0"
             assert cliente.post("/api/versao/silenciar", headers=cabeca).json()["aviso"] is None
             assert cliente.get("/api/versao", headers=cabeca).json()["aviso"] is None

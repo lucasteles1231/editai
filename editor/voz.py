@@ -344,7 +344,7 @@ class Parte:
     duracao: float
 
 
-def juntar(partes: Sequence[np.ndarray], nivel: str = "original"
+def juntar(partes: Sequence[np.ndarray], nivel: str = "original", *, portao: bool = True
            ) -> tuple[np.ndarray, list[Parte]]:
     """As partes (mono) em ordem, com 0,3 s entre elas. Com mais de uma, as pontas de cada
     uma são aparadas. Fora do "original", cada uma perde o grave e o eco do cômodo e vai a
@@ -358,7 +358,7 @@ def juntar(partes: Sequence[np.ndarray], nivel: str = "original"
             x, corte = aparar(x)
         if nivel != "original":
             x = tirar_eco(filtrar(x, "highpass=f=80"))
-            if nivel == "limpa":
+            if nivel == "limpa" and portao:     # sem o portão, o DeepFilterNet3 já limpou
                 x = tirar_ruido(x)
             x = nivelar(x, PARTE_LUFS)
         if k:
@@ -391,9 +391,10 @@ def palavras_nas_partes(por_parte: Sequence[Sequence[Palavra]], partes: Sequence
 # ── o estilo ─────────────────────────────────────────────────────────────
 
 
-def tratar(x: np.ndarray, nivel: str) -> np.ndarray:
+def tratar(x: np.ndarray, nivel: str, *, portao: bool = True) -> np.ndarray:
     """A voz mono (já juntada e, se for o caso, limpa) no estilo pedido, em estéreo
-    (amostras × 2), a −15 LUFS. Em "original", só vira estéreo."""
+    (amostras × 2), a −15 LUFS. Em "original", só vira estéreo. Sem o ``portao``, o redutor
+    de ruído de antes não entra (o DeepFilterNet3 já tirou o ruído)."""
     if nivel == "original":
         return np.ascontiguousarray(np.stack([x, x], axis=1).astype(np.float32))
     voz = filtrar(x, NITIDA)
@@ -403,7 +404,8 @@ def tratar(x: np.ndarray, nivel: str) -> np.ndarray:
         # A ordem do chat: a nítida, nivelada; depois o redutor de ruído (o equalizador e
         # a compressão levantariam o chiado), a cadeia e o expansor, que fecha as pausas
         # antes da dobra, para ela não copiar ruído.
-        voz = expansor(filtrar(tirar_ruido(nivelar(voz, FINAL_LUFS)), ESTUDIO))
+        nivelada = nivelar(voz, FINAL_LUFS)
+        voz = expansor(filtrar(tirar_ruido(nivelada) if portao else nivelada, ESTUDIO))
         esquerda = filtrar(voz, CORO_ESQUERDA)
         direita = filtrar(voz, CORO_DIREITA)
         rms = float(np.sqrt(np.mean(voz.astype(np.float64) ** 2)) + 1e-12)

@@ -31,15 +31,19 @@ arquivo marcado como "vindo da internet".
 
 ## O que é instalado, e onde
 
+A instalação traz só o editor. Cada modelo entra no primeiro uso, e só depois do seu ok: o
+editor mostra o tamanho e a licença, e baixa quando você aprova.
+
 | O quê | Tamanho | Onde fica |
 |---|---|---|
 | O uv | ~45 MB | Windows: `%USERPROFILE%\.local\bin` · macOS e Linux: `~/.local/bin` |
 | O Python 3.12, se você ainda não tiver | ~75 MB | dentro da pasta do uv |
 | O editor e o que ele usa | ~220 MB | um ambiente só dele, criado pelo uv |
 | O atalho Editai | ~150 KB | macOS: `~/Applications/Editai.app` · Windows: o menu Iniciar e a Área de Trabalho · Linux: `~/.local/share/applications/editai.desktop` |
-| O modelo do Whisper (`small`) | 464 MB | Windows: `%USERPROFILE%\.cache\huggingface` · macOS e Linux: `~/.cache/huggingface` |
+| O modelo do Whisper (`small`) | 486 MB | Windows: `%USERPROFILE%\.cache\huggingface` · macOS e Linux: `~/.cache/huggingface` |
 | O modelo do recorte (MODNet), na primeira vez que a pessoa é recortada | 26 MB | a mesma pasta do Hugging Face |
 | O auditor das fotos (SigLIP 2), na primeira vez que as fotos são achadas pelo tema | ~410 MB | a mesma pasta do Hugging Face |
+| O redutor de ruído (DeepFilterNet3), na primeira vez que uma fala tem ruído | 13 MB | `ruido`, na pasta de dados (a mesma da Minha voz, abaixo) |
 | A IA local (o Qwen3.5-4B e o llama-server), só se você instalar | ~3,5 GB | `ia-local`, na pasta de dados (a mesma da Minha voz, abaixo) |
 | A voz sintetizada (Minha voz), só se você instalar: o ambiente e o modelo | ~3,5 GB | `motor-de-voz`, na pasta de dados: `%LOCALAPPDATA%\editor-de-video` (Windows), `~/Library/Application Support/editor-de-video` (macOS) ou `~/.local/share/editor-de-video` (Linux) |
 | As vozes gravadas: a leitura e a referência de cada uma | ~15 MB cada | `vozes`, na mesma pasta de dados |
@@ -65,9 +69,9 @@ vídeo do Python ([PyAV](https://github.com/PyAV-Org/PyAV)).
 
 | Modelo | Download | Quando usar |
 |---|---|---|
-| `tiny` | 75 MB | computador bem modesto; erra mais |
-| `base` | 145 MB | mais rápido que o padrão, para testes |
-| **`small`** | **464 MB** | **o padrão:** o menor que transcreve português sem tropeçar a cada frase |
+| `tiny` | 78 MB | computador bem modesto; erra mais |
+| `base` | 148 MB | mais rápido que o padrão, para testes |
+| **`small`** | **486 MB** | **o padrão:** o menor que transcreve português sem tropeçar a cada frase |
 | `medium` | 1,5 GB | sotaque forte, áudio ruim ou termos técnicos; bem mais lento |
 
 Escolha na página (passo 3) ou com `--modelo`. Cada modelo é baixado na primeira vez que
@@ -86,15 +90,17 @@ instaladores e o que mudou. A lista completa está em [Versões](../versoes).
 
 ## Atualizar
 
-**O aviso de versão nova.** Uma vez por dia, o Editai pergunta ao GitHub qual é a última
-versão publicada. Se for mais nova que a sua, a página mostra uma faixa amarela com o que
-mudou e o comando para atualizar.
+**O aviso de versão nova.** Na primeira vez, a página pergunta **Avisar quando sair versão
+nova?**. Só com o **Avisar**, o Editai passa a perguntar ao GitHub, uma vez por dia, qual é a
+última versão publicada. Se for mais nova que a sua, a página mostra uma faixa amarela com o
+que mudou e o comando para atualizar.
 
 - **O que sai do computador:** só o pedido da última versão ao GitHub
   (`api.github.com`), sem nada seu. Veja [Segurança e privacidade](./seguranca-e-privacidade).
 - **Sem internet,** o Editai abre igual, só sem o aviso.
-- **Para desligar:** "Não avisar mais", na própria faixa, ou a variável de ambiente
-  `EDITAI_SEM_AVISO_DE_VERSAO=1`.
+- **Para desligar:** "Não" na pergunta, "Não avisar mais" na própria faixa, ou a variável de
+  ambiente `EDITAI_SEM_AVISO_DE_VERSAO=1`.
+- **`editai --atualizar`** pergunta ao GitHub na hora, porque foi você quem pediu.
 
 **Para atualizar:**
 
@@ -107,6 +113,11 @@ mudou e o comando para atualizar.
 Rodar o instalador de novo também atualiza, em qualquer sistema.
 
 ## Desinstalar
+
+Para tirar **um modelo só** (o Whisper de um tamanho, o recorte, o auditor ou os sons do tema
+Notícia), abra **No computador**, em "Antes de começar", e clique em **Tirar** nele. Sai só a
+pasta exata dele, e usar de novo pede o seu ok de novo. A IA local e as vozes saem pelo cartão
+de cada uma.
 
 Para desinstalar tudo (o motor da voz, as vozes gravadas, os avatares, os presets, as
 chaves, os temporários, o atalho e o programa):

@@ -3,7 +3,7 @@
  * URL aberta pelo comando `editai` e fica guardado na aba (sessionStorage).
  */
 import type {
-  AudioInfo, AvatarSalvo, BibliotecaInfo, Edicao, EfeitosDaVoz, Estado, EstadoChave, EstadoDasVozes, EstadoDaVersao, EstadoIa,
+  AudioInfo, AvatarSalvo, BibliotecaInfo, Componente, Edicao, EfeitosDaVoz, Estado, EstadoChave, EstadoDasVozes, EstadoDaVersao, EstadoIa,
   PrincipalDaIa,
   FotoPexels,
   GeracaoDaMatriz, GravacaoDaVoz, Ideia, ImagemFundo, MotorDeVoz, Narracao, PartesDaFoto, PersonagemInfo, Preset, PresetsImportados, RecorteInfo, RoteiroEscrito, Saida, Tarefa,
@@ -30,13 +30,43 @@ async function erroDe(r: Response): Promise<Error> {
 
 const JSON_ = {'Content-Type': 'application/json'};
 
+/** O que falta baixar para um pedido seguir: o servidor responde 409 com a lista. */
+export type PedidoDeOk = {precisa_de_ok: Componente[]; bytes: number; tamanho: string};
+/** O que quem usa respondeu: o que aprovou baixar e o que recusou (só o que tem reserva).
+ *  ``null`` é "Agora não". */
+export type RespostaDoOk = {aprovados: string[]; recusados: string[]} | null;
+
+let quemPergunta: ((p: PedidoDeOk) => Promise<RespostaDoOk>) | null = null;
+/** Quem mostra o "Aprovar e baixar": a página registra o diálogo uma vez. */
+export function aoPrecisarDeOk(f: ((p: PedidoDeOk) => Promise<RespostaDoOk>) | null) {
+  quemPergunta = f;
+}
+
+/** Nada baixa sem o ok de quem usa: se o servidor pedir, a página pergunta e refaz o
+ *  pedido com a resposta (cada rodada pode pedir uma parte nova). */
+const RODADAS_DO_OK = 4;
+
 async function pedir<T>(caminho: string, init: RequestInit = {}): Promise<T> {
-  const r = await fetch(caminho, {
-    ...init,
-    headers: {...(init.headers ?? {}), 'X-Editor-Token': token},
-  });
-  if (!r.ok) throw await erroDe(r);
-  return r.json() as Promise<T>;
+  let ok: Record<string, string> = {};
+  for (let rodada = 0; rodada < RODADAS_DO_OK; rodada++) {
+    const r = await fetch(caminho, {
+      ...init,
+      headers: {...(init.headers ?? {}), ...ok, 'X-Editor-Token': token},
+    });
+    if (r.status === 409 && quemPergunta) {
+      const corpo = await r.clone().json().catch(() => ({}));
+      if (Array.isArray(corpo.precisa_de_ok)) {
+        const resposta = await quemPergunta(corpo as PedidoDeOk);
+        if (!resposta) throw new Error('Sem o seu ok, nada foi baixado.');
+        ok = {'X-Editai-Aprovados': resposta.aprovados.join(','),
+              'X-Editai-Recusados': resposta.recusados.join(',')};
+        continue;
+      }
+    }
+    if (!r.ok) throw await erroDe(r);
+    return r.json() as Promise<T>;
+  }
+  throw new Error('O download aprovado não terminou: tente de novo.');
 }
 
 /** Envia um arquivo com progresso (o fetch não informa progresso de envio). */
@@ -76,12 +106,22 @@ export type PedidoDeMontagem = {
   audio_das_cenas?: string[];
   recorte: 'transparente' | 'modnet'; formato: string; tirar_fundo_do_personagem: boolean;
   fala: 'fundo' | 'pessoa' | 'audio';
+  /** O áudio (um só) foi gravado junto com o vídeo da câmera: alinhar pelo som. */
+  sincronizar?: boolean;
 };
 
 export const api = {
   estado: () => pedir<Estado>('/api/estado'),
+  /** O que o Editai pode baixar, com o que já está no computador. */
+  componentes: () => pedir<{componentes: Componente[]}>('/api/componentes'),
+  /** Tira um modelo do computador (a pasta exata dele); usar de novo pede o ok de novo. */
+  tirarComponente: (id: string) =>
+    pedir<{saiu: number; componentes: Componente[]}>(`/api/componentes/${id}`, {method: 'DELETE'}),
   versao: () => pedir<EstadoDaVersao>('/api/versao'),
   silenciarVersao: () => pedir<EstadoDaVersao>('/api/versao/silenciar', {method: 'POST'}),
+  /** A resposta de quem usa: o editor pode (ou não) consultar o GitHub pela versão nova. */
+  permitirVersao: (sim: boolean) =>
+    pedir<EstadoDaVersao>('/api/versao/permitir', {method: 'POST', headers: JSON_, body: JSON.stringify({sim})}),
 
   enviar: (arquivo: File, aoProgresso: (fracao: number) => void) =>
     enviarArquivo<VideoInfo>('/api/videos', arquivo, aoProgresso),

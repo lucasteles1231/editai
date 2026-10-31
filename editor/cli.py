@@ -74,6 +74,11 @@ def argumentos() -> argparse.ArgumentParser:
     p.add_argument("-h", "--ajuda", "--help", action="help", help="mostra esta ajuda e sai")
     p.add_argument("video", nargs="?", type=Path, help="o vídeo a editar")
     p.add_argument("-o", "--saida", type=Path, help="onde gravar (padrão: <nome>-editado.<ext>)")
+    p.add_argument("--sim", action="store_true",
+                   help="não pergunta nada: aprova baixar o que a edição precisa (o Whisper, "
+                        "na primeira vez) e, com --desinstalar ou --desinstalar-voz, apaga sem "
+                        "perguntar (os modelos e os vídeos ficam, a não ser com --com-modelos e "
+                        "--com-videos)")
     g = p.add_argument_group("edição")
     g.add_argument("--preset", choices=list(presets.todos()),
                    help="o ponto de partida, um pronto ou um seu (veja --presets); as outras "
@@ -126,6 +131,9 @@ def argumentos() -> argparse.ArgumentParser:
                         "sílaba vira bipe na voz e asteriscos na legenda")
     g.add_argument("--voz", choices=["original", "limpa", "estudio"],
                    help="o tratamento da voz (padrão: original)")
+    g.add_argument("--ruido", choices=["auto", "leve", "forte", "nao"],
+                   help="o ruído do fundo (o DeepFilterNet3, baixado com o seu ok): auto mede e "
+                        "só tira quando há ruído; leve deixa a voz mais natural (padrão: auto)")
     g.add_argument("--efeito-na-voz", dest="efeito_da_voz", type=_efeito, metavar="EFEITO",
                    help='um efeito pronto ou seu (veja --efeitos), ou os ajustes: '
                         '"tom=9,eco=30"; "nenhum" tira o do preset')
@@ -165,6 +173,14 @@ def argumentos() -> argparse.ArgumentParser:
     m.add_argument("--fala", choices=["fundo", "pessoa", "audio"],
                    help="de onde vem o áudio (padrão: o --audio; senão a pessoa, se tiver "
                         "som; senão o fundo)")
+    m.add_argument("--sincronizar", action="store_true",
+                   help="o --audio foi gravado junto com o vídeo da câmera (a pessoa, ou o "
+                        "fundo): o Editai acha o atraso pelo próprio som e põe os dois no tempo. "
+                        "Com um vídeo só (editai camera.mp4 --audio mic.wav --sincronizar), ele "
+                        "é o fundo")
+    m.add_argument("--atraso", type=float, metavar="SEGUNDOS",
+                   help="com --audio: o atraso ajustado à mão, no lugar do medido (o que toca em "
+                        "t no áudio aparece em t + SEGUNDOS no vídeo)")
     m.add_argument("--recorte", choices=["modnet", "transparente"],
                    help="como tirar o fundo da pessoa (padrão: o alfa do arquivo, se houver)")
     m.add_argument("--quadro", default="fundo",
@@ -275,9 +291,6 @@ def argumentos() -> argparse.ArgumentParser:
                    help="tira o Editai deste computador: o motor da voz, as vozes, os avatares, "
                         "os presets, as chaves, os temporários e o programa (mostra tudo antes e "
                         "pergunta à parte pelos modelos e pelos vídeos editados)")
-    d.add_argument("--sim", action="store_true",
-                   help="com --desinstalar ou --desinstalar-voz: não pergunta nada (os modelos e "
-                        "os vídeos ficam, a não ser com --com-modelos e --com-videos)")
     d.add_argument("--com-modelos", action="store_true",
                    help="com --desinstalar: apaga também os modelos do Whisper, do MODNet e do "
                         "auditor, na pasta do Hugging Face")
@@ -585,11 +598,75 @@ def _salvar_preset(a: argparse.Namespace) -> int:
     return 0
 
 
+#: Quantas vezes o terminal pergunta pelo ok numa mesma rodada (cada pergunta é de uma parte).
+RODADAS_DO_OK = 4
+
+
 def main(argv: list[str] | None = None) -> int:
     _utf8()
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
     a = argumentos().parse_args(argv)
+    from editor import componentes
 
+    # Nada baixa sem o ok de quem usa: o que precisar no meio do caminho é perguntado aqui,
+    # e a tarefa recomeça com ele.
+    for _ in range(RODADAS_DO_OK):
+        try:
+            return _executar(a)
+        except componentes.PrecisaDeOk as erro:
+            print()
+            if not _ok_para_baixar(erro.faltam, sim=a.sim):
+                return 1
+    print("erro: o download aprovado não terminou", file=sys.stderr)
+    return 1
+
+
+def _ok_para_baixar(faltam, *, sim: bool, perguntar=input) -> bool:
+    """Mostra o que falta baixar e pergunta (com ``--sim``, aprova). ``False`` se faltou o ok
+    de algo essencial; o que tem reserva, recusado, fica de fora sem parar nada."""
+    from editor import componentes
+
+    if not faltam:
+        return True
+    total = componentes.legivel(sum(c.bytes for c in faltam))
+    print("Para seguir, o Editai precisa baixar (só desta vez, e fica no computador):")
+    for c in faltam:
+        extra = "" if c.essencial else " — opcional"
+        print(f"  · {c.nome}, {c.tamanho()}{extra}: {c.para_que} ({c.licenca}; {c.link})")
+    if sim:
+        print("  (--sim: aprovado)")
+        componentes.aprovar([c.id for c in faltam])
+        return True
+    if sys.stdin is not None and sys.stdin.isatty():
+        resposta = perguntar(f"Aprovar e baixar {total}? [s/N] ").strip().lower()
+        if resposta in ("s", "sim", "y", "yes"):
+            componentes.aprovar([c.id for c in faltam])
+            return True
+    else:
+        print("Sem ninguém para responder: rode de novo com --sim para aprovar.")
+    componentes.recusar([c.id for c in faltam if not c.essencial])
+    essenciais = [c.nome for c in faltam if c.essencial]
+    if essenciais:
+        print(f"Nada foi baixado. Sem {' e '.join(essenciais)}, não dá para seguir.")
+        return False
+    print("Fica sem: toca a reserva.")
+    return True
+
+
+def _baixar_no_terminal(ids: list[str]) -> None:
+    """Os downloads aprovados, cada um na sua linha, antes da edição."""
+    from editor import componentes
+
+    for c in componentes.a_baixar(ids):
+        def andou(fracao: float, texto: str, c=c) -> None:
+            print(f"\r  baixando {c.nome}: {fracao * 100:5.1f}%  {texto}"[:110].ljust(110),
+                  end="", flush=True)
+
+        componentes.baixar(c.id, andou)
+        print()
+
+
+def _executar(a: argparse.Namespace) -> int:
     # No Windows 11, o Controle Inteligente de Aplicativos pode barrar o PyAV. Sem ele
     # nada funciona, então a explicação vem antes de tudo, no lugar do traceback.
     aviso = bloqueio.conferir()
@@ -763,8 +840,17 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     destino = a.saida or principal.with_name(f"{principal.stem}-editado.{formato}")
 
+    from editor import componentes
     from editor.render import editar
 
+    try:                                   # de onde vem a fala, para medir o ruído dela
+        fala = montagem.arquivos_da_fala() if montagem is not None else [a.video]
+    except Exception:
+        fala = []
+    usa = componentes.da_edicao(edicao, montagem, fala)
+    if not _ok_para_baixar(componentes.faltando(usa), sim=a.sim):
+        return 1
+    _baixar_no_terminal(usa)
     print(f"editando {principal.name} → {destino.name}")
     comeco = time.monotonic()
     r = editar(None if montagem is not None else a.video, destino, edicao, saida,
@@ -785,6 +871,10 @@ def _montagem(a: argparse.Namespace):
     from editor import video as video_mod
     from editor.montagem import Montagem
 
+    sincronizar = a.sincronizar or a.atraso is not None
+    if (sincronizar and a.fundo is None and a.cenas is None and a.video is not None
+            and not (a.pessoa or a.personagem or a.avatar)):
+        a.fundo, a.video = a.video, None       # o vídeo da câmera, com o som do --audio
     if a.fundo is None and a.cenas is None:
         if a.pessoa or a.personagem or a.avatar or a.audio or a.fala:
             return None, ("--pessoa, --personagem, --avatar, --audio e --fala vão junto com "
@@ -825,7 +915,7 @@ def _montagem(a: argparse.Namespace):
                     cenas=a.cenas, matriz=a.matriz,
                     recorte=recorte or "modnet", formato=a.quadro,
                     tirar_fundo_do_personagem=not a.manter_fundo_do_personagem,
-                    fala=a.fala), ""
+                    fala=a.fala, sincronizar=a.sincronizar, atraso_s=a.atraso), ""
 
 
 __all__ = ["argumentos", "main"]
