@@ -217,4 +217,6 @@ class TestDePontaAPonta:
         entrada = fazer_video(tmp_path / "e.mp4", segundos=12.0)
         r = render.editar(entrada, tmp_path / "s.mp4", OpcoesDeEdicao(duracao="tudo"),
                           saida.OpcoesDeSaida())
-        assert not r.selecao["fora"] and r.selecao["depois"] == pytest.approx(r.duracao_final)
+        # "depois" vai com 2 casas; as bordas dos cortes caem a cada 1 ms
+        assert not r.selecao["fora"] and r.selecao["depois"] == pytest.approx(r.duracao_final,
+                                                                             abs=0.005)

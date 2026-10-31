@@ -100,14 +100,11 @@ class TestABordaVaiParaOSilencio:
         ws = [Palavra("tapete", 0.0, 0.6), Palavra("azul", 0.7, 1.4)]
         assert cortes.calcular(ws, audio, TAXA, 2.0)[0].ini == 0.0
 
-    def test_pausa_perto_escolhe_a_mais_longa(self):
-        audio = _audio(2.0, [(0.0, 0.50), (0.53, 1.0), (1.4, 2.0)])
-        a, b = cortes.pausa_perto(audio, TAXA, 0.3, 1.6)
-        assert a == pytest.approx(1.0, abs=0.02) and b == pytest.approx(1.4, abs=0.02)
-
-    def test_sem_contraste_nao_inventa_pausa(self):
-        audio = _audio(1.0, [(0.0, 1.0)])
-        assert cortes.pausa_perto(audio, TAXA, 0.2, 0.8) is None
+    def test_fala_sem_pausa_nao_ganha_corte(self):
+        """Sem contraste nenhum no som, não se inventa pausa engolida."""
+        audio = _audio(2.0, [(0.0, 2.0)])
+        ws = [Palavra("um", 0.1, 0.9), Palavra("dois", 1.2, 1.9)]
+        assert cortes.calcular(ws, audio, TAXA, 2.0) == [cortes.Trecho(0.0, 2.0)]
 
 
 class TestOMapaDoTempo:

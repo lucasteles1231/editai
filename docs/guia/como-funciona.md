@@ -23,7 +23,9 @@ flowchart TD
    com outras opções não transcreve outra vez.
 3. Os **cortes** procuram a pausa real no áudio em volta de cada palavra. O Whisper
    costuma marcar o fim da palavra cedo e o começo da seguinte muito cedo, e o corte no
-   tempo dele comeria sílabas ou deixaria meia pausa.
+   tempo dele comeria sílabas ou deixaria meia pausa. A pausa é medida em duas faixas: a da
+   voz, sem o ronco grave, e a de cima, onde estão o "s" e o "f". Um respiro não parte a
+   pausa, e a cauda que some devagar fica na palavra.
 4. O **plano** decide, por regras, cada linha de legenda, cada adesivo, zoom, ícone e
    som e, na montagem, onde a pessoa anda. Com o roteiro ligado, as cenas, os cartões e
    os destaques da legenda vêm do Gemini, conferidos pelo editor. Ele vai junto do vídeo,

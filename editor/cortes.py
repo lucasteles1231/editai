@@ -4,17 +4,12 @@ Os cortes de silêncio: quais trechos do vídeo ficam.
 Uma pausa maior que :data:`PAUSA_MAXIMA_S` vira um respiro curto
 (:data:`RESPIRO_S`), e o começo e o fim do vídeo são aparados.
 
-**A pausa é medida no áudio, não no tempo do Whisper.** Ele erra os dois lados da
-palavra, cada um de um jeito:
-
-- o **fim** sai cedo, de 30 a 300 ms. Cortar ali come a última sílaba, então o fim
-  procura a pausa real numa janela em volta do tempo dele (:func:`pausa_perto`);
-- o **começo** da palavra que vem depois de uma pausa sai *muito* cedo: o Whisper dá
-  a ela o silêncio que vem antes (medido com fala real: até 0,9 s). Cortar ali deixa a
-  pausa quase inteira, então o começo procura do tempo dele até o fim da palavra;
-- às vezes o silêncio inteiro vai para dentro da palavra, e as duas palavras parecem
-  coladas: por isso também se procura, entre duas palavras "coladas", um silêncio
-  engolido maior que a pausa máxima.
+**A pausa é medida no áudio, não no tempo do Whisper** (:mod:`editor.fronteiras`). Ele erra
+os dois lados da palavra: o fim sai cedo (cortar ali come a última sílaba), e o começo da palavra
+que vem depois de uma pausa sai cedo também, às vezes com o silêncio inteiro dentro dela (cortar
+ali deixa a pausa no vídeo). E às vezes as duas palavras parecem coladas, com o silêncio dentro
+de uma delas: por isso também se procura, entre duas palavras "coladas", um silêncio engolido
+maior que a pausa máxima.
 """
 from __future__ import annotations
 
@@ -25,32 +20,19 @@ from itertools import pairwise
 
 import numpy as np
 
+from editor import fronteiras
 from editor.transcricao import Palavra
 
 #: Uma pausa maior que isto entre duas palavras vira corte.
 PAUSA_MAXIMA_S = 0.45
 #: Quanto do silêncio fica entre duas falas depois do corte (meio de cada lado).
 RESPIRO_S = 0.15
-#: Onde procurar a pausa real em volta da borda do Whisper: um pouco antes, bem
-#: mais depois — é depois que a pausa costuma estar.
-ANTES_DA_BORDA_S = 0.10
-DEPOIS_DA_BORDA_S = 0.40
 #: O silêncio no começo de uma fala só conta se tiver pelo menos isto: sem pausa
-#: antes (vídeo que já abre falando), a mais longa da janela seria o fechamento de
-#: uma consoante dentro da primeira palavra, de 50 a 100 ms.
+#: antes (vídeo que já abre falando), a pausa achada seria o fechamento de uma
+#: consoante dentro da primeira palavra, de 50 a 100 ms.
 PAUSA_NO_COMECO_S = 0.15
 #: Folga quando não há pausa clara (fala colada em música, por exemplo).
 FOLGA_SEM_PAUSA_S = 0.06
-#: O que conta como pausa: até 6 dB acima do ponto mais baixo da janela, com pelo
-#: menos 20 dB de contraste entre o mais alto e o mais baixo, e 30 ms de duração.
-PAUSA_RELATIVA_DB = 6.0
-CONTRASTE_MINIMO_DB = 20.0
-PAUSA_MINIMA_S = 0.03
-#: E também conta como pausa o que fica 30 dB abaixo do pico da janela. Só com a
-#: régua do fundo, um silêncio digital (zeros) depois da palavra puxava o fundo para
-#: −140 dB: a pausa natural (−44 dB) deixava de contar e o corte caía no meio da
-#: cauda da última sílaba — visto com fala real.
-SILENCIO_ABAIXO_DO_PICO_DB = 30.0
 #: Dois trechos mais próximos que isto viram um só.
 JUNTAR_ABAIXO_DE_S = 0.05
 
@@ -67,43 +49,6 @@ class Trecho:
         return self.fim - self.ini
 
 
-def pausa_perto(amostras: np.ndarray, taxa: int, de: float, ate: float
-                ) -> tuple[float, float] | None:
-    """A pausa mais longa entre ``de`` e ``ate`` (segundos), ou ``None``.
-
-    **A mais longa, e não a primeira.** Dentro de uma palavra também há silêncio —
-    o fechamento do "t" dura uns 50 ms — e cortar ali tira a sílaba do mesmo jeito.
-    A pausa entre duas frases é mais longa que qualquer uma delas.
-    """
-    passo = max(1, int(0.01 * taxa))
-    i0, i1 = max(0, int(de * taxa)), min(len(amostras), int(ate * taxa))
-    quadros = (i1 - i0) // passo
-    if quadros < 3:
-        return None
-    trecho = np.asarray(amostras[i0:i0 + quadros * passo], dtype=np.float32)
-    rms = np.sqrt(np.mean(trecho.reshape(quadros, passo) ** 2, axis=1))
-    rms = np.convolve(rms, np.ones(3) / 3, mode="same")
-    db = 20 * np.log10(np.maximum(rms, 1e-7))
-    if db.max() - db.min() < CONTRASTE_MINIMO_DB:
-        return None
-    limiar = max(db.min() + PAUSA_RELATIVA_DB, db.max() - SILENCIO_ABAIXO_DO_PICO_DB)
-    corridas, comeco = [], None
-    for k, v in enumerate(db):
-        if v <= limiar and comeco is None:
-            comeco = k
-        elif v > limiar and comeco is not None:
-            corridas.append((comeco, k))
-            comeco = None
-    if comeco is not None:
-        corridas.append((comeco, quadros))
-    corridas = [c for c in corridas if (c[1] - c[0]) * passo / taxa >= PAUSA_MINIMA_S]
-    if not corridas:
-        return None
-    a, b = max(corridas, key=lambda c: (c[1] - c[0], -c[0]))
-    base = i0 / taxa
-    return base + a * passo / taxa, base + b * passo / taxa
-
-
 def calcular(palavras: Sequence[Palavra], amostras: np.ndarray | None, taxa: int,
              duracao: float, *, pausa_maxima: float = PAUSA_MAXIMA_S,
              respiro: float = RESPIRO_S) -> list[Trecho]:
@@ -111,14 +56,16 @@ def calcular(palavras: Sequence[Palavra], amostras: np.ndarray | None, taxa: int
     ws = sorted(palavras, key=lambda p: p.inicio)
     if not ws or duracao <= 0:
         return [Trecho(0.0, max(0.0, duracao))]
+    medida = (fronteiras.atividade(amostras, taxa)
+              if amostras is not None and len(amostras) else None)
     # O que sai: o silêncio antes da primeira palavra, as pausas longas e o silêncio
     # depois da última. O que fica é o que sobra entre eles.
-    fora = [(0.0, max(0.0, _comeco_real(ws[0], 0.0, amostras, taxa)))]
+    fora = [(0.0, max(0.0, _comeco_real(ws[0], medida)))]
     for a, b in pairwise(ws):
-        pausa = _pausa_entre(a, b, pausa_maxima, amostras, taxa)
+        pausa = _pausa_entre(a, b, pausa_maxima, medida)
         if pausa:
             fora.append(pausa)
-    fora.append((min(duracao, _fim_real(ws[-1].fim, duracao, amostras, taxa)), duracao))
+    fora.append((min(duracao, _fim_real(ws[-1], duracao, medida)), duracao))
     meio = respiro / 2
     fora = _unir(fora)
     trechos = [Trecho(max(0.0, ini - meio), min(duracao, fim + meio))
@@ -126,45 +73,40 @@ def calcular(palavras: Sequence[Palavra], amostras: np.ndarray | None, taxa: int
     return _juntar(trechos)
 
 
-def _pausa_entre(a: Palavra, b: Palavra, pausa_maxima: float, amostras, taxa: int
-                 ) -> tuple[float, float] | None:
+def _pausa_entre(a: Palavra, b: Palavra, pausa_maxima: float,
+                 medida: fronteiras.Atividade | None) -> tuple[float, float] | None:
     """O silêncio a cortar entre duas palavras seguidas, ou ``None``."""
     vao = b.inicio - a.fim
-    if amostras is None:
+    if medida is None:
         if vao > pausa_maxima:
             return a.fim + FOLGA_SEM_PAUSA_S, b.inicio - FOLGA_SEM_PAUSA_S
         return None
     if vao > pausa_maxima:
-        fim = _fim_real(a.fim, b.inicio, amostras, taxa)
-        return fim, _comeco_real(b, fim, amostras, taxa)
+        achada = fronteiras.entre(medida, a, b)
+        if achada is None:
+            return a.fim + FOLGA_SEM_PAUSA_S, b.inicio - FOLGA_SEM_PAUSA_S
+        return achada.fim_da_fala, achada.comeco_da_fala
     # O Whisper diz que estão coladas, mas pode ter posto a pausa dentro de uma delas.
     # A janela vai do meio da primeira ao fim da segunda; o fechamento de uma
     # consoante não passa de 100 ms, então nada dentro da palavra chega à pausa máxima.
-    achada = pausa_perto(amostras, taxa, (a.inicio + a.fim) / 2, b.fim)
-    if achada and achada[1] - achada[0] > pausa_maxima:
-        return achada
+    achada = fronteiras.pausa(medida, (a.inicio + a.fim) / 2, b.fim)
+    if achada and achada.duracao > pausa_maxima:
+        return achada.fim_da_fala, achada.comeco_da_fala
     return None
 
 
-def _comeco_real(palavra: Palavra, limite: float, amostras, taxa: int) -> float:
-    """Onde o som da palavra começa: o fim da pausa entre o tempo do Whisper (que sai
-    cedo) e o fim da palavra."""
-    if amostras is None:
-        return palavra.inicio - FOLGA_SEM_PAUSA_S
-    de = max(limite + 0.02, palavra.inicio - DEPOIS_DA_BORDA_S)
-    ate = max(palavra.fim, palavra.inicio + ANTES_DA_BORDA_S)
-    achada = pausa_perto(amostras, taxa, de, ate)
-    if achada and achada[1] - achada[0] >= PAUSA_NO_COMECO_S:
-        return achada[1]
+def _comeco_real(palavra: Palavra, medida: fronteiras.Atividade | None) -> float:
+    """Onde o som da primeira palavra começa."""
+    achada = fronteiras.entre(medida, None, palavra) if medida else None
+    if achada and achada.duracao >= PAUSA_NO_COMECO_S:
+        return achada.comeco_da_fala
     return palavra.inicio - FOLGA_SEM_PAUSA_S
 
 
-def _fim_real(fim: float, limite: float, amostras, taxa: int) -> float:
-    if amostras is None:
-        return fim + FOLGA_SEM_PAUSA_S
-    ate = min(limite - 0.02, fim + DEPOIS_DA_BORDA_S)
-    achada = pausa_perto(amostras, taxa, fim - ANTES_DA_BORDA_S, ate)
-    return achada[0] if achada else fim + FOLGA_SEM_PAUSA_S
+def _fim_real(palavra: Palavra, duracao: float, medida: fronteiras.Atividade | None) -> float:
+    """Onde o som da última palavra acaba."""
+    achada = fronteiras.entre(medida, palavra, None, duracao) if medida else None
+    return achada.fim_da_fala if achada else palavra.fim + FOLGA_SEM_PAUSA_S
 
 
 def _unir(fora: list[tuple[float, float]]) -> list[tuple[float, float]]:
@@ -278,5 +220,4 @@ class Linha:
         return saida
 
 
-__all__ = ["PAUSA_MAXIMA_S", "RESPIRO_S", "Linha", "Trecho", "calcular", "cruzar",
-           "pausa_perto"]
+__all__ = ["PAUSA_MAXIMA_S", "RESPIRO_S", "Linha", "Trecho", "calcular", "cruzar"]

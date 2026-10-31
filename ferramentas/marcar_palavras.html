@@ -1,0 +1,195 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Marcar as palavras</title>
+<style>
+:root{--fundo:#f4f4f1;--cartao:#fff;--texto:#1b1d1c;--fraco:#5e6461;--linha:#d8dbd6;--realce:#c2410c;
+--ok:#1d7a46}
+@media (prefers-color-scheme:dark){:root{--fundo:#141615;--cartao:#1d201f;--texto:#e7e9e6;
+--fraco:#a1a8a4;--linha:#333836;--realce:#fb923c;--ok:#5fd193}}
+*{box-sizing:border-box}body{margin:0;background:var(--fundo);color:var(--texto);
+font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1460px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;margin:0 0 4px}.fraco{color:var(--fraco)}
+.barra{height:8px;background:var(--linha);border-radius:99px;overflow:hidden;margin:10px 0 18px}
+.barra>div{height:100%;background:var(--ok)}
+.pedido{font-size:20px;margin:6px 0}.pedido b{color:var(--realce)}
+.contexto{color:var(--fraco);margin-bottom:10px}
+.tela{position:relative;overflow-x:auto;border:1px solid var(--linha);border-radius:8px;
+background:var(--cartao);cursor:crosshair}
+.tela img{display:block}
+.marca{position:absolute;top:0;bottom:0;width:2px;background:var(--realce);pointer-events:none}
+.tocando{position:absolute;top:0;bottom:0;width:1px;background:#22c55e;pointer-events:none}
+.botoes{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+button{font:inherit;padding:8px 14px;border-radius:8px;border:1px solid var(--linha);
+background:var(--cartao);color:var(--texto);cursor:pointer}
+button.principal{background:var(--ok);color:#fff;border-color:var(--ok)}
+button:focus-visible{outline:3px solid var(--realce);outline-offset:2px}
+kbd{font:12px ui-monospace,monospace;border:1px solid var(--linha);border-radius:4px;padding:1px 5px}
+.ajuda{color:var(--fraco);font-size:13px}
+.aviso{border-left:3px solid var(--realce);padding:4px 10px;margin:0 0 10px}
+</style></head><body><main>
+<h1>Marcar as palavras</h1>
+<p class="fraco">Clique no ponto exato. A forma de onda está em cima e o espectrograma embaixo: o
+"s", o "f" e o "x" aparecem lá em cima no espectrograma, como uma névoa clara. Cada marca é
+guardada na hora.</p>
+<div class="barra"><div id="progresso"></div></div>
+<div id="cont" class="fraco"></div>
+<p class="pedido" id="pedido"></p>
+<p class="contexto" id="contexto"></p>
+<p class="aviso" id="revisao" hidden>Revisão: a marca de antes está na figura. Confira com
+<kbd>Z</kbd>; se a palavra sair cortada, mova a marca para a direita até ela sair inteira.</p>
+<div class="tela" id="tela"><img id="figura" alt="a forma de onda e o espectrograma do trecho">
+<div class="marca" id="marca" hidden></div><div class="tocando" id="tocando" hidden></div></div>
+<div class="botoes">
+<button id="ouvir">Ouvir o trecho <kbd>espaço</kbd></button>
+<button id="daMarca">Ouvir a partir da marca <kbd>A</kbd></button>
+<button id="ateMarca">Ouvir até a marca <kbd>Z</kbd></button>
+<button id="confirmar" class="principal">Confirmar e seguir <kbd>Enter</kbd></button>
+<button id="pular">Não dá para marcar <kbd>P</kbd></button>
+<button id="voltar">Voltar <kbd>⌫</kbd></button>
+</div>
+<p class="ajuda"><kbd>←</kbd> <kbd>→</kbd> movem a marca 5 ms (com <kbd>Shift</kbd>, 1 ms). O começo é onde
+o primeiro som da palavra começa. O fim é onde o último som dela acaba, contando o "s" final e o
+fim que some devagar: com <kbd>Z</kbd>, a palavra tem de sair inteira, sem perder nada.</p>
+</main><script>
+let pontos = [], ordem = [], k = 0;
+// ?revisar=fim (ou comeco, ou ids separados por vírgula): passa só pelas marcas já feitas
+const revisar = new URLSearchParams(location.search).get("revisar");
+const $ = (id) => document.getElementById(id);
+const figura = $("figura");
+const audio = new AudioContext();
+let buffer = null, pedidoDoSom = 0, tocando = null;
+const pendente = (p) => revisar ? !p.revisado : p.marca_s === null && !p.pulado;
+async function carregar() {
+  pontos = await (await fetch("pontos.json")).json();
+  try {
+    const salvo = await (await fetch("gabarito.json", {cache: "no-store"})).json();
+    const porId = Object.fromEntries(salvo.map((p) => [p.id, p]));
+    pontos = pontos.map((p) => ({...p, ...(porId[p.id] || {})}));
+  } catch (e) {}
+  ordem = pontos.map((_, i) => i);
+  if (revisar) {
+    const ids = new Set(revisar.split(","));
+    ordem = ordem.filter((i) => pontos[i].marca_s !== null
+      && (pontos[i].tipo === revisar || ids.has(pontos[i].id)));
+  }
+  k = Math.max(0, ordem.findIndex((i) => pendente(pontos[i])));
+  if (ordem.every((i) => !pendente(pontos[i]))) k = ordem.length - 1;
+  mostrar();
+}
+function salvar() {
+  fetch("salvar", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(pontos)});
+}
+const atual = () => pontos[ordem[k]];
+function duracao(p) { return p.fim_s - p.inicio_s; }
+function mostrar() {
+  parar();
+  const p = atual();
+  const feitos = ordem.filter((i) => !pendente(pontos[i])).length;
+  $("progresso").style.width = `${feitos / ordem.length * 100}%`;
+  $("cont").textContent = `${k + 1} de ${ordem.length} · ${feitos} ${revisar ? "revisados" : "marcados"}`
+    + (feitos === ordem.length ? " · pronto" : "");
+  $("pedido").innerHTML = p.tipo === "comeco"
+    ? `Onde <b>começa</b> o som de “${p.palavra}”?` : `Onde <b>termina</b> o som de “${p.palavra}”?`;
+  $("contexto").textContent = `“${p.contexto}”`;
+  $("revisao").hidden = !revisar;
+  figura.src = `trechos/${p.id}.png`;
+  carregarSom(p);
+  desenharMarca();
+}
+async function carregarSom(p) {
+  const meu = ++pedidoDoSom;
+  buffer = null;
+  const dados = await (await fetch(`trechos/${p.id}.wav`)).arrayBuffer();
+  const decodificado = await audio.decodeAudioData(dados);
+  if (meu === pedidoDoSom) buffer = decodificado;
+}
+function desenharMarca() {
+  const p = atual(), m = $("marca");
+  if (p.marca_s === null) { m.hidden = true; return; }
+  m.hidden = false;
+  m.style.left = `${(p.marca_s - p.inicio_s) / duracao(p) * figura.clientWidth}px`;
+}
+function mudarMarca(t) {
+  const p = atual();
+  if (revisar && p.marca_original === undefined) p.marca_original = p.marca_s;
+  p.marca_s = +Math.min(p.fim_s, Math.max(p.inicio_s, t)).toFixed(4);
+  p.pulado = false;
+  desenharMarca();
+  salvar();
+}
+$("tela").addEventListener("click", (e) => {
+  const r = figura.getBoundingClientRect(), p = atual();
+  mudarMarca(p.inicio_s + Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * duracao(p));
+});
+// O som toca pelo Web Audio, que para na amostra exata. O <audio> parava atrasado (o pause()
+// vinha de um laço de quadros, e o que já tinha ido para o fone ainda tocava): ouvia-se a
+// palavra inteira com a marca cedo.
+const RAMPA_S = 0.005;
+function parar() {
+  if (tocando) { try { tocando.stop(); } catch (e) {} tocando = null; }
+  $("tocando").hidden = true;
+}
+function tocar(de, para) {
+  parar();
+  if (!buffer) return;
+  audio.resume();
+  const p = atual(), fonte = audio.createBufferSource(), ganho = audio.createGain();
+  fonte.buffer = buffer;
+  fonte.connect(ganho).connect(audio.destination);
+  const tempo = Math.max(RAMPA_S * 2, (para ?? buffer.duration) - de);
+  const t0 = audio.currentTime + 0.03;
+  // rampas de 5 ms: o corte seco estala, e o estalo soa como uma consoante a mais
+  ganho.gain.setValueAtTime(0, t0);
+  ganho.gain.linearRampToValueAtTime(1, t0 + RAMPA_S);
+  ganho.gain.setValueAtTime(1, t0 + tempo - RAMPA_S);
+  ganho.gain.linearRampToValueAtTime(0, t0 + tempo);
+  fonte.start(t0, de, tempo);
+  tocando = fonte;
+  fonte.onended = () => { if (tocando === fonte) parar(); };
+  const t = $("tocando");
+  t.hidden = false;
+  const passo = () => {
+    if (tocando !== fonte) return;
+    const andou = Math.min(tempo, Math.max(0, audio.currentTime - t0 - (audio.outputLatency || 0)));
+    t.style.left = `${(de + andou) / duracao(p) * figura.clientWidth}px`;
+    requestAnimationFrame(passo);
+  };
+  requestAnimationFrame(passo);
+}
+const ouvir = () => tocar(0, null);
+const daMarca = () => { const p = atual(); if (p.marca_s !== null) tocar(p.marca_s - p.inicio_s, null); };
+const ateMarca = () => { const p = atual(); if (p.marca_s !== null) tocar(0, p.marca_s - p.inicio_s); };
+const seguir = () => { if (k < ordem.length - 1) { k++; mostrar(); } else mostrar(); };
+const confirmar = () => {
+  const p = atual();
+  if (p.marca_s === null) return;
+  if (revisar) { p.revisado = true; salvar(); }
+  seguir();
+};
+const pular = () => {
+  const p = atual();
+  p.pulado = true; p.marca_s = null;
+  if (revisar) p.revisado = true;
+  salvar(); seguir();
+};
+const voltar = () => { if (k > 0) { k--; mostrar(); } };
+$("ouvir").onclick = ouvir; $("daMarca").onclick = daMarca; $("ateMarca").onclick = ateMarca;
+$("confirmar").onclick = confirmar; $("pular").onclick = pular; $("voltar").onclick = voltar;
+document.addEventListener("keydown", (e) => {
+  const p = atual();
+  if (e.key === " ") { e.preventDefault(); ouvir(); }
+  else if (e.key === "Enter") { e.preventDefault(); confirmar(); }
+  else if (e.key === "a" || e.key === "A") daMarca();
+  else if (e.key === "z" || e.key === "Z") ateMarca();
+  else if (e.key === "p" || e.key === "P") pular();
+  else if (e.key === "Backspace") { e.preventDefault(); voltar(); }
+  else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && p.marca_s !== null) {
+    e.preventDefault();
+    mudarMarca(p.marca_s + (e.shiftKey ? 0.001 : 0.005) * (e.key === "ArrowLeft" ? -1 : 1));
+  }
+});
+window.addEventListener("resize", desenharMarca);
+figura.addEventListener("load", desenharMarca);
+carregar();
+</script></body></html>

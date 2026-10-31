@@ -7,6 +7,21 @@ está sempre no [site](https://lucasteles1231.github.io/editai/baixar).
 Os números seguem o [versionamento semântico](https://semver.org/lang/pt-BR/): o último muda
 nas correções, o do meio nas novidades e o primeiro quando algo deixa de funcionar como antes.
 
+## [Não publicado]
+
+### Melhorias
+
+- **O corte cai no começo e no fim reais da fala.** O Whisper marca o fim da palavra cedo (em
+  20 de 21 palavras marcadas à mão, o corte no tempo dele comia a cauda da última sílaba) e o
+  começo da seguinte cedo também. Agora a pausa é medida no som, em duas faixas: a da voz, sem o
+  ronco grave abaixo de 150 Hz, e a de cima, onde estão o "s", o "f" e o "x". Um respiro ou um
+  estalo da boca não partem a pausa, e a cauda que some devagar fica na palavra.
+  - Numa prova com 22 começos e fins marcados à mão, que o método não tinha visto, 73% das
+    bordas caem a até 30 ms do som. O corte de antes acertava 41%, e o Whisper, 14%.
+  - Nas pausas que o corte de silêncio corta, 83%, contra 58% do corte de antes. O pior erro
+    caiu de 667 para 309 ms.
+  - Medir a fala de 10 min leva uns 2 s num M5.
+
 ## [0.7.0] — 31/10/2026
 
 ### Novidades
