@@ -2,12 +2,12 @@
 O que os testes compartilham.
 
 - **Nenhum teste roda modelo de verdade nem chama a internet:** o transcritor falso, o
-  recorte falso, o auditor falso, a IA falsa, o Pexels falso, as fotos falsas e o motor de
-  voz falso ficam ligados para todos, e os sons que o editor baixaria (os do Remotion sem
-  licença livre) não vêm: toca a reserva deles. Esquecer isso num teste da interface rodaria
-  o Whisper (ou gastaria a chave do Gemini) sem ninguém perceber. Os testes do recorte, do
-  auditor e da IA desligam o falso de propósito, com o modelo e a rede trocados por
-  imitações.
+  recorte falso, o auditor falso, a IA falsa, a pesquisa falsa, o Pexels falso, as fotos
+  falsas e o motor de voz falso ficam ligados para todos, e os sons que o editor baixaria
+  (os do Remotion sem licença livre) não vêm: toca a reserva deles. Esquecer isso num teste
+  da interface rodaria o Whisper (ou gastaria a chave do Gemini) sem ninguém perceber. Os
+  testes do recorte, do auditor, da pesquisa e da IA desligam o falso de propósito, com o
+  modelo e a rede trocados por imitações.
 - **Nenhum teste escreve nas pastas do usuário nem lê as chaves dele:** o cache de
   transcrições, os envios, as imagens de fundo, o registro de gastos e a configuração
   (onde ficam as chaves do Gemini e do Pexels) vão para a pasta temporária do teste, e
@@ -32,6 +32,7 @@ from editor import (
     ia,
     imagens,
     motor_de_voz,
+    pesquisa,
     pexels,
     recorte,
     render,
@@ -53,6 +54,7 @@ def _isolado(tmp_path, monkeypatch):
     monkeypatch.setenv(motor_de_voz.VARIAVEL_FALSA, "falsa")
     monkeypatch.setenv(versao.VARIAVEL_FALSA, "falsa")
     monkeypatch.setenv(fotos.VARIAVEL_FALSA, "falso")
+    monkeypatch.setenv(pesquisa.VARIAVEL_FALSA, "falsa")
     # "Abrir a pasta" abriria o Finder (ou o Explorer) de verdade
     monkeypatch.setattr(servidor, "abrir_pasta", lambda pasta: None)
     monkeypatch.delenv(ia.VARIAVEL_DA_CHAVE, raising=False)

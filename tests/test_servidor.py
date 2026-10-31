@@ -1120,3 +1120,26 @@ class TestFotosEOSomDasCenas:
         assert r.status_code == 200, r.text
         t = _esperar(cliente, r.json()["id"], limite=120)
         assert t["estado"] == "pronto", t
+
+
+class TestAIAPrincipal:
+    def test_escolher_e_instalar_a_ia_local(self, cliente, monkeypatch):
+        from editor import ia_local
+
+        monkeypatch.delenv(ia.VARIAVEL_FALSA)
+        r = cliente.put("/api/ia/principal", headers=CABECA, json={"principal": "local"})
+        assert r.status_code == 200 and r.json()["principal"] == "local"
+        assert not r.json()["pronta"]                       # escolhida, mas não instalada
+        assert cliente.put("/api/ia/principal", headers=CABECA,
+                           json={"principal": "outra"}).status_code == 422
+        chamados: list[str] = []
+        monkeypatch.setattr(ia_local, "instalar_em_segundo_plano",
+                            lambda: chamados.append("instalar"))
+        monkeypatch.setattr(ia_local, "cancelar_instalacao", lambda: chamados.append("cancelar"))
+        monkeypatch.setattr(ia_local, "desinstalar", lambda: chamados.append("desinstalar"))
+        assert cliente.post("/api/ia/local", headers=CABECA).status_code == 200
+        assert cliente.post("/api/ia/local/cancelar", headers=CABECA).status_code == 200
+        monkeypatch.setattr(ia_local, "instalado", lambda: True)
+        e = cliente.delete("/api/ia/local", headers=CABECA).json()
+        assert chamados == ["instalar", "cancelar", "desinstalar"]
+        assert e["pronta"] and e["provedor"] == "local"

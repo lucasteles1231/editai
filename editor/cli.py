@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import logging
+import os
 import sys
 import time
 from pathlib import Path
@@ -204,6 +205,15 @@ def argumentos() -> argparse.ArgumentParser:
                         "e de saída por cima (o mesmo nome substitui)")
     p.add_argument("--frase", metavar="TEXTO", default="",
                    help="com --salvar-preset: a frase que descreve o preset")
+    i = p.add_argument_group("a IA (opcional: o roteiro, as cenas, os cartões, a matriz, o avatar "
+                             "e as ideias de capa)")
+    i.add_argument("--ia", choices=["automatica", "gemini", "local"],
+                   help="quem responde nesta edição: o Gemini (com a chave), a IA local "
+                        "(instalada) ou a automática, que usa o Gemini e, sem a chave, a local "
+                        "(padrão: a escolhida na página)")
+    i.add_argument("--instalar-ia", action="store_true",
+                   help="instala a IA local: o Qwen3.5-4B e o llama-server (uns 3,5 GB)")
+    i.add_argument("--desinstalar-ia", action="store_true", help="apaga a IA local")
     g2 = p.add_argument_group("a matriz da biblioteca de cenas")
     g2.add_argument("--gerar-matriz", type=Path, metavar="PASTA",
                     help="escreve o cenas.json de uma pasta de clipes: o Gemini descreve cada "
@@ -223,6 +233,9 @@ def argumentos() -> argparse.ArgumentParser:
                    help="com --tema: quem narra: gemini:Orus (ou outra voz do Gemini), local "
                         "(a voz do computador) ou o nome de uma voz sua (padrão: o Gemini com "
                         "a chave; sem ela, a local)")
+    t.add_argument("--pesquisar", action="store_true",
+                   help="com --tema: o roteiro sai do que a internet traz hoje (as notícias e a "
+                        "Wikipédia, grátis), com as fontes; o tema e as buscas saem do computador")
     t.add_argument("--sem-auditor", dest="sem_auditor", action="store_true",
                    help="com --tema: fica com as primeiras fotos de cada busca, sem o auditor "
                         "conferir se elas mostram o trecho (ele baixa uns 410 MB na 1ª vez)")
@@ -476,15 +489,21 @@ def _pelo_tema(a: argparse.Namespace) -> str:
               'que o assunto pede'} sobre: {a.tema}")
         try:
             r = escrita.escrever(a.tema, segundos, teto=_limite_do_formato(a, None),
-                                 idioma=a.idioma)
+                                 idioma=a.idioma, pesquisar=a.pesquisar)
         except escrita.SemRoteiro as erro:
             return f"erro: {erro}"
         roteiro = r.texto
         print(f"\n{r.titulo}\n\n{roteiro}\n")
+        if r.fontes:
+            print("as fontes da pesquisa:")
+            for f in r.fontes:
+                print(f"  [{f['numero']}] {f['fonte']}, {f['data'] or 's/d'}: {f['titulo']} "
+                      f"({f['link']})")
+            print()
     pasta.mkdir(parents=True, exist_ok=True)
     (pasta / "roteiro.txt").write_text(roteiro, encoding="utf-8")
 
-    narrador = a.narrador or ("gemini:Orus" if ia.ligada() else "local")
+    narrador = a.narrador or ("gemini:Orus" if ia.gemini_pronto() else "local")
     if narrador == "local":
         narrador = voz_pronta.VOZ_LOCAL.id
     destino = pasta / "narracao.wav"
@@ -647,6 +666,27 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{v['apelido']:20} {v['nome']} · criada em {v['criada']}")
         if not lista:
             print("nenhuma voz salva: crie uma com --criar-voz NOME")
+        return 0
+    if a.ia:
+        from editor import ia
+
+        os.environ[ia.VARIAVEL_DA_PRINCIPAL] = a.ia     # vale só para esta edição
+    if a.instalar_ia or a.desinstalar_ia:
+        from editor import ia_local
+
+        try:
+            if a.desinstalar_ia:
+                ia_local.desinstalar()
+                print("a IA local foi apagada")
+            else:
+                print(f"instalando a IA local ({ia_local.NOME}): {ia_local.ESPACO}, "
+                      f"{ia_local.TEMPO}")
+                ia_local.instalar()
+                print("a IA local está pronta: ela responde quando não há a chave do Gemini, "
+                      "ou sempre, com --ia local")
+        except ia_local.ErroDaIALocal as erro:
+            print(f"erro: {erro}", file=sys.stderr)
+            return 1
         return 0
     if a.instalar_voz_local or a.desinstalar_voz_local:
         from editor import voz_local

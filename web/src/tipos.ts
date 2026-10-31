@@ -203,7 +203,10 @@ export type EstadoDasProntas = {
 /** O motor da voz sintetizada, as vozes gravadas e as prontas (``GET /api/vozes``). */
 export type EstadoDasVozes = {motor: MotorDeVoz; vozes: VozSalva[]; prontas: EstadoDasProntas};
 /** O roteiro escrito pela IA a partir do tema (``POST /api/roteiro``). */
-export type RoteiroEscrito = {titulo: string; texto: string; palavras: number; por: string; pedidos: number};
+/** Uma fonte da pesquisa: o número com que o roteiro cita, o título, o veículo, a data e o link. */
+export type FonteDaPesquisa = {numero: number; titulo: string; trecho: string; link: string; fonte: string; data: string};
+export type RoteiroEscrito = {titulo: string; texto: string; palavras: number; por: string; pedidos: number;
+  fontes: FonteDaPesquisa[]};
 export type MedidasDaLeitura = {segundos: number; lufs: number; snr_db: number; estouro: number};
 export type ParagrafoDaLeitura = {
   indice: number; texto: string; estado: 'pendente' | 'ok' | 'refazer'; motivos: string[]; cobertura: number;
@@ -392,7 +395,14 @@ export type Ideia = {
   imagem?: ImagemFundo | null;
 };
 
-export type EstadoIa = {configurada: boolean; origem: string; final: string; falsa: boolean};
+/** A IA local: o modelo, a instalação e o espaço que ela ocupa. */
+export type EstadoDaIaLocal = {instalado: boolean; instalando: boolean; modelo: string; etapa: string; fracao: number;
+  erro: string; espaco: string; tempo: string; ocupa: string};
+export type PrincipalDaIa = 'automatica' | 'gemini' | 'local';
+/** ``configurada`` é a chave do Gemini (as vozes e o fundo gerado); ``pronta``, se há uma IA para as tarefas de texto
+ *  e de imagem, e ``provedor``, qual responde agora. */
+export type EstadoIa = {configurada: boolean; origem: string; final: string; falsa: boolean; pronta: boolean;
+  principal: PrincipalDaIa; provedor: string; local: EstadoDaIaLocal};
 export type EstadoChave = {configurada: boolean; origem: string; final: string};
 
 export type RecorteInfo = {ok: boolean; pessoa: Caixa | null; rosto: Caixa | null};

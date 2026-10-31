@@ -44,17 +44,18 @@ const Aviso: React.FC = () => (
 );
 
 export const PainelIa: React.FC<Props> = (p) => {
-  if (!p.ia.configurada) {
+  if (!p.ia.pronta) {
     return (
       <div className="painel-ia" id="painel-ia">
         <strong>Thumbnail com IA <span className="etiqueta">opcional</span></strong>
         <p>
-          Com uma chave do Gemini, a IA lê o que você falou, olha 8 quadros do vídeo e sugere 3
-          thumbnails de acordo com o conteúdo: chamada, quadro, cores, ícone e seta.
+          Com uma IA (a local, no seu computador, ou o Gemini, com a chave grátis), ela lê o que você
+          falou, olha 8 quadros do vídeo e sugere 3 thumbnails de acordo com o conteúdo: chamada,
+          quadro, cores, ícone e seta.
         </p>
         <div className="linha-de-opcoes">
           <button type="button" className="botao pequeno" onClick={irParaAChave}>
-            Colar a chave do Gemini
+            Configurar a IA
           </button>
         </div>
         <Aviso />

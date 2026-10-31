@@ -18,7 +18,7 @@ import {PROPORCAO} from './componentes/thumb/AbaFundo';
 import {gerarPng} from './thumb/exportar';
 import {carregarFonte} from './thumb/medida';
 import type {
-  AndamentoDaMatriz, AudioInfo, AvatarSalvo, BibliotecaInfo, Camadas, CenaDaMatriz, Edicao, Estado, EstadoChave, EstadoDasVozes, EstadoIa, Ideia,
+  AndamentoDaMatriz, AudioInfo, AvatarSalvo, BibliotecaInfo, Camadas, CenaDaMatriz, Edicao, Estado, EstadoChave, EstadoDasVozes, EstadoIa, FonteDaPesquisa, Ideia,
   MontagemConfig,
   PersonagemInfo, Preset, RecorteInfo, Saida, Tarefa, ThumbConfig, VideoInfo,
 } from './tipos';
@@ -145,6 +145,9 @@ export const App: React.FC = () => {
   const [escrevendoRoteiro, setEscrevendoRoteiro] = useState(false);
   const [erroDoRoteiro, setErroDoRoteiro] = useState('');
   const [fotosAchadas, setFotosAchadas] = useState<FotosAchadas | null>(null);
+  /** O roteiro pelo tema com a pesquisa na internet (desligada de começo) e as fontes que ela trouxe. */
+  const [pesquisar, setPesquisar] = useState(false);
+  const [fontes, setFontes] = useState<FonteDaPesquisa[]>([]);
   /** O auditor escolhe, entre as fotos de cada busca, as que mostram o trecho. */
   const [conferirFotos, setConferirFotos] = useState(true);
   const [revisao, setRevisao] = useState<Revisao | null>(null);
@@ -178,8 +181,8 @@ export const App: React.FC = () => {
   const [erroThumb, setErroThumb] = useState('');
   const trilha = useMemo(() => montarTrilha(materiais, {
     completoTemSom: completo ? completo.tem_audio : null, pessoaTemSom: daPessoa ? daPessoa.tem_audio : null,
-    temAvatar: Boolean(avatares?.length), temIa: Boolean(ia?.configurada), narrar, porCima: porCimaEscolhido,
-  }), [materiais, completo, daPessoa, avatares, ia?.configurada, narrar, porCimaEscolhido]);
+    temAvatar: Boolean(avatares?.length), temIa: Boolean(ia?.pronta), narrar, porCima: porCimaEscolhido,
+  }), [materiais, completo, daPessoa, avatares, ia?.pronta, narrar, porCimaEscolhido]);
   const noLugar = (d: Destino) => (trilha.completo === d ? completo : trilha.daPessoa === d ? daPessoa : null);
   const modo = trilha.modo;
   const unico = noLugar('unico');
@@ -521,15 +524,16 @@ export const App: React.FC = () => {
     const segundos = Number(duracaoEscolhida);
     try {
       const r = await api.escreverRoteiro(tema, Number.isFinite(segundos) && segundos > 0 ? segundos : null,
-        limite ?? 600, 'pt');
+        limite ?? 600, 'pt', pesquisar);
       setRoteiro(r.texto);
+      setFontes(r.fontes ?? []);
       setNarracao(null);
     } catch (e) {
       setErroDoRoteiro((e as Error).message);
     } finally {
       setEscrevendoRoteiro(false);
     }
-  }, [tema, duracaoEscolhida, limite]);
+  }, [tema, duracaoEscolhida, limite, pesquisar]);
 
   /** As fotos achadas pelo roteiro: viram uma biblioteca de cenas, que já vale ao terminar (dá para
    *  revisar depois, na tabela de sempre). */
@@ -671,7 +675,7 @@ export const App: React.FC = () => {
     }
     // Com a IA ligada, a primeira ideia vira a thumbnail; se ela falhar, fica a sugestão local.
     const {ia: estadoIa, usarIa: usar} = iaAtual.current;
-    if (config.ativo && usar && estadoIa?.configurada) {
+    if (config.ativo && usar && estadoIa?.pronta) {
       const novas = await pedirIdeias(t.id, []);
       if (novas.length) {
         config = aplicarIdeia(config, novas[0]);
@@ -860,7 +864,7 @@ export const App: React.FC = () => {
             <p>Legenda, cortes de silêncio, zoom, palavras que saltam, ícones, sons e thumbnail. Ou uma notícia
               montada a partir de uma pasta de cenas, com cartões animados — tudo feito aqui no seu computador.</p>
           </div>
-          <AntesDeComecar ia={ia} aoSalvarChave={async (chave) => setIa(await api.salvarChave(chave))}
+          <AntesDeComecar ia={ia} aoMudarIa={setIa} aoSalvarChave={async (chave) => setIa(await api.salvarChave(chave))}
             aoApagarChave={async () => setIa(await api.apagarChave())}
             pexels={pexels} aoSalvarChavePexels={async (chave) => setPexels(await api.salvarChavePexels(chave))}
             aoApagarChavePexels={async () => setPexels(await api.apagarChavePexels())}
@@ -881,6 +885,7 @@ export const App: React.FC = () => {
             progresso={envios} erro={errosDeEnvio} aoEscolher={escolherArquivo}
             aoEscolherAudios={(a) => void escolherAudios(a)} aoEscolherPasta={(a) => void escolherPasta(a)}
             aoEscolherVideoLongo={(f) => void separarVideoLongo(f)} pastaDasCenas={pastaDasCenas}
+            pesquisar={pesquisar} aoMudarPesquisar={setPesquisar} fontes={fontes}
             aoEscreverRoteiro={() => void escreverRoteiro()} escrevendoRoteiro={escrevendoRoteiro}
             duracao={duracaoEscolhida} aoMudarDuracao={setDuracaoEscolhida} limite={limite}
             erroDoRoteiro={erroDoRoteiro} aoAcharFotos={() => void acharFotos()}

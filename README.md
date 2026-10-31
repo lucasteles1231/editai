@@ -83,7 +83,8 @@ O que o instalador faz, passo a passo, e como instalar à mão estão em
 | **[Cartões animados](https://lucasteles1231.github.io/editai/guia/cartoes-animados)** e **[legenda em destaques](https://lucasteles1231.github.io/editai/guia/a-legenda-em-destaques)** | selo, lista, quadro e número na palavra certa; opcionais, com o Gemini |
 | **[Voz e bipe](https://lucasteles1231.github.io/editai/guia/voz-e-bipe)** e **[efeitos na voz](https://lucasteles1231.github.io/editai/guia/efeitos-na-voz)** | voz limpa ou de estúdio, robô ou esquilo, e bipe nas palavras proibidas |
 | **[Quanto tempo](https://lucasteles1231.github.io/editai/guia/como-usar#quanto-tempo)** | 15 s, 30 s, 1 min… ou Auto: o que passar, a IA escolhe as frases que ficam |
-| **[O vídeo só pelo tema](https://lucasteles1231.github.io/editai/guia/o-video-so-pelo-tema)** | escreva o assunto: a IA escreve o roteiro, você revisa, um auditor no seu computador escolhe as fotos que mostram cada trecho, e uma voz narra |
+| **[O vídeo só pelo tema](https://lucasteles1231.github.io/editai/guia/o-video-so-pelo-tema)** | escreva o assunto: a IA escreve o roteiro (pesquisando na internet, se for de agora), você revisa, um auditor no seu computador escolhe as fotos que mostram cada trecho, e uma voz narra |
+| **[A IA no seu computador](https://lucasteles1231.github.io/editai/guia/a-ia-no-seu-computador)** | o roteiro, as cenas, os cartões, a matriz e o avatar sem internet e sem chave, num modelo aberto; ou o Gemini, com a chave grátis |
 | **[Minha voz](https://lucasteles1231.github.io/editai/guia/minha-voz)** | leia um texto uma vez, e a sua voz narra qualquer roteiro |
 | **[Meu avatar](https://lucasteles1231.github.io/editai/guia/meu-avatar)** | um personagem seu em pixel art, de pessoa ou de bicho, que fala no seu lugar |
 | **[Presets](https://lucasteles1231.github.io/editai/guia/presets)** | gameplay, vlog, review, aula, notícia: um clique muda tudo |
@@ -125,8 +126,10 @@ O detalhe de cada função, medido, está em
 
 Nada do vídeo, do áudio nem da sua voz sai do computador. O que sai, e só quando você usa:
 
-- o texto da fala e quadros pequenos para o Gemini, com a sua chave;
-- no vídeo só pelo tema, o tema e o roteiro para o Gemini, com a sua chave;
+- o texto da fala e quadros pequenos para o Gemini, com a sua chave (com a IA local, nada
+  disso sai);
+- no vídeo só pelo tema, o tema e o roteiro para o Gemini, com a sua chave, e, com a
+  pesquisa ligada, o tema e as buscas para as notícias e a Wikipédia;
 - a busca de fotos no Pexels e no Openverse;
 - os downloads da instalação e dos modelos;
 - o pedido da última versão ao GitHub, uma vez por dia.

@@ -13,7 +13,8 @@ import {bytes, duracao, numero} from '../formatar';
 import {ORDEM, PLATAFORMAS, type Plataforma, juntar} from '../plataformas';
 import {MATERIAIS, type Material, type Trilha} from '../trilha';
 import type {
-  AndamentoDaMatriz, AudioInfo, AvatarSalvo, BibliotecaInfo, CenaDaMatriz, EstadoDasVozes, Fala, MontagemConfig, PersonagemInfo, PorCima,
+  AndamentoDaMatriz, AudioInfo, AvatarSalvo, BibliotecaInfo, CenaDaMatriz, EstadoDasVozes, Fala, FonteDaPesquisa, MontagemConfig,
+  PersonagemInfo, PorCima,
   VideoInfo,
 } from '../tipos';
 import {Interruptor} from './Interruptor';
@@ -241,8 +242,12 @@ export type PropsDoEnvio = {
   aoEscolherVideoLongo: (arquivo: File) => void;
   /** Onde as cenas do vídeo longo (ou as fotos achadas) ficaram. */
   pastaDasCenas: string | null;
-  /** O roteiro pelo tema: a IA escreve, no tamanho de "Quanto tempo?", e ele cai no roteiro de sempre. */
+  /** O roteiro pelo tema: a IA escreve, no tamanho de "Quanto tempo?", e ele cai no roteiro de sempre. Com a
+   *  pesquisa, ela escreve com o que a internet traz hoje, e as fontes vêm junto, para a revisão. */
   aoEscreverRoteiro: () => void;
+  pesquisar: boolean;
+  aoMudarPesquisar: (v: boolean) => void;
+  fontes: FonteDaPesquisa[];
   /** Quanto o vídeo deve durar ("auto", "tudo" ou os segundos) e o limite das plataformas marcadas. */
   duracao: string;
   aoMudarDuracao: (d: string) => void;
@@ -382,6 +387,10 @@ const EscreverRoteiro: React.FC<PropsDoEnvio> = (p) => {
           : `No tamanho que o assunto pede${p.limite ? `, até ${tempoRedondo(p.limite)}` : ''}: é o Auto, de “Quanto tempo?”, lá `
             + 'embaixo.'}
       </small>
+      <Interruptor ligado={p.pesquisar} aoMudar={p.aoMudarPesquisar} desabilitado={p.escrevendoRoteiro}
+        titulo="Pesquisar na internet"
+        descricao={'Para um assunto de agora: a IA busca as notícias e a Wikipédia (grátis) e escreve só com o que '
+          + 'acha, com as fontes. O assunto e as buscas saem do computador.'} />
       <div className="linha-de-opcoes">
         <button type="button" className="botao pequeno usar" disabled={!p.tema.trim() || p.escrevendoRoteiro}
           title={p.tema.trim() ? undefined : 'escreva o tema primeiro'} onClick={escrever}>
@@ -389,7 +398,10 @@ const EscreverRoteiro: React.FC<PropsDoEnvio> = (p) => {
         </button>
       </div>
       {p.escrevendoRoteiro ? (
-        <small className="andamento" aria-live="polite">A IA está escrevendo o roteiro (leva de 30 s a 2 min)…</small>
+        <small className="andamento" aria-live="polite">
+          {p.pesquisar ? 'A IA está pesquisando e escrevendo o roteiro (leva de 30 s a 3 min)…'
+            : 'A IA está escrevendo o roteiro (leva de 30 s a 2 min)…'}
+        </small>
       ) : null}
       <Aviso texto={p.erroDoRoteiro} />
       <label className="campo">
@@ -402,6 +414,20 @@ const EscreverRoteiro: React.FC<PropsDoEnvio> = (p) => {
           exatamente este texto, e cada parágrafo (separado por uma linha em branco) vira um trecho, com a sua imagem.
         </small>
       </label>
+      {p.fontes.length ? (
+        <details className="fontes-do-roteiro" open>
+          <summary>As fontes da pesquisa ({p.fontes.length})</summary>
+          <small>Confira os fatos nelas antes de narrar: a IA escreveu só com isto, mas pode ter lido errado.</small>
+          <ol>
+            {p.fontes.map((f) => (
+              <li key={f.numero} value={f.numero}>
+                <a href={f.link} target="_blank" rel="noreferrer">{f.titulo}</a>
+                <span className="fraco"> · {f.fonte}{f.data ? `, ${f.data.split('-').reverse().join('/')}` : ''}</span>
+              </li>
+            ))}
+          </ol>
+        </details>
+      ) : null}
     </div>
   );
 };

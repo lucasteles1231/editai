@@ -295,7 +295,7 @@ class TestOPedido:
 
     def test_sem_chave(self, monkeypatch):
         monkeypatch.delenv(ia.VARIAVEL_FALSA, raising=False)
-        with pytest.raises(ia.ErroDaIA, match="Falta a chave"):
+        with pytest.raises(ia.ErroDaIA, match="Falta uma IA"):
             _sugerir(_Gemini())
 
     def test_falsa_nao_chama_ninguem(self):
@@ -475,3 +475,83 @@ class TestAMontagemEmCamadas:
                                                        rosto=[100, 400, 300, 600])]},
                               8, set(NOMES), ["fundo"] * 8)
         assert boas[0]["recorte"] is True and boas[0]["rosto"] is None
+
+
+class TestAIAPrincipal:
+    """Quem responde: o Gemini (com a chave) ou a IA local (instalada). Na automática, o
+    Gemini primeiro; a escolhida que falha avisa e para, sem trocar de IA."""
+
+    @pytest.fixture
+    def sem_falsa(self, monkeypatch):
+        monkeypatch.delenv(ia.VARIAVEL_FALSA, raising=False)
+        monkeypatch.delenv(ia.VARIAVEL_DA_CHAVE, raising=False)
+        monkeypatch.delenv(ia.VARIAVEL_DA_PRINCIPAL, raising=False)
+
+    @pytest.fixture
+    def local(self, monkeypatch):
+        from editor import ia_local
+
+        pedidos: list[tuple] = []
+
+        def perguntar_json(sistema, pedido, esquema, *, temperatura, imagens=()):
+            pedidos.append((sistema, pedido, list(imagens)))
+            return {"ok": "local"}
+
+        monkeypatch.setattr(ia_local, "instalado", lambda: True)
+        monkeypatch.setattr(ia_local, "perguntar_json", perguntar_json)
+        return pedidos
+
+    def test_a_escolha_fica_guardada(self, sem_falsa):
+        assert ia.escolhida() == "automatica"
+        ia.escolher("local")
+        assert ia.escolhida() == "local"
+        ia.escolher("automatica")
+        assert ia.escolhida() == "automatica"
+        with pytest.raises(ia.ErroDaIA, match="uma destas"):
+            ia.escolher("outra")
+
+    def test_quem_responde(self, sem_falsa, local, monkeypatch):
+        assert ia.provedor() == "local"                  # sem a chave, a local
+        monkeypatch.setenv(ia.VARIAVEL_DA_CHAVE, CHAVE)
+        assert ia.provedor() == "gemini"                 # na automática, o Gemini primeiro
+        ia.escolher("local")
+        assert ia.provedor() == "local" and ia.gemini_pronto()
+        monkeypatch.delenv(ia.VARIAVEL_DA_CHAVE)
+        ia.escolher("gemini")
+        assert ia.provedor() == "" and not ia.ligada()   # escolhido, mas sem a chave
+
+    def test_o_pedido_vai_para_a_local(self, sem_falsa, local):
+        gasto: list[str] = []
+        resposta, modelo = ia.perguntar_json("s", "p", {}, temperatura=0.2, gasto=gasto,
+                                             imagens=[b"jpeg"])
+        assert resposta == {"ok": "local"} and modelo == "Qwen3.5-4B"
+        assert gasto == ["Qwen3.5-4B"] and local == [("s", "p", [b"jpeg"])]
+        assert ia.de_quem(modelo) == "local" and ia.de_quem("gemini-flash-latest") == "gemini"
+
+    def test_a_local_que_falha_avisa_e_para(self, sem_falsa, monkeypatch):
+        from editor import ia_local
+
+        def falha(*_a, **_k):
+            raise ia_local.ErroDaIALocal("A IA local fechou ao abrir")
+
+        monkeypatch.setattr(ia_local, "instalado", lambda: True)
+        monkeypatch.setattr(ia_local, "perguntar_json", falha)
+        monkeypatch.setenv(ia.VARIAVEL_DA_CHAVE, CHAVE)
+        ia.escolher("local")
+        gemini = _Gemini(_resposta([_variante()] * 3))
+        with pytest.raises(ia.ErroDaIA, match="fechou ao abrir"):
+            ia.perguntar_json("s", "p", {}, temperatura=0.2,
+                              transporte=httpx.MockTransport(gemini))
+        assert gemini.pedidos == []                      # o Gemini não foi chamado
+
+    def test_sem_nenhuma_ia_diz_o_que_fazer(self, sem_falsa):
+        with pytest.raises(ia.ErroDaIA, match="instale a IA local ou cole a chave"):
+            ia.perguntar_json("s", "p", {}, temperatura=0.2)
+        ia.escolher("local")
+        with pytest.raises(ia.ErroDaIA, match="instalar-ia"):
+            ia.perguntar_json("s", "p", {}, temperatura=0.2)
+
+    def test_o_estado_para_a_pagina(self, sem_falsa, local):
+        e = ia.estado()
+        assert e["pronta"] and e["provedor"] == "local" and e["principal"] == "automatica"
+        assert not e["configurada"] and e["local"]["modelo"] == "Qwen3.5-4B"

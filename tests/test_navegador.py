@@ -696,10 +696,21 @@ def test_o_video_so_pelo_tema(navegador, endereco, tmp_path):
     with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/roteiro")) as pedido:
         escrever.click()
     assert pedido.value.post_data_json == {"tema": "O céu azul", "segundos": None, "teto": 180,
-                                           "idioma": "pt"}
+                                           "idioma": "pt", "pesquisar": False}
     roteiro = texto.get_by_label("o roteiro", exact=True)
     expect(roteiro).to_have_value(re.compile(r"^Por que o céu azul funciona"))
     expect(texto.get_by_role("button", name="Escrever de novo")).to_be_visible()
+    expect(texto.locator(".fontes-do-roteiro")).to_have_count(0)
+    # com a pesquisa (a falsa, sem rede), as fontes vêm junto, para a revisão
+    texto.get_by_text("Pesquisar na internet").click()
+    pagina.once("dialog", lambda d: d.accept())
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/roteiro")) as pedido:
+        texto.get_by_role("button", name="Escrever de novo").click()
+    assert pedido.value.post_data_json["pesquisar"] is True
+    fontes = texto.locator(".fontes-do-roteiro")
+    expect(fontes).to_contain_text("As fontes da pesquisa (4)")
+    expect(fontes.get_by_role("link").first).to_have_attribute(
+        "href", re.compile(r"^https://exemplo.org/"))
     roteiro.fill(roteiro.input_value() + "\n\nE no pôr do sol, por que ele fica laranja?")
 
     # as fotos, do roteiro revisado
@@ -1286,23 +1297,44 @@ def test_antes_de_comecar(navegador, endereco, monkeypatch):
 
     faixa = pagina.get_by_label("antes de começar")
     assert faixa.bounding_box()["y"] < pagina.locator("#passo-envio").bounding_box()["y"]
-    gemini = faixa.get_by_role("article", name="Chave do Gemini")
-    expect(gemini).to_contain_text("sem chave")
+    gemini = faixa.get_by_role("article", name="A IA")
+    expect(gemini).to_contain_text("sem IA")
     expect(faixa.get_by_role("article", name="Minha voz")).to_contain_text("nenhuma voz gravada")
     # a chave não está mais solta na página: só dentro do painel
     expect(pagina.get_by_label("chave do Gemini", exact=True)).to_have_count(0)
 
     gemini.get_by_role("button", name="Configurar").click()
-    painel = pagina.get_by_role("dialog", name="Chave do Gemini")
+    painel = pagina.get_by_role("dialog", name="A IA")
     campo = painel.get_by_label("chave do Gemini", exact=True)
     expect(campo).to_be_focused()
-    expect(painel).to_contain_text("a matriz da biblioteca de cenas e os cartões animados")
-    painel.get_by_role("button", name="fechar: Chave do Gemini").click()
+    expect(painel).to_contain_text("o Gemini responde às tarefas da IA")
+    # quem responde: a escolha vai para o servidor, e a IA local se instala pelo botão
+    from editor import ia_local
+
+    instalar: list[str] = []
+    monkeypatch.setattr(ia_local, "instalar_em_segundo_plano", lambda: instalar.append("ok"))
+    principal = painel.get_by_role("group", name="a IA principal")
+    expect(principal.get_by_role("button", name="Automática")).to_have_attribute(
+        "aria-pressed", "true")
+    with pagina.expect_request(lambda r: r.url.split("?")[0].endswith("/api/ia/principal")) as p:
+        principal.get_by_role("button", name="IA local").click()
+    assert p.value.post_data_json == {"principal": "local"}
+    expect(principal.get_by_role("button", name="IA local")).to_have_attribute(
+        "aria-pressed", "true")
+    expect(painel).to_contain_text("Instale a IA local abaixo para ela responder.")
+    with pagina.expect_response(lambda r: r.url.split("?")[0].endswith("/api/ia/local")
+                                and r.request.method == "POST"):
+        painel.get_by_role("button", name="Instalar a IA local").click()
+    assert instalar == ["ok"]
+    principal.get_by_role("button", name="Automática").click()
+    expect(principal.get_by_role("button", name="Automática")).to_have_attribute(
+        "aria-pressed", "true")
+    painel.get_by_role("button", name="fechar: A IA").click()
     expect(painel).to_have_count(0)
 
-    # o painel da IA, no passo 5, abre o mesmo painel
-    pagina.locator("#painel-ia").get_by_role("button", name="Colar a chave do Gemini").click()
-    expect(pagina.get_by_role("dialog", name="Chave do Gemini").get_by_label(
+    # o painel da thumbnail com IA, no passo 5, abre o mesmo painel
+    pagina.locator("#painel-ia").get_by_role("button", name="Configurar a IA").click()
+    expect(pagina.get_by_role("dialog", name="A IA").get_by_label(
         "chave do Gemini", exact=True)).to_be_focused()
     pagina.keyboard.press("Escape")
     expect(pagina.get_by_role("dialog")).to_have_count(0)

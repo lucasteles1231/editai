@@ -29,6 +29,8 @@ editai --separar-cenas trailer.mp4                # o vídeo longo vira a pasta 
 editai --tema "Por que o céu é azul"              # só pelo tema: roteiro, voz, fotos e vídeo
 editai --tema "Por que o céu é azul" --duracao 60 --narrador local   # a voz do computador
 editai --instalar-voz-local                       # a voz local (o Piper), uns 210 MB
+editai --instalar-ia                              # a IA local (o Qwen3.5-4B), uns 3,5 GB
+editai video.mp4 --ia local                       # a IA local nas cenas e nos cartões
 editai --cenas imovel/ --matriz imovel/cenas.json --audio imovel/tour-1.mp4 imovel/tour-2.mp4 \
        --preset imoveis               # fotos e vídeos de um imóvel, o som de dois vídeos dela
 editai --cenas cenas/ --matriz cenas/cenas.json --audio p1.m4a p2.m4a p3.m4a \
@@ -92,9 +94,13 @@ editai --formatos                                 # o que este computador grava
 | `--tema TEXTO` | o assunto do vídeo, em uma frase. Sozinho, o Editai escreve o roteiro (ou usa o `--roteiro`), narra, acha as fotos e monta ([O vídeo só pelo tema](./o-video-so-pelo-tema)); com um vídeo ou as cenas, vai de contexto para a IA | |
 | `--duracao TEMPO` | quanto o vídeo deve durar: `auto` (só sai o que passar do limite da plataforma: 3 min em pé; deitado, nada sai), `tudo` (nada da fala sai) ou os segundos. O que passar, a IA escolhe as frases que ficam ([Quanto tempo](./como-usar#quanto-tempo)); com `--tema`, é o tamanho do roteiro | `auto` |
 | `--narrador VOZ` | com `--tema`: quem narra: `gemini:Orus` (ou `gemini:Charon`, `Puck`, `Kore`, `Aoede`, `Leda`), `local` ou o nome de uma voz sua | o Gemini, com a chave; sem ela, a local |
+| `--pesquisar` | com `--tema`: o roteiro sai do que a internet traz hoje (as notícias e a Wikipédia, grátis), com as fontes embaixo dele ([Pesquisar na internet](./o-video-so-pelo-tema#pesquisar-na-internet)) | sem pesquisa |
 | `--sem-auditor` | com `--tema`: fica com as primeiras fotos de cada busca, sem o [auditor](./o-video-so-pelo-tema#o-auditor) conferir se elas mostram o trecho (ele baixa uns 410 MB na primeira vez) | o auditor confere |
 | `--instalar-voz-local` | instala a voz local (o Piper, uns 210 MB), num ambiente à parte | |
 | `--desinstalar-voz-local` | apaga a voz local | |
+| `--ia QUAL` | quem responde nesta edição (o roteiro, as cenas, os cartões, a matriz, o avatar e as ideias de capa): `gemini` (com a chave), `local` (a [IA no seu computador](./a-ia-no-seu-computador)) ou `automatica`, que usa o Gemini e, sem a chave, a local | a escolhida na página |
+| `--instalar-ia` | instala a IA local: o Qwen3.5-4B e o llama-server, uns 3,5 GB | |
+| `--desinstalar-ia` | apaga a IA local | |
 | `--janela`, `--sem-janela` | a cena numa janela 16:9 com câmera | sem |
 | `--pessoa` | o vídeo de você falando, por cima do fundo | o vídeo do argumento |
 | `--personagem` | um GIF, PNG animado ou WebP, em loop por cima | |

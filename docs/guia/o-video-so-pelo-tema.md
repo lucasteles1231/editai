@@ -10,10 +10,14 @@ resto. É o vídeo de explicação dos canais que só narram, com fotos passando
 4. **A edição de sempre:** a legenda, os cortes, o zoom, os ícones, os sons e, se você
    tiver, o seu avatar por cima.
 
-**O que precisa:** a chave grátis do Gemini, para escrever o roteiro. Pegue a sua no
-[Google AI Studio](https://aistudio.google.com/apikey) e cole em **Antes de começar**, logo
-abaixo do título. Sem ela, marque também **Roteiro** e escreva o texto você mesmo: o resto
-funciona igual, com a voz local ou a sua.
+**O que precisa:** uma IA, para escrever o roteiro. Pode ser:
+- **a IA local** ([A IA no seu computador](./a-ia-no-seu-computador)), sem internet e sem
+  chave;
+- **o Gemini**, com a chave grátis do [Google AI Studio](https://aistudio.google.com/apikey).
+
+As duas ficam no cartão **A IA**, em **Antes de começar**, logo abaixo do título. Sem
+nenhuma, marque também **Roteiro** e escreva o texto você mesmo: o resto funciona igual, com
+a voz local ou a sua.
 
 ## Na página
 
@@ -21,7 +25,9 @@ funciona igual, com a voz local ou a sua.
 2. **A duração** é a de **Quanto tempo?**, no fim do passo 1 ([veja](./como-usar#quanto-tempo)).
    No **Auto**, a IA escreve no tamanho que o assunto pede, até o limite da plataforma (3 min
    no Shorts e no Reels). Com um tempo escolhido (15 s, 30 s, 1 min…), ela escreve para ele.
-3. **Escrever o roteiro.** Ele aparece logo abaixo, para você revisar:
+3. **Escrever o roteiro.** Para um assunto de agora (uma notícia da semana), ligue antes
+   **Pesquisar na internet** ([veja](#pesquisar-na-internet)). O roteiro aparece logo abaixo,
+   para você revisar:
    - a voz lê exatamente esse texto;
    - cada parágrafo (separado por uma linha em branco) vira um trecho do vídeo, com a sua
      foto;
@@ -46,6 +52,29 @@ funciona igual, com a voz local ou a sua.
 - termina com uma pergunta para quem assiste comentar.
 
 Mesmo assim, **revise**. O que ela escreve é dela, e um fato errado num vídeo é seu.
+
+## Pesquisar na internet
+
+O que a IA sabe tem data de corte: sem pesquisa, uma notícia da semana sai velha, ou
+inventada. Com **Pesquisar na internet** ligado, o roteiro sai do que a internet traz hoje.
+
+1. **O editor busca o tema** nas notícias e na Wikipédia. Essa primeira busca é dele, e não
+   da IA: medido em 26/10/2026, metade dos modelos não pediu nenhuma busca sozinha.
+2. **A IA busca e lê o que mais quiser,** até 4 buscas e 3 páginas, e anota os fatos, cada um
+   com o número da fonte.
+3. **O roteiro é escrito só com essas notas.** As fontes aparecem embaixo dele, com os links,
+   para você conferir antes de narrar.
+
+**As fontes,** todas grátis e sem chave:
+- **as notícias:** o RSS do Bing Notícias e, se ele não responder, o do Google Notícias;
+- **os fatos:** a Wikipédia.
+
+Nenhum dos dois RSS tem termos de uso publicados para esse uso.
+
+**O que sai do computador:** o tema e as buscas que a IA fizer vão para essas fontes, e as
+páginas lidas são baixadas. Com a IA local, o resto continua no computador.
+
+**No terminal:** `--pesquisar`, com `--tema`. As fontes aparecem embaixo do roteiro.
 
 ## As fotos
 
@@ -135,6 +164,7 @@ editai --tema "Por que o céu é azul" --narrador local    # a voz do computador
 editai --tema "Por que o céu é azul" --roteiro roteiro.txt --narrador ana   # o seu roteiro, a sua voz
 editai --instalar-voz-local                              # a voz local, uns 210 MB
 editai --tema "Por que o céu é azul" --sem-auditor       # as primeiras fotos de cada busca
+editai --tema "GTA 6: a pré-venda" --pesquisar           # com o que a internet traz hoje
 ```
 
 No terminal, tudo sai de uma vez, sem a revisão: o roteiro aparece na tela e fica no

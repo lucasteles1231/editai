@@ -121,7 +121,7 @@ def estado() -> dict:
     """O que a página mostra das vozes prontas: quais existem, e o que falta para cada uma."""
     return {"vozes": [{"id": v.id, "nome": v.nome, "descricao": v.descricao, "motor": v.motor}
                       for v in vozes()],
-            "gemini": {"ligado": ia.ligada(), "restantes_hoje": restantes_hoje(),
+            "gemini": {"ligado": ia.gemini_pronto(), "restantes_hoje": restantes_hoje(),
                        "por_dia": POR_DIA},
             "local": voz_local.estado()}
 

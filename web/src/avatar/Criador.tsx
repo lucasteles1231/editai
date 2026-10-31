@@ -256,13 +256,14 @@ export const Criador: React.FC<Props> = ({ia, avatares, aoMudarAvatares}) => {
             {fotoUrl ? (
               <div className="foto-escolhida">
                 <img src={fotoUrl} alt="a foto escolhida" />
-                {ia?.configurada ? (
+                {ia?.pronta ? (
                   <button type="button" className="botao" disabled={lendo} onClick={() => void montarPelaFoto()}>
-                    {lendo ? 'O Gemini está olhando a foto…' : 'Montar pela foto com o Gemini (grátis)'}
+                    {lendo ? 'A IA está olhando a foto…' : ia.provedor === 'local'
+                      ? 'Montar pela foto com a IA local' : 'Montar pela foto com o Gemini (grátis)'}
                   </button>
                 ) : (
                   <button type="button" className="botao pequeno" onClick={() => abrirConfiguracao('gemini')}>
-                    Colar a chave do Gemini para montar pela foto
+                    Configurar a IA para montar pela foto
                   </button>
                 )}
               </div>

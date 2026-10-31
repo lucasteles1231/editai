@@ -305,7 +305,7 @@ def gerar(clipes: Sequence[tuple[Path, str]], *, assunto: str = "",
             logger.info("clipe ilegível: %s", caminho, exc_info=True)
     total = len(lidos)
     descricoes: dict[int, dict] = {}
-    por, aviso, pedidos = "gemini", "", 0
+    por, aviso, pedidos = "local" if ia.provedor() == "local" else "gemini", "", 0
 
     def avisar() -> None:
         if progresso:
@@ -315,8 +315,8 @@ def gerar(clipes: Sequence[tuple[Path, str]], *, assunto: str = "",
         descricoes = {i: _falsa(c) for i, c in enumerate(lidos)}
         por = "falsa"
     elif not ia.ligada():
-        por, aviso = "rascunho", ("sem a chave do Gemini, a descrição veio do nome de cada "
-                                  "arquivo: revise na tabela")
+        por, aviso = "rascunho", ("sem IA (a local, ou a chave do Gemini), a descrição veio "
+                                  "do nome de cada arquivo: revise na tabela")
     else:
         guardadas = _ler_guardadas()
         faltam: list[int] = []
@@ -381,7 +381,8 @@ def gerar(clipes: Sequence[tuple[Path, str]], *, assunto: str = "",
         if not d.get("energia"):
             d["energia"] = medidas[i]
         cenas.append({"id": c.caminho.stem, "arquivo": c.arquivo, **d, "duracao": c.duracao})
-    if por == "gemini" and any(i not in descricoes for i in range(total)) and not aviso:
+    if por in ("gemini", "local") and any(i not in descricoes for i in range(total)) \
+            and not aviso:
         aviso = "algumas cenas vieram sem descrição do Gemini: revise as marcadas"
     if progresso:
         progresso(total, total, pedidos)

@@ -183,12 +183,84 @@ def mascarada(valor: str) -> str:
 
 
 def estado() -> dict:
-    """O que a página precisa saber — nunca a chave."""
+    """O que a página precisa saber — nunca a chave. ``configurada`` é a chave do Gemini (as
+    vozes e o fundo gerado precisam dela); ``pronta``, se há uma IA para as tarefas de texto e
+    de imagem, e ``provedor``, qual."""
+    from editor import ia_local
+
     if _falsa():
-        return {"configurada": True, "origem": "falsa", "final": "…test", "falsa": True}
+        return {"configurada": True, "origem": "falsa", "final": "…test", "falsa": True,
+                "pronta": True, "principal": escolhida(), "provedor": "falsa",
+                "local": ia_local.estado()}
     from editor import chaves
 
-    return {**chaves.estado(NOME_DA_CHAVE, VARIAVEL_DA_CHAVE), "falsa": False}
+    quem = provedor()
+    return {**chaves.estado(NOME_DA_CHAVE, VARIAVEL_DA_CHAVE), "falsa": False,
+            "pronta": bool(quem), "principal": escolhida(), "provedor": quem,
+            "local": ia_local.estado()}
+
+
+# ── a IA principal ───────────────────────────────────────────────────────
+# Quem responde às tarefas de texto e de imagem: o Gemini (com a chave) ou a IA local
+# (:mod:`editor.ia_local`). Na "automática", a mais forte que estiver pronta: o Gemini, que
+# escreveu melhor na prova de 26/10/2026, e, sem a chave, a local. Se a escolhida falha, o
+# editor avisa e para: ele não troca de IA sozinho.
+
+PRINCIPAIS = ("automatica", "gemini", "local")
+NOME_DA_PRINCIPAL = "ia_principal"
+VARIAVEL_DA_PRINCIPAL = "EDITAI_IA"
+
+
+def escolhida() -> str:
+    """A IA principal escolhida: ``"automatica"``, ``"gemini"`` ou ``"local"``."""
+    from editor import chaves
+
+    valor, _origem = chaves.ler(NOME_DA_PRINCIPAL, VARIAVEL_DA_PRINCIPAL)
+    return valor if valor in PRINCIPAIS else "automatica"
+
+
+def escolher(principal: str) -> None:
+    from editor import chaves
+
+    if principal not in PRINCIPAIS:
+        raise ErroDaIA(f"A IA principal é uma destas: {', '.join(PRINCIPAIS)}.")
+    if principal == "automatica":
+        chaves.apagar(NOME_DA_PRINCIPAL)
+    else:
+        chaves.salvar(NOME_DA_PRINCIPAL, principal)
+
+
+def gemini_pronto() -> bool:
+    """Se há a chave do Gemini (ou a IA falsa dos testes): as vozes do Gemini e o fundo
+    gerado dependem dela, qualquer que seja a IA principal."""
+    return _falsa() or bool(chave()[0])
+
+
+def provedor() -> str:
+    """Quem responde agora: ``"gemini"``, ``"local"``, ``"falsa"`` (os testes) ou ``""``
+    (nenhuma IA pronta)."""
+    from editor import ia_local
+
+    if _falsa():
+        return "falsa"
+    principal = escolhida()
+    if principal in ("automatica", "gemini") and chave()[0]:
+        return "gemini"
+    if principal in ("automatica", "local") and ia_local.instalado():
+        return "local"
+    return ""
+
+
+def _sem_ia() -> ErroDaIA:
+    principal = escolhida()
+    if principal == "local":
+        return ErroDaIA("A IA local não está instalada: instale em \"A IA\", em Antes de "
+                        "começar (ou com editai --instalar-ia).")
+    if principal == "gemini":
+        return ErroDaIA("Falta a chave do Gemini: cole a sua em \"A IA\", em Antes de "
+                        f"começar (crie uma em {ONDE_PEGAR_A_CHAVE}).")
+    return ErroDaIA("Falta uma IA: instale a IA local ou cole a chave do Gemini em \"A IA\", "
+                    "em Antes de começar.")
 
 
 # ── a conversa com a API ─────────────────────────────────────────────────
@@ -428,25 +500,151 @@ def _perguntar(chave_: str, sistema: str, pedido: str, imagens: Sequence[bytes],
                    + "). Tente de novo em alguns minutos.")
 
 
-def perguntar_json(sistema: str, pedido: str, esquema_: dict, *, temperatura: float,
-                   transporte=None, gasto: list[str] | None = None,
-                   imagens: Sequence[bytes] = (), leve: bool = False) -> tuple[dict, str]:
-    """Um pedido com a chave salva, descendo a escada de modelos: só de texto (o roteiro
-    do vídeo: as cenas e os cartões) ou com imagens JPEG antes do texto (a descrição das
-    cenas da biblioteca). ``leve`` começa pelo modelo leve (:data:`MODELOS_LEVES`), para os
-    pedidos simples. Levanta :class:`ErroDaIA` sem chave."""
+def _perguntar_local(sistema: str, pedido: str, imagens: Sequence[bytes], esquema_: dict, *,
+                     temperatura: float, gasto: list[str] | None) -> tuple[dict, str]:
+    from editor import ia_local
+
+    if gasto is not None:
+        gasto.append(ia_local.NOME)
+    try:
+        resposta = ia_local.perguntar_json(sistema, pedido, esquema_, temperatura=temperatura,
+                                           imagens=imagens)
+    except ia_local.ErroDaIALocal as erro:
+        raise ErroDaIA(str(erro)) from erro
+    return resposta, ia_local.NOME
+
+
+def _pedir(sistema: str, pedido: str, imagens: Sequence[bytes], esquema_: dict, *,
+           temperatura: float, transporte=None, gasto: list[str] | None = None,
+           leve: bool = False) -> tuple[dict, str]:
+    """O pedido à IA principal: a local, ou o Gemini descendo a escada de modelos."""
+    quem = provedor()
+    if quem == "local":
+        return _perguntar_local(sistema, pedido, imagens, esquema_, temperatura=temperatura,
+                                gasto=gasto)
     valor, _origem = chave()
     if not valor:
-        raise ErroDaIA("Falta a chave do Gemini: cole a sua no passo 5 "
-                       f"(crie uma em {ONDE_PEGAR_A_CHAVE}).")
+        raise _sem_ia()
     return _perguntar(valor, sistema, pedido, list(imagens), esquema_,
                       temperatura=temperatura, transporte=transporte, gasto=gasto,
                       modelos=MODELOS_LEVES if leve else MODELOS)
 
 
+def perguntar_json(sistema: str, pedido: str, esquema_: dict, *, temperatura: float,
+                   transporte=None, gasto: list[str] | None = None,
+                   imagens: Sequence[bytes] = (), leve: bool = False) -> tuple[dict, str]:
+    """Um pedido à IA principal: só de texto (o roteiro do vídeo: as cenas e os cartões) ou
+    com imagens JPEG antes do texto (a descrição das cenas da biblioteca). No Gemini,
+    ``leve`` começa pelo modelo leve (:data:`MODELOS_LEVES`), para os pedidos simples.
+    Levanta :class:`ErroDaIA` sem IA pronta."""
+    return _pedir(sistema, pedido, imagens, esquema_, temperatura=temperatura,
+                  transporte=transporte, gasto=gasto, leve=leve)
+
+
+#: Quantas voltas de ferramenta a IA pode dar na pesquisa antes de ter de responder.
+VOLTAS_DA_PESQUISA = 6
+
+
+def _notas_locais(sistema: str, pedido: str, pesquisa_) -> str:
+    from editor import ia_local, pesquisa
+
+    mensagens = [{"role": "system", "content": sistema}, {"role": "user", "content": pedido}]
+    try:
+        for volta in range(VOLTAS_DA_PESQUISA + 1):
+            msg = ia_local.conversar(mensagens, ferramentas=pesquisa.FERRAMENTAS
+                                     if volta < VOLTAS_DA_PESQUISA else ())
+            chamadas = msg.get("tool_calls") or []
+            if not chamadas:
+                return str(msg.get("content") or "")
+            mensagens.append({"role": "assistant", "content": msg.get("content") or "",
+                              "tool_calls": chamadas})
+            for c in chamadas:
+                try:
+                    argumentos = json.loads(c["function"].get("arguments") or "{}")
+                except ValueError:
+                    argumentos = {}
+                mensagens.append({"role": "tool", "tool_call_id": c.get("id") or "",
+                                  "content": pesquisa_.executar(c["function"]["name"],
+                                                                argumentos)})
+    except ia_local.ErroDaIALocal as erro:
+        raise ErroDaIA(str(erro)) from erro
+    return ""
+
+
+def _notas_do_gemini(sistema: str, pedido: str, pesquisa_, *, transporte=None) -> str:
+    """A pesquisa pelo Gemini, com as ferramentas como funções. O modelo que começa a
+    conversa vai até o fim: as respostas de um levam a assinatura do raciocínio dele."""
+    import httpx
+
+    from editor import pesquisa
+
+    valor, _origem = chave()
+    declaracoes = [f["function"] for f in pesquisa.FERRAMENTAS]
+    conteudos: list[dict] = [{"role": "user", "parts": [{"text": pedido}]}]
+    modelos = list(MODELOS)
+    with _cliente(transporte, timeout=180) as cliente:
+        for volta in range(VOLTAS_DA_PESQUISA + 1):
+            corpo: dict = {"systemInstruction": {"parts": [{"text": sistema}]},
+                           "contents": conteudos, "generationConfig": {"temperature": 0.3}}
+            if volta < VOLTAS_DA_PESQUISA:
+                corpo["tools"] = [{"functionDeclarations": declaracoes}]
+            dados = None
+            while modelos and dados is None:
+                try:
+                    r = cliente.post(f"{API}/models/{modelos[0]}:generateContent", json=corpo,
+                                     headers={"x-goog-api-key": valor})
+                except httpx.HTTPError as erro:
+                    raise ErroDaIA("Não consegui falar com o Gemini. Confira a internet e "
+                                   "tente de novo.") from erro
+                if r.status_code == 200:
+                    dados = r.json()
+                elif volta == 0:
+                    logger.info("pesquisa: %s respondeu %s", modelos[0], r.status_code)
+                    modelos.pop(0)              # sem conversa ainda: dá para trocar de modelo
+                else:
+                    raise ErroDaIA(f"O Gemini parou no meio da pesquisa ({r.status_code}).")
+            if dados is None:
+                raise ErroDaIA("O Gemini não conseguiu fazer a pesquisa agora (a cota ou "
+                               "a sobrecarga). Tente de novo em alguns minutos.")
+            conteudo = ((dados.get("candidates") or [{}])[0].get("content")
+                        or {"role": "model", "parts": []})
+            partes = conteudo.get("parts", [])
+            chamadas = [x["functionCall"] for x in partes if "functionCall" in x]
+            if not chamadas:
+                return "".join(x.get("text", "") for x in partes if not x.get("thought"))
+            conteudos.append(conteudo)
+            conteudos.append({"role": "user", "parts": [
+                {"functionResponse": {"name": c["name"], "response": {
+                    "resultado": pesquisa_.executar(c["name"], c.get("args") or {})}}}
+                for c in chamadas]})
+    return ""
+
+
+def pesquisar_notas(sistema: str, pedido: str, pesquisa_, *, transporte=None) -> str:
+    """As notas de uma pesquisa pela IA principal: ela pede as buscas e as leituras que quiser
+    (:mod:`editor.pesquisa`, que executa e conta), e responde com os fatos e o número da fonte
+    de cada um. A IA falsa dos testes devolve os títulos que já estão na pesquisa."""
+    quem = provedor()
+    if quem == "falsa":
+        return "\n".join(f"- {f.titulo} [{f.numero}]" for f in pesquisa_.fontes)
+    if quem == "local":
+        return _notas_locais(sistema, pedido, pesquisa_)
+    if quem == "gemini":
+        return _notas_do_gemini(sistema, pedido, pesquisa_, transporte=transporte)
+    raise _sem_ia()
+
+
+def de_quem(modelo: str) -> str:
+    """Quem respondeu, pelo modelo que veio na resposta: ``"local"`` ou ``"gemini"``."""
+    from editor import ia_local
+
+    return "local" if modelo == ia_local.NOME else "gemini"
+
+
 def ligada() -> bool:
-    """Se dá para pedir ao Gemini agora: a chave existe (ou a IA é a falsa dos testes)."""
-    return _falsa() or bool(chave()[0])
+    """Se há uma IA pronta para as tarefas de texto e de imagem: a principal (o Gemini com a
+    chave, ou a local instalada), ou a falsa dos testes."""
+    return bool(provedor())
 
 
 def falsa() -> bool:
@@ -792,10 +990,8 @@ def sugerir(fala: str, quadros: Sequence[tuple[float, bytes]], *, idioma: str,
         variantes = [{**v, "t": tempos[min(v["quadro"], len(tempos) - 1)], "t_fundo": None}
                      for v in _falsas()]
         return {"variantes": variantes, "modelo": "falsa", "pedidos": 0, "segundos": 0.0}
-    valor, _origem = chave()
-    if not valor:
-        raise ErroDaIA("Falta a chave do Gemini: cole a sua no passo 5 "
-                       f"(crie uma em {ONDE_PEGAR_A_CHAVE}).")
+    if not ligada():
+        raise _sem_ia()
     if not quadros:
         raise ErroDaIA("Não consegui tirar quadros deste vídeo para o Gemini olhar.")
     nomes = set(nomes_de_icones)
@@ -805,8 +1001,8 @@ def sugerir(fala: str, quadros: Sequence[tuple[float, bytes]], *, idioma: str,
                            plataformas=plataformas)
     imagens = [b for _, b in quadros]
     gasto: list[str] = []
-    resposta, modelo = _perguntar(valor, SISTEMA, pedido, imagens, formato,
-                                  temperatura=1.0, transporte=transporte, gasto=gasto)
+    resposta, modelo = _pedir(SISTEMA, pedido, imagens, formato, temperatura=1.0,
+                              transporte=transporte, gasto=gasto)
     boas, ruins = _separar(resposta, len(quadros), nomes, origens)
     if ruins and len(boas) < VARIANTES:
         logger.info("conserto de %d ideia(s): %s", len(ruins),
@@ -820,9 +1016,8 @@ def sugerir(fala: str, quadros: Sequence[tuple[float, bytes]], *, idioma: str,
                         f"- {json.dumps(v, ensure_ascii=False)}\n  problemas: "
                         + "; ".join(p) for v, p in ruins))
         try:
-            resposta2, modelo = _perguntar(valor, SISTEMA, conserto, imagens, formato,
-                                           temperatura=0.4, transporte=transporte,
-                                           gasto=gasto)
+            resposta2, modelo = _pedir(SISTEMA, conserto, imagens, formato,
+                                       temperatura=0.4, transporte=transporte, gasto=gasto)
             mais, _ = _separar(resposta2, len(quadros), nomes, origens)
             boas.extend(mais)
         except ErroDaIA:

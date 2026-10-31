@@ -485,10 +485,10 @@ def escrever(palavras: Sequence[Palavra], duracao: float, *,
         roteiro.por = "falsa"
         return roteiro
     if not palavras:
-        return pelas_palavras("sem fala, não há o que o Gemini ler")
+        return pelas_palavras("sem fala, não há o que a IA ler")
     if not ia.ligada():
-        return pelas_palavras("sem a chave do Gemini, as cenas foram escolhidas pelas "
-                              "palavras e não há cartões")
+        return pelas_palavras("sem IA (a local, ou a chave do Gemini), as cenas foram "
+                              "escolhidas pelas palavras e não há cartões")
 
     pedido = montar_pedido(palavras, blocos, biblioteca, cartoes=cartoes, idioma=idioma,
                            nomes_de_icones=sorted(nomes), proibidas=proibidas,
@@ -533,7 +533,7 @@ def escrever(palavras: Sequence[Palavra], duracao: float, *,
     roteiro.escolhas, roteiro.cartoes = escolhas, prontos
     if destaques:   # sem nenhum do Gemini, os das palavras: a legenda não fica sem cor
         roteiro.destaques = marcas or plano.destaques_pelas_palavras(palavras)
-    roteiro.por, roteiro.pedidos, roteiro.modelo = "gemini", len(gasto), modelo
+    roteiro.por, roteiro.pedidos, roteiro.modelo = ia.de_quem(modelo), len(gasto), modelo
     return roteiro
 
 

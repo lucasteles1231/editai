@@ -40,6 +40,7 @@ arquivo marcado como "vindo da internet".
 | O modelo do Whisper (`small`) | 464 MB | Windows: `%USERPROFILE%\.cache\huggingface` · macOS e Linux: `~/.cache/huggingface` |
 | O modelo do recorte (MODNet), na primeira vez que a pessoa é recortada | 26 MB | a mesma pasta do Hugging Face |
 | O auditor das fotos (SigLIP 2), na primeira vez que as fotos são achadas pelo tema | ~410 MB | a mesma pasta do Hugging Face |
+| A IA local (o Qwen3.5-4B e o llama-server), só se você instalar | ~3,5 GB | `ia-local`, na pasta de dados (a mesma da Minha voz, abaixo) |
 | A voz sintetizada (Minha voz), só se você instalar: o ambiente e o modelo | ~3,5 GB | `motor-de-voz`, na pasta de dados: `%LOCALAPPDATA%\editor-de-video` (Windows), `~/Library/Application Support/editor-de-video` (macOS) ou `~/.local/share/editor-de-video` (Linux) |
 | As vozes gravadas: a leitura e a referência de cada uma | ~15 MB cada | `vozes`, na mesma pasta de dados |
 | Os avatares | ~1 MB cada | `avatares`, na mesma pasta de dados |

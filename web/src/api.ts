@@ -4,6 +4,7 @@
  */
 import type {
   AudioInfo, AvatarSalvo, BibliotecaInfo, Edicao, EfeitosDaVoz, Estado, EstadoChave, EstadoDasVozes, EstadoDaVersao, EstadoIa,
+  PrincipalDaIa,
   FotoPexels,
   GeracaoDaMatriz, GravacaoDaVoz, Ideia, ImagemFundo, MotorDeVoz, Narracao, PartesDaFoto, PersonagemInfo, Preset, PresetsImportados, RecorteInfo, RoteiroEscrito, Saida, Tarefa,
   VideoInfo, VozLocal, VozSalva,
@@ -118,9 +119,9 @@ export const api = {
     }),
   /** O roteiro escrito pela IA a partir do tema, para revisar antes de narrar. */
   /** Sem ``segundos`` (o Auto), no tamanho que o assunto pede, até o ``teto``. */
-  escreverRoteiro: (tema: string, segundos: number | null, teto: number | null, idioma: string) =>
+  escreverRoteiro: (tema: string, segundos: number | null, teto: number | null, idioma: string, pesquisar: boolean) =>
     pedir<RoteiroEscrito>('/api/roteiro', {
-      method: 'POST', headers: JSON_, body: JSON.stringify({tema, segundos, teto, idioma}),
+      method: 'POST', headers: JSON_, body: JSON.stringify({tema, segundos, teto, idioma, pesquisar}),
     }),
   matrizAtual: (biblioteca: string) =>
     pedir<{cenas: Record<string, unknown>[]}>(`/api/bibliotecas/${biblioteca}/matriz`),
@@ -199,6 +200,15 @@ export const api = {
       method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({chave}),
     }),
   apagarChave: () => pedir<EstadoIa>('/api/ia/chave', {method: 'DELETE'}),
+  // A IA principal e a IA local (a instalação roda em segundo plano: a página pergunta o andamento).
+  estadoDaIa: () => pedir<EstadoIa>('/api/ia'),
+  escolherIa: (principal: PrincipalDaIa) =>
+    pedir<EstadoIa>('/api/ia/principal', {
+      method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({principal}),
+    }),
+  instalarIaLocal: () => pedir<EstadoIa>('/api/ia/local', {method: 'POST'}),
+  cancelarIaLocal: () => pedir<EstadoIa>('/api/ia/local/cancelar', {method: 'POST'}),
+  desinstalarIaLocal: () => pedir<EstadoIa>('/api/ia/local', {method: 'DELETE'}),
   ideias: (tarefaId: string, evitar: string[], plataformas: string[]) =>
     pedir<{variantes: Ideia[]; modelo: string; segundos: number}>(`/api/tarefas/${tarefaId}/thumbs-ia`, {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({evitar, plataformas}),

@@ -16,6 +16,7 @@ const PERIODOS: [string, string][] = [['', 'período?'], ['dia', 'Dia'], ['entar
 
 const QUEM: Record<string, string> = {
   gemini: 'Descritas pelo Gemini',
+  local: 'Descritas pela IA local',
   rascunho: 'Rascunho: a descrição veio do nome de cada arquivo',
   falsa: 'Descritas pela IA de teste',
 };
@@ -46,7 +47,7 @@ export const RevisaoDaMatriz: React.FC<{
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
-  const quem = p.por ? `${QUEM[p.por] ?? 'Gerada'}${p.por === 'gemini' ? ` (${p.pedidos} pedidos)` : ''}.`
+  const quem = p.por ? `${QUEM[p.por] ?? 'Gerada'}${p.por === 'gemini' || p.por === 'local' ? ` (${p.pedidos} pedidos)` : ''}.`
     : 'A matriz em uso.';
   return (
     <div className="revisao" role="region" aria-label="revisão da matriz">

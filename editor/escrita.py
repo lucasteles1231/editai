@@ -20,6 +20,13 @@ a voz narra. É o começo do vídeo feito só pelo tema.
   - nenhum número de que o modelo não tenha certeza;
   - termina com uma pergunta ou uma chamada para comentar.
 - **Sem a IA não há roteiro:** o motivo vai para a página.
+- **Com a pesquisa** (``pesquisar``), o roteiro sai do que a internet traz hoje, só por fontes
+  grátis (:mod:`editor.pesquisa`):
+  1. a primeira busca é do Editai, com o tema: o modelo não sabe o que não sabe, e na prova de
+     26/10/2026 dois dos quatro modelos não pediram nenhuma busca sozinhos;
+  2. depois, a IA busca e lê o que quiser, até o teto, e responde com as notas: cada fato com o
+     número da fonte;
+  3. o roteiro é escrito só com as notas, e as fontes voltam junto, para a revisão.
 """
 from __future__ import annotations
 
@@ -61,6 +68,9 @@ class Roteiro:
     por: str = ""
     pedidos: int = 0
     modelo: str = ""
+    #: Com a pesquisa: as fontes numeradas (título, veículo, data e link) e o que foi buscado.
+    fontes: list[dict] = field(default_factory=list)
+    buscas: list[dict] = field(default_factory=list)
 
     @property
     def texto(self) -> str:
@@ -74,7 +84,7 @@ class Roteiro:
     def para_dict(self) -> dict:
         return {"titulo": self.titulo, "texto": self.texto, "paragrafos": self.paragrafos,
                 "palavras": self.palavras, "por": self.por, "pedidos": self.pedidos,
-                "modelo": self.modelo}
+                "modelo": self.modelo, "fontes": self.fontes, "buscas": self.buscas}
 
 
 def palavras_alvo(segundos: float) -> int:
@@ -192,19 +202,71 @@ def _falso(tema: str, segundos: float | None) -> Roteiro:
     return Roteiro(titulo=tema[:TITULO_MAXIMO], paragrafos=paragrafos, por="falsa")
 
 
+SISTEMA_DA_PESQUISA = """Você pesquisa os fatos de um roteiro de vídeo curto. Hoje é {hoje}.
+O que você sabe tem data de corte e pode estar velho: o que as fontes trazem é real, mesmo que
+você não conheça o assunto. Use as ferramentas quando precisar de mais (no máximo {buscas}
+buscas e {leituras} leituras). Quando tiver o bastante, sem chamar ferramenta, responda com as
+notas: os fatos que o roteiro pode usar, um por linha, cada um com o número da fonte entre
+colchetes, como [3]."""
+
+
+def _pesquisar(tema: str, transporte=None):
+    """As notas e as fontes do tema (a primeira busca é do Editai; as outras, da IA)."""
+    import contextlib
+    import time
+
+    from editor import pesquisa
+
+    p = pesquisa.Pesquisa(transporte=transporte)
+    achadas = []
+    for tipo in ("noticias", "fatos"):
+        with contextlib.suppress(pesquisa.SemPesquisa):
+            achadas += p.pesquisar(tema, tipo)
+    if not achadas:
+        raise SemRoteiro("A pesquisa não achou nada sobre o tema (ou a internet caiu). Tente "
+                         "com outras palavras, ou desligue a pesquisa.")
+    resultados = json.dumps([{"n": a.numero, "titulo": a.titulo, "trecho": a.trecho,
+                              "fonte": a.fonte, "data": a.data, "link": a.link}
+                             for a in achadas], ensure_ascii=False)
+    sistema = SISTEMA_DA_PESQUISA.format(hoje=time.strftime("%d/%m/%Y"),
+                                         buscas=p.buscas_max, leituras=p.leituras_max)
+    try:
+        notas = ia.pesquisar_notas(sistema, f"O tema do vídeo: {tema}\n\nA primeira busca "
+                                   f"achou:\n{resultados}", p, transporte=transporte)
+    except ia.ErroDaIA as erro:
+        raise SemRoteiro(str(erro)) from erro
+    return notas.strip(), p
+
+
 def escrever(tema: str, segundos: float | None = 45, *, teto: float | None = None,
-             idioma: str = "pt", transporte=None) -> Roteiro:
+             idioma: str = "pt", pesquisar: bool = False, transporte=None) -> Roteiro:
     """O roteiro do tema, para a pessoa revisar. Sem ``segundos`` (o Auto), no tamanho que
-    o assunto pede, até o ``teto``. Levanta :class:`SemRoteiro` sem a IA."""
+    o assunto pede, até o ``teto``. Com ``pesquisar``, só com o que a internet traz hoje.
+    Levanta :class:`SemRoteiro` sem a IA."""
     tema = _limpo(tema)[:TEMA_MAXIMO]
     if not tema:
         raise SemRoteiro("Escreva o tema do vídeo, em uma frase.")
     if ia.falsa():
-        return _falso(tema, segundos)
+        roteiro = _falso(tema, segundos)
+        if pesquisar:
+            _notas, pesquisa_ = _pesquisar(tema, transporte)
+            dados = pesquisa_.para_json()
+            roteiro.fontes, roteiro.buscas = dados["fontes"], dados["feitas"]
+        return roteiro
     if not ia.ligada():
-        raise SemRoteiro("Para escrever o roteiro pelo tema, cole a chave do Gemini em \"Antes "
-                         "de começar\". Ou marque Roteiro e escreva o texto.")
+        raise SemRoteiro("Para escrever o roteiro pelo tema, instale a IA local ou cole a "
+                         "chave do Gemini em \"A IA\", em Antes de começar. Ou marque Roteiro "
+                         "e escreva o texto.")
     pedido = montar_pedido(tema, segundos, teto=teto, idioma=idioma)
+    pesquisa_ = None
+    if pesquisar:
+        import time
+
+        notas, pesquisa_ = _pesquisar(tema, transporte)
+        pedido += (f"\n\nHOJE É {time.strftime('%d/%m/%Y')}. Os fatos que a pesquisa achou (são "
+                   "reais, mesmo os que você não conhece; use só estes números, datas e nomes, "
+                   f"e o que não estiver aqui não afirme):\n{notas or '(nenhum)'}\n\nAs fontes:"
+                   f"\n{pesquisa_.para_o_pedido()}")
     gasto: list[str] = []
     try:
         resposta, modelo = ia.perguntar_json(SISTEMA, pedido, esquema(), temperatura=0.8,
@@ -227,7 +289,10 @@ def escrever(tema: str, segundos: float | None = 45, *, teto: float | None = Non
             logger.info("o conserto do roteiro não veio; fica o primeiro")
     if not roteiro.paragrafos:
         raise SemRoteiro("A IA não devolveu o roteiro. Tente de novo.")
-    roteiro.por, roteiro.pedidos, roteiro.modelo = "gemini", len(gasto), modelo
+    roteiro.por, roteiro.pedidos, roteiro.modelo = ia.de_quem(modelo), len(gasto), modelo
+    if pesquisa_ is not None:
+        dados = pesquisa_.para_json()
+        roteiro.fontes, roteiro.buscas = dados["fontes"], dados["feitas"]
     return roteiro
 
 

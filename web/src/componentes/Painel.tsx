@@ -35,7 +35,7 @@ type Props = {
 /** O que a duração escolhida tirou: quantas frases, o alvo e quem escolheu. */
 export function textoDaSelecao(s: Resultado['selecao']): string {
   if (!s || !('fora' in s) || !s.fora.length) return '';
-  const quem = s.por === 'gemini' ? 'a IA escolheu' : s.por === 'falsa' ? 'a IA de teste escolheu'
+  const quem = s.por === 'gemini' || s.por === 'local' ? 'a IA escolheu' : s.por === 'falsa' ? 'a IA de teste escolheu'
     : 'o corte foi no fim, sem a IA, e escolheu';
   const n = s.fora.length;
   return `Para caber em uns ${duracao(s.alvo ?? 0)}, ${quem} as frases que ficam: ${n} ${n === 1 ? 'frase saiu'
@@ -50,6 +50,7 @@ export function textoDoRoteiro(r: Resultado['roteiro']): string {
   if (r.por === 'gemini') {
     return `Roteiro do Gemini: ${oQue} (${r.pedidos} ${r.pedidos === 1 ? 'pedido' : 'pedidos'} da cota grátis).`;
   }
+  if (r.por === 'local') return `Roteiro da IA local: ${oQue} (${r.pedidos} ${r.pedidos === 1 ? 'pedido' : 'pedidos'}).`;
   if (r.por === 'falsa') return `Roteiro da IA de teste: ${oQue}.`;
   if (r.por === 'trechos') return 'As fotos entraram no trecho de cada uma, sem pedido à IA.';
   return r.aviso ? `${r.aviso.charAt(0).toUpperCase()}${r.aviso.slice(1)}.` : '';

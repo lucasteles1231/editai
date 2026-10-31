@@ -145,7 +145,9 @@ def _dentro(filha: Path, mae: Path) -> bool:
 
 
 #: Os motores instalados à parte dentro dos dados, mostrados cada um na sua linha (são o grosso).
-MOTORES = (("motor-de-voz", "o motor da voz sintetizada"), ("voz-local", "a voz local (o Piper)"))
+MOTORES = (("ia-local", "a IA local (o Qwen3.5-4B e o llama-server)"),
+           ("motor-de-voz", "o motor da voz sintetizada"),
+           ("voz-local", "a voz local (o Piper)"))
 
 
 def principais() -> list[Item]:

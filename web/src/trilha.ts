@@ -76,8 +76,8 @@ export type Trilha = {
 
 /** Por que a trilha ainda não anda, nos caminhos sem vídeo. */
 export const FALTA = {
-  ia: 'Para escrever o roteiro pelo tema, cole a chave do Gemini em "Antes de começar" (ou marque Roteiro e '
-    + 'escreva o texto).',
+  ia: 'Para escrever o roteiro pelo tema, configure a IA em "Antes de começar": instale a IA local ou cole a chave '
+    + 'do Gemini (ou marque Roteiro e escreva o texto).',
   texto: 'Sem vídeo e sem cenas, as fotos são achadas pelo texto: marque também o Roteiro e cole o texto do áudio '
     + '(ou marque o Tema).',
 };

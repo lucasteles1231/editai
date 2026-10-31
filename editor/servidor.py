@@ -46,6 +46,7 @@ from editor import (
     escrita,
     fotos,
     ia,
+    ia_local,
     icones,
     imagens,
     montagem,
@@ -481,6 +482,37 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
     @app.delete("/api/ia/chave")
     def apagar_a_chave():
         ia.apagar_chave()
+        return ia.estado()
+
+    # ── a IA principal e a IA local ───────────────────────────────────────
+
+    @app.put("/api/ia/principal")
+    def escolher_a_principal(dados: Annotated[dict, Body()]):
+        try:
+            ia.escolher(str(dados.get("principal", "")))
+        except ia.ErroDaIA as erro:
+            raise HTTPException(422, str(erro)) from erro
+        return ia.estado()
+
+    @app.post("/api/ia/local")
+    def instalar_a_ia_local():
+        try:
+            ia_local.instalar_em_segundo_plano()
+        except ia_local.ErroDaIALocal as erro:
+            raise HTTPException(409, str(erro)) from erro
+        return ia.estado()
+
+    @app.post("/api/ia/local/cancelar")
+    def cancelar_a_ia_local():
+        ia_local.cancelar_instalacao()
+        return ia.estado()
+
+    @app.delete("/api/ia/local")
+    def desinstalar_a_ia_local():
+        try:
+            ia_local.desinstalar()
+        except ia_local.ErroDaIALocal as erro:
+            raise HTTPException(409, str(erro)) from erro
         return ia.estado()
 
     # ── as imagens de fundo ───────────────────────────────────────────────
@@ -935,7 +967,7 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
                 raise voz_pronta.SemVoz("O roteiro está vazio.")
             if v.motor == "local" and not voz_local.instalado():
                 raise voz_pronta.SemVoz("Instale a voz local primeiro.")
-            if v.motor == "gemini" and not ia.ligada():
+            if v.motor == "gemini" and not ia.gemini_pronto():
                 raise voz_pronta.SemVoz("A voz do Gemini precisa da chave do Gemini (em \"Antes "
                                         "de começar\").")
         except voz_pronta.SemVoz as erro:
@@ -1236,7 +1268,8 @@ def criar_app(token: str, *, porta: int, pasta_saida: Path | None = None,
         try:
             r = escrita.escrever(str(dados.get("tema") or ""), numero(dados.get("segundos")),
                                  teto=numero(dados.get("teto")),
-                                 idioma=str(dados.get("idioma") or "pt"))
+                                 idioma=str(dados.get("idioma") or "pt"),
+                                 pesquisar=dados.get("pesquisar") is True)
         except escrita.SemRoteiro as erro:
             raise HTTPException(422, str(erro)) from erro
         return r.para_dict()

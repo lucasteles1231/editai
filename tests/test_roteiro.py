@@ -231,7 +231,7 @@ class TestSemOGemini:
         monkeypatch.delenv(ia.VARIAVEL_FALSA, raising=False)
         r = _escrever()
         assert r.por == "palavras" and r.cartoes == []
-        assert "sem a chave do Gemini" in r.aviso
+        assert "sem IA (a local, ou a chave do Gemini)" in r.aviso
         assert all(r.escolhas) and len(r.escolhas) == len(r.blocos)
 
     def test_gemini_fora_do_ar(self, de_verdade, monkeypatch):

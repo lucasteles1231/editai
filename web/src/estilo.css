@@ -1374,6 +1374,15 @@ button.link { padding: 0; border: none; background: none; color: inherit; font: 
 /* O roteiro escrito pela IA a partir do tema, e a instalação da voz local (na escolha da voz). */
 .escrever-roteiro { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
 .instalar-voz-local { display: flex; flex-direction: column; gap: 8px; }
+/* "A IA", em Antes de começar: quem responde, a IA local e a chave do Gemini */
+.painel-da-ia { display: flex; flex-direction: column; gap: 16px; }
+.instalar-ia-local { display: flex; flex-direction: column; gap: 8px; }
+/* as fontes da pesquisa, embaixo do roteiro escrito pela IA */
+.fontes-do-roteiro { font-size: 14px; }
+.fontes-do-roteiro summary { cursor: pointer; font-weight: 600; }
+.fontes-do-roteiro ol { margin: 6px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 4px; }
+.fontes-do-roteiro a { color: inherit; overflow-wrap: anywhere; }
+.fontes-do-roteiro .fraco { color: var(--tinta-suave); }
 
 .revisao {
   margin-top: 14px;

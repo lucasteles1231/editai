@@ -103,7 +103,7 @@ def test_o_conserto_pior_nao_troca_o_primeiro(de_verdade):
 def test_sem_a_chave_diz_o_que_fazer(monkeypatch):
     monkeypatch.delenv(ia.VARIAVEL_FALSA, raising=False)
     monkeypatch.delenv(ia.VARIAVEL_DA_CHAVE, raising=False)
-    with pytest.raises(escrita.SemRoteiro, match="chave do Gemini"):
+    with pytest.raises(escrita.SemRoteiro, match="IA local ou cole a chave do Gemini"):
         escrita.escrever("céu azul")
     with pytest.raises(escrita.SemRoteiro, match="tema"):
         escrita.escrever("   ")

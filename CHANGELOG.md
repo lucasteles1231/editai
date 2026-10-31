@@ -7,6 +7,36 @@ está sempre no [site](https://lucasteles1231.github.io/editai/baixar).
 Os números seguem o [versionamento semântico](https://semver.org/lang/pt-BR/): o último muda
 nas correções, o do meio nas novidades e o primeiro quando algo deixa de funcionar como antes.
 
+## [0.6.0] — 31/10/2026
+
+### Novidades
+
+- **A IA no seu computador.** O Qwen3.5-4B, um modelo aberto, faz no computador o que o
+  Gemini faz:
+  - o roteiro, as cenas e os cartões;
+  - a matriz das cenas;
+  - o avatar pela foto e as ideias de capa.
+
+  Ele roda sem internet e sem chave, e nada sai do computador.
+  - Instale em **Antes de começar**, no cartão **A IA** (uns 3,5 GB), ou com
+    `editai --instalar-ia`.
+  - No mesmo cartão, escolha quem responde: a **automática** (o Gemini, se houver a chave, e
+    senão a local), o Gemini ou a IA local. No terminal: `--ia`.
+  - Se a escolhida falhar, o editor avisa e para, sem trocar de IA sozinho.
+  - Antes de escolher o modelo, quatro deles foram medidos contra o Gemini nas tarefas do
+    editor. No texto, a IA local fica atrás do Gemini, e vale revisar os fatos.
+
+  [Veja como](https://lucasteles1231.github.io/editai/guia/a-ia-no-seu-computador).
+- **Pesquisar na internet.** No vídeo pelo tema, o roteiro de um assunto de agora sai do que
+  a internet traz hoje.
+  - As fontes são as notícias (o RSS do Bing e do Google Notícias) e a Wikipédia, grátis e
+    sem chave.
+  - A IA busca e lê o que precisar, e escreve só com o que acha.
+  - As fontes aparecem embaixo do roteiro, com os links, para você conferir.
+  - No terminal: `--pesquisar`.
+
+  [Veja como](https://lucasteles1231.github.io/editai/guia/o-video-so-pelo-tema#pesquisar-na-internet).
+
 ## [0.5.1] — 26/10/2026
 
 ### Correções

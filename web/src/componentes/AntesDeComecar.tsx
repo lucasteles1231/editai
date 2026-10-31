@@ -9,13 +9,14 @@ import {api} from '../api';
 import {Criador} from '../avatar/Criador';
 import {type Configuracao, ouvirConfiguracao} from '../configurar';
 import type {AvatarSalvo, EstadoChave, EstadoDasVozes, EstadoIa} from '../tipos';
-import {ChaveGemini} from './ChaveGemini';
 import {ChavePexels} from './ChavePexels';
 import {Dialogo} from './Dialogo';
+import {PainelDaIa} from './PainelDaIa';
 import {PainelDaVoz} from './MinhaVoz';
 
 type Props = {
   ia: EstadoIa | null;
+  aoMudarIa: (e: EstadoIa) => void;
   aoSalvarChave: (chave: string) => Promise<void>;
   aoApagarChave: () => Promise<void>;
   pexels: EstadoChave;
@@ -39,6 +40,15 @@ type Cartao = {
   imagem?: string;
 };
 
+function estadoDaIa(ia: EstadoIa | null): string {
+  if (!ia) return 'carregando…';
+  if (ia.local.instalando) return 'instalando a IA local…';
+  if (ia.provedor === 'local') return `IA local · ${ia.local.modelo}`;
+  if (ia.provedor === 'gemini') return `Gemini · ${ia.origem === 'variavel' ? 'variável' : ia.final}`;
+  if (ia.provedor === 'falsa') return 'IA de teste';
+  return 'sem IA';
+}
+
 function estadoDaVoz(v: EstadoDasVozes | null): [boolean, string] {
   if (!v) return [false, 'carregando…'];
   if (!v.motor.instalado) return [false, 'não instalada'];
@@ -60,11 +70,9 @@ export const AntesDeComecar: React.FC<Props> = (p) => {
       liga: 'Você em pixel art, pela sua foto: falando na montagem e na thumbnail.',
       imagem: p.avatares?.length
         ? api.quadroDoAvatarUrl(p.avatares[0].apelido, 'neutro_fechada.png', p.avatares[0].criado) : undefined},
-    {id: 'gemini', titulo: 'Chave do Gemini', pronto: Boolean(p.ia?.configurada),
-      estado: !p.ia ? 'carregando…' : p.ia.configurada ? `ligado · ${p.ia.origem === 'variavel' ? 'variável' : p.ia.final}`
-        : 'sem chave',
-      liga: 'O vídeo só pelo tema (o roteiro e a voz), ideias de capa, cartões, a matriz das cenas e o avatar pela '
-        + 'foto. Grátis.'},
+    {id: 'gemini', titulo: 'A IA', pronto: Boolean(p.ia?.pronta), estado: estadoDaIa(p.ia),
+      liga: 'O roteiro pelo tema, as cenas, os cartões, a matriz, o avatar pela foto e as ideias de capa: no seu '
+        + 'computador (a IA local) ou pelo Gemini, com a chave grátis. As vozes do Gemini pedem a chave.'},
     {id: 'pexels', titulo: 'Chave do Pexels', pronto: p.pexels.configurada,
       estado: p.pexels.configurada ? 'ligado' : 'sem chave',
       liga: 'Fotos grátis para o fundo da thumbnail e para o vídeo só pelo tema.'},
@@ -99,7 +107,8 @@ export const AntesDeComecar: React.FC<Props> = (p) => {
             <Criador ia={p.ia} avatares={p.avatares} aoMudarAvatares={p.aoMudarAvatares} />
           ) : null}
           {aberto.id === 'gemini' && p.ia ? (
-            <ChaveGemini ia={p.ia} aoSalvarChave={p.aoSalvarChave} aoApagarChave={p.aoApagarChave} />
+            <PainelDaIa ia={p.ia} aoMudar={p.aoMudarIa} aoSalvarChave={p.aoSalvarChave}
+              aoApagarChave={p.aoApagarChave} />
           ) : null}
           {aberto.id === 'pexels' ? (
             <ChavePexels pexels={p.pexels} aoSalvarChave={p.aoSalvarChavePexels}

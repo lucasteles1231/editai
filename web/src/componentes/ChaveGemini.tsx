@@ -1,6 +1,6 @@
 /**
- * A chave do Gemini, no painel de "Antes de começar": ela liga as ideias de thumbnail, a matriz
- * das cenas e os cartões animados, que ficam em passos diferentes. A chave vai para o servidor
+ * A chave do Gemini, no painel "A IA" de Antes de começar: com ela, o Gemini responde às tarefas
+ * da IA (na automática, antes da local) e narra com as vozes dele. A chave vai para o servidor
  * local e nunca volta: a página só sabe o fim dela.
  */
 import React, {useState} from 'react';
@@ -62,8 +62,8 @@ export const ChaveGemini: React.FC<Props> = ({ia, aoSalvarChave, aoApagarChave})
   return (
     <section className="chave-gemini" id="chave-gemini" aria-label="a chave do Gemini">
       <small>
-        Liga as ideias de thumbnail, a matriz da biblioteca de cenas e os cartões animados. Sem ela, todo o resto
-        funciona do mesmo jeito.
+        Com a chave, o Gemini responde às tarefas da IA (na automática, antes da local) e narra com as vozes dele. É
+        grátis, e sem ela todo o resto funciona do mesmo jeito.
       </small>
       <form className="chave-ia" onSubmit={salvar}>
         <input type="password" autoComplete="off" spellCheck={false} value={chave} data-foco

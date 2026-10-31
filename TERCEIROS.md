@@ -60,6 +60,8 @@ não usá-los, escolha outro tema de sons.
 | [MODNet](https://github.com/ZHKKKe/MODNet), em ONNX ([`Xenova/modnet`](https://huggingface.co/Xenova/modnet)) | o recorte da pessoa na thumbnail, baixado no primeiro uso (26 MB) | Apache-2.0, código **e** pesos: [`licencas/MODNet-Apache-2.0.txt`](licencas/MODNet-Apache-2.0.txt) |
 | [SigLIP 2](https://huggingface.co/google/siglip2-base-patch16-224), do Google, em ONNX int8 ([`onnx-community/siglip2-base-patch16-224-ONNX`](https://huggingface.co/onnx-community/siglip2-base-patch16-224-ONNX)) | o auditor das fotos achadas pelo tema, baixado no primeiro uso (~410 MB) | Apache-2.0 (a do modelo do Google; a exportação é o mesmo modelo, em ONNX) |
 | ONNX Runtime | roda o MODNet e o auditor | MIT |
+| [llama.cpp](https://github.com/ggml-org/llama.cpp) (o `llama-server`, release `b11669`) | roda a IA local; baixado só se você instalar | MIT |
+| [Qwen3.5-4B](https://huggingface.co/Qwen/Qwen3.5-4B), em GGUF ([`unsloth/Qwen3.5-4B-GGUF`](https://huggingface.co/unsloth/Qwen3.5-4B-GGUF)) | o modelo da IA local; baixado só se você instalar (~3,4 GB) | Apache-2.0 |
 | [tokenizers](https://github.com/huggingface/tokenizers) | o vocabulário do auditor | Apache-2.0 |
 | [PyAV](https://github.com/PyAV-Org/PyAV) | ler e gravar vídeo | BSD-3-Clause (veja abaixo) |
 | NumPy | as contas do áudio e dos quadros | BSD-3-Clause, entre outras |

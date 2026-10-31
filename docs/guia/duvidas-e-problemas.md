@@ -127,6 +127,20 @@ Para não usar o auditor, desmarque **Conferir as fotos** (no terminal, `--sem-a
 </details>
 
 <details>
+<summary><b>A IA local não instalou, ou não abriu</b></summary>
+
+- **O download parou:** clique em **Instalar a IA local** de novo. O que já tinha baixado e
+  conferido não baixa outra vez.
+- **"Não abriu neste computador":** no Windows e no Linux, o editor tenta o pacote com a placa
+  de vídeo (Vulkan) e, se ele não abrir, o só de processador. Se os dois falharem, atualize o
+  driver da placa e tente de novo. O que o programa disse fica em `servidor.log`, na pasta
+  `ia-local` dos dados.
+- **Está lenta:** sem placa de vídeo, ela usa só o processador, e um roteiro pode levar
+  minutos. Feche os outros programas, ou use o Gemini para o texto (no cartão **A IA**).
+
+</details>
+
+<details>
 <summary><b>A thumbnail com IA avisou que a cota acabou</b></summary>
 
 A cota gratuita do Gemini conta pedidos por modelo e por dia. O editor tenta três

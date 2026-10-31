@@ -341,7 +341,7 @@ def escolher(palavras: Sequence[Palavra], linha: cortes.Linha, duracao: float, *
         ids, sel.por = cortar_no_fim(lista, a), "falsa"
     elif ia.ligada():
         ids, sel.pedidos, aviso = _pela_ia(lista, a, tema, transporte)
-        sel.por = "gemini"
+        sel.por = "local" if ia.provedor() == "local" else "gemini"
         if not ids:
             ids, sel.por = cortar_no_fim(lista, a), "fim"
             sel.aviso = (f"A IA não escolheu ({aviso}): o vídeo foi cortado no fim, na última "

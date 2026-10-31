@@ -187,7 +187,7 @@ class TestSemOGemini:
     def test_sem_chave_sai_o_rascunho(self, pasta, monkeypatch):
         monkeypatch.delenv(ia.VARIAVEL_FALSA, raising=False)
         g = catalogo.gerar(catalogo.clipes_relativos(pasta))
-        assert g.por == "rascunho" and "sem a chave" in g.aviso
+        assert g.por == "rascunho" and "sem IA" in g.aviso
         assert g.cenas[0]["descricao"] == "Explosao carro"
         assert {c["energia"] for c in g.cenas} <= set(cenas.ENERGIAS)
         # a que mexe é mais forte que a parada
