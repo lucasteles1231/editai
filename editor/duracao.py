@@ -28,7 +28,7 @@ import logging
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
-from editor import cortes, ia
+from editor import cortes, fronteiras, ia
 from editor.transcricao import Palavra
 
 logger = logging.getLogger(__name__)
@@ -120,7 +120,8 @@ class Frase:
     #: No vídeo original: o começo da primeira palavra e o fim da última.
     ini: float
     fim: float
-    #: Onde ela começa e termina para o corte: no meio da pausa com a vizinha.
+    #: Onde ela começa e termina para o corte: no meio da pausa com a vizinha
+    #: (:func:`entre_frases`).
     corte_ini: float = 0.0
     corte_fim: float = 0.0
     #: Quanto ela dura no vídeo editado (já sem os silêncios).
@@ -131,7 +132,21 @@ def _no_editado(linha: cortes.Linha, a: float, b: float) -> float:
     return sum(max(0.0, min(b, t.fim) - max(a, t.ini)) for t in linha.trechos)
 
 
-def frases(palavras: Sequence[Palavra], linha: cortes.Linha, duracao: float) -> list[Frase]:
+def entre_frases(a: Palavra, b: Palavra, medida: fronteiras.Atividade | None = None) -> float:
+    """Onde cortar entre a última palavra de uma frase e a primeira da seguinte: no meio da
+    pausa medida no som. O Whisper marca o fim da frase cedo, e o meio do vão dele chegou a
+    cair na última sílaba ("Alô!" perdia 174 ms no gabarito). Sem a medida, ou sem pausa no
+    som, fica o meio do vão do Whisper."""
+    achada = fronteiras.entre(medida, a, b) if medida is not None else None
+    if achada is not None:
+        meio = (achada.fim_da_fala + achada.comeco_da_fala) / 2
+        if a.inicio < meio < b.fim:
+            return meio
+    return (a.fim + b.inicio) / 2
+
+
+def frases(palavras: Sequence[Palavra], linha: cortes.Linha, duracao: float,
+           medida: fronteiras.Atividade | None = None) -> list[Frase]:
     """As frases da fala, em ordem, com onde cada uma pode ser cortada."""
     ws = sorted(palavras, key=lambda p: p.inicio)
     grupos: list[list[Palavra]] = []
@@ -147,9 +162,11 @@ def frases(palavras: Sequence[Palavra], linha: cortes.Linha, duracao: float) -> 
             atual = []
     lista = [Frase(k, " ".join(w.texto for w in g), g[0].inicio, g[-1].fim)
              for k, g in enumerate(grupos)]
+    cortes_entre = [entre_frases(grupos[k][-1], grupos[k + 1][0], medida)
+                    for k in range(len(grupos) - 1)]
     for k, f in enumerate(lista):
-        f.corte_ini = 0.0 if k == 0 else (lista[k - 1].fim + f.ini) / 2
-        f.corte_fim = duracao if k == len(lista) - 1 else (f.fim + lista[k + 1].ini) / 2
+        f.corte_ini = 0.0 if k == 0 else cortes_entre[k - 1]
+        f.corte_fim = duracao if k == len(lista) - 1 else cortes_entre[k]
         f.segundos = round(_no_editado(linha, f.corte_ini, f.corte_fim), 2)
     return lista
 
@@ -326,14 +343,15 @@ def _juntar_vizinhas(intervalos: list[tuple[float, float]]) -> list[tuple[float,
 
 def escolher(palavras: Sequence[Palavra], linha: cortes.Linha, duracao: float, *,
              escolha="auto", limite: float | None = None, tema: str = "",
-             transporte=None) -> Selecao:
-    """As frases que ficam para o vídeo caber na duração escolhida."""
+             transporte=None, medida: fronteiras.Atividade | None = None) -> Selecao:
+    """As frases que ficam para o vídeo caber na duração escolhida. Com a ``medida`` do som,
+    o corte entre duas frases cai no meio da pausa de verdade."""
     sel = Selecao(str(escolha or "auto"), antes=linha.duracao, depois=linha.duracao)
     a = alvo(escolha, limite, linha.duracao)
     if a is None or not palavras:
         return sel
     sel.alvo = a.segundos
-    lista = frases(palavras, linha, duracao)
+    lista = frases(palavras, linha, duracao, medida)
     if len(lista) < 2:
         sel.aviso = "A fala é uma frase só, mais longa que o tempo escolhido: nada saiu dela."
         return sel

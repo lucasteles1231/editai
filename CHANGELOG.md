@@ -21,6 +21,10 @@ nas correções, o do meio nas novidades e o primeiro quando algo deixa de funci
   - Nas pausas que o corte de silêncio corta, 83%, contra 58% do corte de antes. O pior erro
     caiu de 667 para 309 ms.
   - Medir a fala de 10 min leva uns 2 s num M5.
+- **O "Quanto tempo?" corta entre as frases no meio da pausa de verdade.** Antes, ele cortava no
+  meio do vão que o Whisper dava, e o fim da frase vinha cedo: um "Alô!" perdia os últimos
+  174 ms. Das 30 pontas de frase marcadas à mão, o corte comia a palavra em 2. Agora come em 1,
+  o fio de som no fim de "opinião.", que o corte de silêncio deixa de fora.
 
 ## [0.7.0] — 31/10/2026
 

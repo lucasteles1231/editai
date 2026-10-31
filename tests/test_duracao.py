@@ -71,6 +71,27 @@ class TestAsFrases:
         assert lista[0].corte_ini == 0 and lista[-1].corte_fim == 30.0
         assert sum(f.segundos for f in lista) == pytest.approx(30.0, abs=0.05)
 
+    def test_o_corte_entre_frases_cai_na_pausa_medida(self):
+        """O Whisper diz que "dia." acaba em 1,0 s, e o som vai até 1,2 s: o meio do vão dele
+        (1,075 s) cortaria a última sílaba. Com o som medido, o corte cai no meio da pausa."""
+        import numpy as np
+
+        from editor import fronteiras
+
+        taxa = 48_000
+        t = np.arange(3 * taxa) / taxa
+        som = np.random.default_rng(1).standard_normal(len(t)) * 1e-4
+        fala = ((t >= 0.3) & (t < 1.2)) | ((t >= 1.6) & (t < 2.5))
+        som[fala] += 0.3 * np.sin(2 * np.pi * 200 * t[fala])
+        palavras = [Palavra("Bom", 0.3, 0.6), Palavra("dia.", 0.6, 1.0),
+                    Palavra("Hoje", 1.15, 1.5), Palavra("vamos.", 1.5, 2.5)]
+        linha = cortes.Linha([cortes.Trecho(0.0, 3.0)])
+        assert duracao.frases(palavras, linha, 3.0)[0].corte_fim == pytest.approx(1.075)
+        medida = fronteiras.atividade(som, taxa)
+        primeira, segunda = duracao.frases(palavras, linha, 3.0, medida)
+        assert primeira.corte_fim == pytest.approx(1.4, abs=0.03)
+        assert segunda.corte_ini == primeira.corte_fim
+
     def test_sem_pontuacao_a_pausa_fecha_a_frase(self):
         palavras = [Palavra("uma", 0.0, 0.3), Palavra("frase", 0.4, 0.7),
                     Palavra("outra", 1.6, 1.9), Palavra("aqui", 2.0, 2.3)]

@@ -24,6 +24,7 @@ from editor import (
     cortes,
     efeitos_da_voz,
     exportar,
+    fronteiras,
     icones,
     plano,
     recorte,
@@ -385,16 +386,19 @@ def _planejar(fala: Path, duracao_da_fala: float, tem_audio: bool, edicao: Opcoe
     avisar("cortando", 0.0, "")
     audio = (video_mod.ler_audio(fala, duracao_da_fala)[: int(duracao * video_mod.TAXA)]
              if tem_audio else np.zeros((0, 2), np.float32))
+    # o som medido uma vez: as pausas do corte de silêncio e o corte entre as frases
+    medida = (fronteiras.atividade(audio.mean(axis=1), video_mod.TAXA)
+              if len(audio) and palavras else None)
     if edicao.cortes and palavras:
-        trechos = cortes.calcular(palavras, audio.mean(axis=1) if len(audio) else None,
-                                  video_mod.TAXA, duracao, pausa_maxima=edicao.pausa_maxima,
-                                  respiro=edicao.respiro)
+        trechos = cortes.calcular(palavras, None, video_mod.TAXA, duracao,
+                                  pausa_maxima=edicao.pausa_maxima, respiro=edicao.respiro,
+                                  medida=medida)
     else:
         trechos = [cortes.Trecho(0.0, duracao)]
     linha = cortes.Linha(trechos)
     avisar("cortando", 1.0, f"{len(trechos)} trecho(s), {linha.duracao:.1f} s de "
                             f"{duracao:.1f} s")
-    selecao = _escolher_as_frases(palavras, linha, duracao, edicao, previa_s, avisar)
+    selecao = _escolher_as_frases(palavras, linha, duracao, edicao, previa_s, avisar, medida)
     if selecao.manter is not None:
         trechos = cortes.cruzar(trechos, selecao.manter)
         linha = cortes.Linha(trechos)
@@ -417,8 +421,8 @@ def _planejar(fala: Path, duracao_da_fala: float, tem_audio: bool, edicao: Opcoe
 
 
 def _escolher_as_frases(palavras: list, linha: cortes.Linha, duracao: float,
-                        edicao: OpcoesDeEdicao, previa_s: float | None, avisar: Progresso
-                        ) -> duracao_alvo.Selecao:
+                        edicao: OpcoesDeEdicao, previa_s: float | None, avisar: Progresso,
+                        medida: fronteiras.Atividade | None = None) -> duracao_alvo.Selecao:
     """A duração escolhida: as frases que ficam (:mod:`editor.duracao`). A prévia mostra o
     começo do vídeo, sem a escolha."""
     if previa_s:
@@ -430,7 +434,8 @@ def _escolher_as_frases(palavras: list, linha: cortes.Linha, duracao: float,
     if a is not None and palavras:
         avisar("escolhendo", 0.0, f"escolhendo as frases que cabem em uns {a.segundos:.0f} s")
     sel = duracao_alvo.escolher(palavras, linha, duracao, escolha=edicao.duracao,
-                                limite=edicao.limite_da_plataforma, tema=edicao.tema)
+                                limite=edicao.limite_da_plataforma, tema=edicao.tema,
+                                medida=medida)
     if sel.manter is not None:
         avisar("escolhendo", 1.0, f"{len(sel.fora)} frase(s) de fora")
     if sel.aviso:

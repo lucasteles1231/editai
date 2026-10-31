@@ -51,13 +51,15 @@ class Trecho:
 
 def calcular(palavras: Sequence[Palavra], amostras: np.ndarray | None, taxa: int,
              duracao: float, *, pausa_maxima: float = PAUSA_MAXIMA_S,
-             respiro: float = RESPIRO_S) -> list[Trecho]:
-    """Os trechos a manter. Sem palavras, o vídeo fica inteiro."""
+             respiro: float = RESPIRO_S,
+             medida: fronteiras.Atividade | None = None) -> list[Trecho]:
+    """Os trechos a manter. Sem palavras, o vídeo fica inteiro. A ``medida`` do som
+    (:func:`editor.fronteiras.atividade`) pode vir pronta; sem ela, é medida aqui."""
     ws = sorted(palavras, key=lambda p: p.inicio)
     if not ws or duracao <= 0:
         return [Trecho(0.0, max(0.0, duracao))]
-    medida = (fronteiras.atividade(amostras, taxa)
-              if amostras is not None and len(amostras) else None)
+    if medida is None and amostras is not None and len(amostras):
+        medida = fronteiras.atividade(amostras, taxa)
     # O que sai: o silêncio antes da primeira palavra, as pausas longas e o silêncio
     # depois da última. O que fica é o que sobra entre eles.
     fora = [(0.0, max(0.0, _comeco_real(ws[0], medida)))]
